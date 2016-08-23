@@ -91,3 +91,8 @@ ENV/
 # Pycharm project settings
 .idea/
 
+# data
+data/
+
+# numpy saved models
+*.npz
