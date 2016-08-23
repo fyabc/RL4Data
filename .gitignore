@@ -91,3 +91,5 @@ ENV/
 # Pycharm project settings
 .idea/
 
+# data
+data/

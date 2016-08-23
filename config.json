@@ -1,0 +1,9 @@
+{
+    "data_dir": "data/cifar-10-batches-py",
+    "total_size": 60000,
+    "train_size": 50000,
+
+    "parameters": {
+        "n": 5
+    }
+}
