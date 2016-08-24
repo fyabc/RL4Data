@@ -160,6 +160,14 @@ class CNN(object):
         # Compile a second function computing the validation loss and accuracy:
         self.validate_function = theano.function([self.input_var, self.target_var], [test_loss, test_acc])
 
+    def sample_data(self, x_train, y_train):
+        pass
+
+    @logging
+    def shuffle_data(self, x_train, y_train):
+        np.random.shuffle(x_train)
+        np.random.shuffle(y_train)
+
     @logging
     def train(self, x_train, y_train, x_test, y_test, num_epochs):
         if self.train_function is None:
@@ -171,9 +179,25 @@ class CNN(object):
         for epoch in range(num_epochs):
             print('Epoch {} of {}:'.format(epoch, num_epochs))
 
-            self.train_one_epoch(x_train, y_train, x_test, y_test)
+            # shuffle training data
+            self.shuffle_data(x_train, y_train)
 
-            # adjust learning rate as in paper
+            start_time = time.time()
+
+            # Train one epoch:
+            train_err, train_batches, softmax_probabilities = self.train_one_epoch(x_train, y_train)
+
+            # And a full pass over the validation data:
+            validate_err, validate_acc, validate_batches = self.validate_or_test(x_test, y_test)
+
+            # Then we print the results for this epoch:
+            print("This epoch took {:.3f}s".format(time.time() - start_time))
+            print("  training loss:\t\t{:.6f}".format(train_err / train_batches))
+            print("  validation loss:\t\t{:.6f}".format(validate_err / validate_batches))
+            print("  validation accuracy:\t\t{:.2f} %".format(
+                validate_acc / validate_batches * 100))
+
+            # Adjust learning rate as in paper
             # 32k and 48k iterations should be roughly equivalent to 41 and 61 epochs
             if (epoch + 1) == 41 or (epoch + 1) == 61:
                 new_lr = self.learning_rate.get_value() * ParamConfig['learning_rate_discount']
@@ -183,19 +207,12 @@ class CNN(object):
         # dump the network weights to a file:
         np.savez(str('cifar10_deep_residual_model.npz'), *lasagne.layers.get_all_param_values(self.network))
 
-    def train_one_epoch(self, x_train, y_train, x_test, y_test):
-        # shuffle training data
-        train_indices = np.arange(x_train.shape[0])
-        np.random.shuffle(train_indices)
-        x_train = x_train[train_indices, :, :, :]
-        y_train = y_train[train_indices]
-
+    @logging
+    def train_one_epoch(self, x_train, y_train):
         # In each epoch, we do a full pass over the training data:
         train_err = 0
         train_batches = 0
         softmax_probabilities = []
-
-        start_time = time.time()
 
         for batch in iterate_minibatches(x_train, y_train, self.train_batch_size, shuffle=True, augment=True):
             inputs, targets = batch
@@ -206,28 +223,7 @@ class CNN(object):
             # print("Output probabilities:", softmax_probabilities)
             # print('Prediction is:', np.argmax(softmax_probabilities, axis=1))
 
-        # And a full pass over the validation data:
-        validate_err = 0
-        validate_acc = 0
-        validate_batches = 0
-        for batch in iterate_minibatches(x_test, y_test, self.validate_batch_size, shuffle=False):
-            inputs, targets = batch
-            err, acc = self.validate_function(inputs, targets)
-            validate_err += err
-            validate_acc += acc
-            validate_batches += 1
-
-        # Then we print the results for this epoch:
-        print("This epoch took {:.3f}s".format(time.time() - start_time))
-        print("  training loss:\t\t{:.6f}".format(train_err / train_batches))
-        print("  validation loss:\t\t{:.6f}".format(validate_err / validate_batches))
-        print("  validation accuracy:\t\t{:.2f} %".format(
-                validate_acc / validate_batches * 100))
-
-        return {
-            'validate_acc': validate_acc,
-            'softmax_probabilities': np.vstack(softmax_probabilities),
-        }
+        return train_err, train_batches, np.vstack(softmax_probabilities)
 
     @logging
     def load_model(self, model):
@@ -240,6 +236,13 @@ class CNN(object):
 
     @logging
     def test(self, x_test, y_test):
+        test_err, test_acc, test_batches = self.validate_or_test(x_test, y_test)
+        print("Final results:")
+        print("  test loss:\t\t\t{:.6f}".format(test_err / test_batches))
+        print("  test accuracy:\t\t{:.2f} %".format(
+                test_acc / test_batches * 100))
+
+    def validate_or_test(self, x_test, y_test):
         # Calculate validation error of model:
         test_err = 0
         test_acc = 0
@@ -250,10 +253,7 @@ class CNN(object):
             test_err += err
             test_acc += acc
             test_batches += 1
-        print("Final results:")
-        print("  test loss:\t\t\t{:.6f}".format(test_err / test_batches))
-        print("  test accuracy:\t\t{:.2f} %".format(
-                test_acc / test_batches * 100))
+        return test_err, test_acc, test_batches
 
 
 def test():

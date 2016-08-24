@@ -25,19 +25,19 @@ def main(n=ParamConfig['n'], num_epochs=ParamConfig['num_epochs'], model=Config[
 
     # Create neural network model
     cnn = CNN(n)
-    cnn.build_train_function()
 
     # Create the policy network
     policy = PolicyNetwork()
 
     if model is None:
-        # Train the network
-        for epoch in range(num_epochs):
-            result = cnn.train_one_epoch(x_train, y_train, x_test, y_test)
+        # # Train the network
+        # cnn.build_train_function()
+        # for epoch in range(num_epochs):
+        #     train_err, train_batches, softmax_probabilities = cnn.train_one_epoch(x_train, y_train)
+        #     validate_err, validate_acc, validate_batches = cnn.validate_or_test(x_test, y_test)
+        #     print(epoch, softmax_probabilities.shape)
 
-            validate_acc = result['validate_acc']
-            softmax_probabilities = result['softmax_probabilities']
-            print(epoch, softmax_probabilities.shape)
+        cnn.train(x_train, y_train, x_test, y_test, num_epochs)
     else:
         cnn.load_model(model)
 
