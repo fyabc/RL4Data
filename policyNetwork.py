@@ -21,25 +21,26 @@ class PolicyNetwork(object):
     """
 
     def __init__(self,
-                 input_size=ParamConfig['cnn_output_size'],
-                 output_size=ParamConfig['train_batch_size']):
+                 input_size=ParamConfig['cnn_output_size']):
         self.input_size = input_size
-        self.output_size = output_size
 
-        self.W = theano.shared(name='W', value=init_norm(output_size, input_size))
-        self.b = theano.shared(name='b', value=init_norm(output_size))
+        self.W = theano.shared(name='W', value=init_norm(input_size))
+        self.b = theano.shared(name='b', value=init_norm())
         self.parameters = [self.W, self.b]
 
-        self.input = T.vector(name='softmax_probabilities')
-        self.h = T.nnet.sigmoid(T.dot(self.W, self.input) + self.b)
+        # a minibatch of probabilities
+        self.state = T.matrix(name='softmax_probabilities', dtype=fX)
+        self.h = T.nnet.sigmoid(T.dot(self.state, self.W) + self.b)
 
         self.output_function = theano.function(
-            inputs=[self.input],
+            inputs=[self.state],
             outputs=self.h,
         )
 
-    def sample(self, output_prob):
-        return np.random.random(self.output_size) < output_prob
+        self.reward = T.scalar('reward', dtype=fX)
+
+    def take_action(self, state):
+        return np.random.random(state.shape[0]) < self.output_function(state)
 
     def update(self):
         pass
@@ -48,9 +49,9 @@ class PolicyNetwork(object):
 def test():
     pn = PolicyNetwork()
 
-    input_data = np.ones(shape=(ParamConfig['cnn_output_size'],), dtype=fX)
+    input_data = np.ones(shape=(4, ParamConfig['cnn_output_size']), dtype=fX)
 
-    print(pn.output_function(input_data))
+    print(pn.take_action(input_data))
 
 
 if __name__ == '__main__':

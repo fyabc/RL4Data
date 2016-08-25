@@ -101,6 +101,7 @@ def iterate_minibatches(inputs, targets, batch_size, shuffle=False, augment=Fals
     if shuffle:
         indices = np.arange(len(inputs))
         np.random.shuffle(indices)
+
     for start_idx in range(0, len(inputs) - batch_size + 1, batch_size):
         if shuffle:
             excerpt = indices[start_idx:start_idx + batch_size]
@@ -113,6 +114,7 @@ def iterate_minibatches(inputs, targets, batch_size, shuffle=False, augment=Fals
             padded = np.pad(inputs[excerpt], ((0, 0), (0, 0), (4, 4), (4, 4)), mode=str('constant'))
             random_cropped = np.zeros(inputs[excerpt].shape, dtype=np.float32)
             crops = np.random.random_integers(0, high=8, size=(batch_size, 2))
+
             for r in range(batch_size):
                 random_cropped[r, :, :, :] = padded[r, :, crops[r, 0]:(crops[r, 0] + 32),
                                                     crops[r, 1]:(crops[r, 1] + 32)]

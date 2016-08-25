@@ -39,7 +39,7 @@ class CNN(object):
         self.network = self.build_cnn(self.input_var, n)
         print("number of parameters in model: %d" % lasagne.layers.count_params(self.network, trainable=True))
 
-        self.prediction_function = None
+        self.probs_function = None
         self.train_function = None
 
         self.build_validate_function()
@@ -120,13 +120,13 @@ class CNN(object):
 
         # Create a loss expression for training, i.e., a scalar objective we want
         # to minimize (for our multi-class problem, it is the cross-entropy loss):
-        prediction = lasagne.layers.get_output(self.network)
-        self.prediction_function = theano.function(
+        probs = lasagne.layers.get_output(self.network)
+        self.probs_function = theano.function(
                 inputs=[self.input_var],
-                outputs=prediction
+                outputs=probs
         )
 
-        loss = lasagne.objectives.categorical_crossentropy(prediction, self.target_var)
+        loss = lasagne.objectives.categorical_crossentropy(probs, self.target_var)
         loss = loss.mean()
 
         # add weight decay
@@ -216,14 +216,23 @@ class CNN(object):
 
         for batch in iterate_minibatches(x_train, y_train, self.train_batch_size, shuffle=True, augment=True):
             inputs, targets = batch
+
             train_err += self.train_function(inputs, targets)
             train_batches += 1
 
-            softmax_probabilities.append(self.prediction_function(inputs))
-            # print("Output probabilities:", softmax_probabilities)
-            # print('Prediction is:', np.argmax(softmax_probabilities, axis=1))
+            current_prediction = self.probs_function(inputs)
+            softmax_probabilities.append(current_prediction)
+            # print("Output probabilities:", current_prediction)
+            # print('Prediction is:', np.argmax(current_prediction, axis=1))
 
         return train_err, train_batches, np.vstack(softmax_probabilities)
+
+    def train_one_minibatch(self, inputs, targets, mask=None):
+        if mask is not None:
+            inputs = inputs[mask]
+            targets = targets[mask]
+
+        return self.train_function(inputs, targets), self.probs_function(inputs)
 
     @logging
     def load_model(self, model):

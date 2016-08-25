@@ -4,11 +4,10 @@ from __future__ import print_function, unicode_literals
 
 import sys
 
-import theano.tensor as T
 # import lasagne
 
 from config import Config, ParamConfig
-from utils import load_cifar10_data
+from utils import load_cifar10_data, iterate_minibatches
 from DeepResidualLearning_CIFAR10 import CNN
 from policyNetwork import PolicyNetwork
 
@@ -26,18 +25,28 @@ def main(n=ParamConfig['n'], num_epochs=ParamConfig['num_epochs'], model=Config[
     # Create neural network model
     cnn = CNN(n)
 
-    # Create the policy network
-    policy = PolicyNetwork()
-
     if model is None:
-        # # Train the network
-        # cnn.build_train_function()
-        # for epoch in range(num_epochs):
-        #     train_err, train_batches, softmax_probabilities = cnn.train_one_epoch(x_train, y_train)
-        #     validate_err, validate_acc, validate_batches = cnn.validate_or_test(x_test, y_test)
-        #     print(epoch, softmax_probabilities.shape)
+        # Create the policy network
+        policy = PolicyNetwork()
 
-        cnn.train(x_train, y_train, x_test, y_test, num_epochs)
+        # Train the network
+        cnn.build_train_function()
+        for epoch in range(num_epochs):
+            for batch in iterate_minibatches(x_train, y_train, ParamConfig['train_batch_size'], augment=True):
+                inputs, targets = batch
+                probability = cnn.probs_function(inputs)
+
+                actions = policy.take_action(probability)
+                print(actions)
+                if actions[0]:
+                    print('Accepted.')
+                    train_err = cnn.train_function(inputs, targets)
+                    print(train_err)
+                print(probability.shape)
+
+            validate_acc = cnn.validate_or_test(x_test, y_test)
+
+            # policy.update(validate_acc)
     else:
         cnn.load_model(model)
 
