@@ -7,13 +7,14 @@ from functools import wraps
 import time
 import cPickle as pkl
 import numpy as np
-from theano import config
+# from theano import config
 
 from config import Config
 
 __author__ = 'fyabc'
 
-fX = config.floatX
+# fX = config.floatX
+fX = Config['floatX']
 
 _depth = 0
 

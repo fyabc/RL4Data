@@ -41,7 +41,9 @@ class CNN(object):
 
         self.probs_function = None
         self.train_function = None
+        self.validate_function = None
 
+        self.build_train_function()
         self.build_validate_function()
 
     @logging
@@ -222,8 +224,6 @@ class CNN(object):
 
             current_prediction = self.probs_function(inputs)
             softmax_probabilities.append(current_prediction)
-            # print("Output probabilities:", current_prediction)
-            # print('Prediction is:', np.argmax(current_prediction, axis=1))
 
         return train_err, train_batches, np.vstack(softmax_probabilities)
 

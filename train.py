@@ -14,7 +14,7 @@ from policyNetwork import PolicyNetwork
 __author__ = 'fyabc'
 
 
-def main(n=ParamConfig['n'], num_epochs=ParamConfig['num_epochs'], model=Config['model']):
+def main(n=ParamConfig['n'], num_epochs=ParamConfig['num_epochs']):
     # Load the dataset
     data = load_cifar10_data()
     x_train = data['x_train']
@@ -25,30 +25,29 @@ def main(n=ParamConfig['n'], num_epochs=ParamConfig['num_epochs'], model=Config[
     # Create neural network model
     cnn = CNN(n)
 
-    if model is None:
-        # Create the policy network
-        policy = PolicyNetwork()
+    # Create the policy network
+    policy = PolicyNetwork()
 
-        # Train the network
-        cnn.build_train_function()
-        for epoch in range(num_epochs):
-            for batch in iterate_minibatches(x_train, y_train, ParamConfig['train_batch_size'], augment=True):
-                inputs, targets = batch
-                probability = cnn.probs_function(inputs)
+    # Train the network
+    for epoch in range(num_epochs):
+        for batch in iterate_minibatches(x_train, y_train, ParamConfig['train_batch_size'], shuffle=True, augment=True):
+            inputs, targets = batch
+            probability = cnn.probs_function(inputs)
 
-                actions = policy.take_action(probability)
-                print(actions)
-                if actions[0]:
-                    print('Accepted.')
-                    train_err = cnn.train_function(inputs, targets)
-                    print(train_err)
-                print(probability.shape)
+            actions = policy.take_action(probability)
 
-            validate_acc = cnn.validate_or_test(x_test, y_test)
+            # get masked inputs and targets
+            inputs = inputs[actions]
+            targets = targets[actions]
+            print('Number of accepted cases:', len(inputs))
 
-            # policy.update(validate_acc)
-    else:
-        cnn.load_model(model)
+            train_err = cnn.train_function(inputs, targets)
+            print('Training error:', train_err)
+
+        _, validate_acc, _ = cnn.validate_or_test(x_test, y_test)
+        print('Validate accuracy:', validate_acc)
+
+        policy.update(validate_acc)
 
     cnn.test(x_test, y_test)
 

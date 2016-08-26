@@ -3,6 +3,8 @@
     "total_size": 60000,
     "train_size": 50000,
     "model": null,
+    "seed": 1234,
+    "floatX": "float32",
 
     "parameters": {
         "init_learning_rate": 0.1,
@@ -15,6 +17,9 @@
         "validate_batch_size": 500,
         "cnn_output_size": 10,
         "n": 5,
-        "num_epochs": 82
+        "num_epochs": 82,
+
+        "policy_optimizer": "rmsprop",
+        "policy_learning_rate": 0.1
     }
 }
