@@ -20,6 +20,10 @@
         "num_epochs": 82,
 
         "policy_optimizer": "rmsprop",
-        "policy_learning_rate": 0.1
+        "policy_learning_rate": 0.1,
+
+        "gamma": 1.0,
+
+        "reward_baseline_update_rate": 0.2
     }
 }

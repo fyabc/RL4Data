@@ -15,6 +15,12 @@ __author__ = 'fyabc'
 
 
 def main(n=ParamConfig['n'], num_epochs=ParamConfig['num_epochs']):
+    # Create the policy network
+    policy = PolicyNetwork()
+
+    # Create neural network model
+    cnn = CNN(n)
+
     # Load the dataset
     data = load_cifar10_data()
     x_train = data['x_train']
@@ -22,11 +28,9 @@ def main(n=ParamConfig['n'], num_epochs=ParamConfig['num_epochs']):
     x_test = data['x_test']
     y_test = data['y_test']
 
-    # Create neural network model
-    cnn = CNN(n)
-
-    # Create the policy network
-    policy = PolicyNetwork()
+    # Use small dataset to check the code
+    x_train = x_train[:1280]
+    y_train = y_train[:1280]
 
     # Train the network
     for epoch in range(num_epochs):
@@ -44,7 +48,9 @@ def main(n=ParamConfig['n'], num_epochs=ParamConfig['num_epochs']):
             train_err = cnn.train_function(inputs, targets)
             print('Training error:', train_err)
 
-        _, validate_acc, _ = cnn.validate_or_test(x_test, y_test)
+        _, validate_acc, validate_batches = cnn.validate_or_test(x_test, y_test)
+        validate_acc /= validate_batches
+
         print('Validate accuracy:', validate_acc)
 
         policy.update(validate_acc)

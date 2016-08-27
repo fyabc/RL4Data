@@ -24,8 +24,11 @@ from config import ParamConfig
 from utils import logging, iterate_minibatches
 
 
-# ##################### Build the neural network model #######################
 class CNN(object):
+    """
+    The neural network model.
+    """
+
     def __init__(self, n=ParamConfig['n']):
         self.train_batch_size = ParamConfig['train_batch_size']
         self.validate_batch_size = ParamConfig['validate_batch_size']
