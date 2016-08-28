@@ -42,7 +42,7 @@ class PolicyNetwork(object):
         self.random_generator = RandomStreams(Config['seed'])
 
         # parameters to be learned
-        self.W = theano.shared(name='W', value=init_norm(input_size))
+        self.W = theano.shared(name='W', value=init_norm(input_size) / np.sqrt(input_size))
         self.b = theano.shared(name='b', value=floatX(0.))
         self.parameters = [self.W, self.b]
 
@@ -61,22 +61,23 @@ class PolicyNetwork(object):
         # replay buffers
         self.input_buffer = []
         self.action_buffer = []
-        self.delta_buffer = []
 
         # the reward
         self.reward = T.scalar('reward', dtype=fX)
         # the baseline of the reward
         self.reward_baseline = 0.
 
-        self.delta = T.scalar('delta', dtype=fX)
+        self.action = T.iscalar('action')
+
+        self.cost = (self.action * T.log(self.output) + (1 - self.action) * T.log(1 - self.output)) * self.reward
 
         grads = T.grad(
-            T.log(self.output) * self.reward,
+            self.cost,
             self.parameters,
-            known_grads={
-                # TODO
-                self.output: (self.output_sample - self.output)
-            }
+            # known_grads={
+            #     # TODO
+            #     self.output: (self.output_sample - self.output)
+            # }
         )
 
         # TODO
@@ -85,8 +86,8 @@ class PolicyNetwork(object):
                    for parameter, grad in zip(self.parameters, grads)]
 
         self.update_function = theano.function(
-            inputs=[self.input, self.reward],
-            outputs=None,
+            inputs=[self.input, self.action, self.reward],
+            outputs=self.cost,
             updates=updates,
             allow_input_downcast=True,
             on_unused_input='ignore',
@@ -102,7 +103,6 @@ class PolicyNetwork(object):
 
             self.input_buffer.append(input_)
             self.action_buffer.append(action)
-            self.delta_buffer.append(delta)
         return actions
 
     @logging
@@ -118,13 +118,12 @@ class PolicyNetwork(object):
 
         # TODO
         # update parameters for every time step
-        for input_, r in zip(self.input_buffer, discounted_rewards):
-            self.update_function(input_, r)
+        for input_, action_, reward_ in zip(self.input_buffer, self.action_buffer, discounted_rewards):
+            self.update_function(input_, action_, reward_)
 
         # clear buffers
         self.input_buffer = []
         self.action_buffer = []
-        self.delta_buffer = []
 
         # update reward baseline
         self.reward_baseline = (1 - self.rb_update_rate) * self.reward_baseline + self.rb_update_rate * reward

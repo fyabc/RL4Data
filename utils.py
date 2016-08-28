@@ -42,7 +42,7 @@ def floatX(value):
 
 
 def init_norm(*dims):
-    return np.random.randn(*dims) * 0.1
+    return floatX(np.random.randn(*dims))
 
 
 def unpickle(filename):
