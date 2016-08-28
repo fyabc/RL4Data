@@ -19,6 +19,7 @@ from lasagne.layers import ExpressionLayer
 from lasagne.layers import NonlinearityLayer
 from lasagne.nonlinearities import softmax, rectify
 from lasagne.layers import batch_norm
+from lasagne.layers.helper import get_all_param_values, set_all_param_values
 
 from config import ParamConfig
 from utils import logging, iterate_minibatches
@@ -41,6 +42,8 @@ class CNN(object):
 
         self.network = self.build_cnn(self.input_var, n)
         print("number of parameters in model: %d" % lasagne.layers.count_params(self.network, trainable=True))
+
+        self.saved_init_parameters_values = get_all_param_values(self.network, trainable=True)
 
         self.probs_function = None
         self.train_function = None
@@ -236,6 +239,9 @@ class CNN(object):
             targets = targets[mask]
 
         return self.train_function(inputs, targets), self.probs_function(inputs)
+
+    def reset_all_parameters(self):
+        set_all_param_values(self.network, self.saved_init_parameters_values, trainable=True)
 
     @logging
     def load_model(self, model):

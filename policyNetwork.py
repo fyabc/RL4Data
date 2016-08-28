@@ -43,7 +43,7 @@ class PolicyNetwork(object):
 
         # parameters to be learned
         self.W = theano.shared(name='W', value=init_norm(input_size))
-        self.b = theano.shared(name='b', value=init_norm())
+        self.b = theano.shared(name='b', value=floatX(0.))
         self.parameters = [self.W, self.b]
 
         # a single case of input softmax probabilities
@@ -53,31 +53,29 @@ class PolicyNetwork(object):
         self.output = T.nnet.sigmoid(T.dot(self.input, self.W) + self.b)
         self.output_sample = self.random_generator.binomial(size=self.output.shape, p=self.output)
 
-        self.output_function = theano.function(
-            inputs=[self.input],
-            outputs=self.output,
-        )
-
         self.output_sample_function = theano.function(
             inputs=[self.input],
-            outputs=self.output_sample,
+            outputs=[self.output_sample, self.output_sample - self.output],
         )
 
         # replay buffers
         self.input_buffer = []
         self.action_buffer = []
+        self.delta_buffer = []
 
         # the reward
         self.reward = T.scalar('reward', dtype=fX)
         # the baseline of the reward
         self.reward_baseline = 0.
 
+        self.delta = T.scalar('delta', dtype=fX)
+
         grads = T.grad(
-            T.log(self.output),
+            T.log(self.output) * self.reward,
             self.parameters,
             known_grads={
                 # TODO
-                self.output: (self.output_sample - self.output) * self.reward
+                self.output: (self.output_sample - self.output)
             }
         )
 
@@ -91,30 +89,32 @@ class PolicyNetwork(object):
             outputs=None,
             updates=updates,
             allow_input_downcast=True,
+            on_unused_input='ignore',
         )
 
     def take_action(self, inputs):
         actions = np.zeros(shape=(inputs.shape[0],), dtype=bool)
 
         for i, input_ in enumerate(inputs):
-            action = bool(self.output_sample_function(input_))
+            action, delta = self.output_sample_function(input_)
+            action = bool(action)
             actions[i] = action
 
             self.input_buffer.append(input_)
             self.action_buffer.append(action)
+            self.delta_buffer.append(delta)
         return actions
 
     @logging
     def update(self, reward):
+        # TODO preprocess of reward
+
         # get discounted rewards
         discounted_rewards = np.zeros_like(self.action_buffer, dtype=fX)
         temp = reward - self.reward_baseline
         for i in reversed(xrange(discounted_rewards.size)):
             discounted_rewards[i] = temp
             temp *= self.gamma
-
-        # discounted_rewards -= np.mean(discounted_rewards)
-        # discounted_rewards /= np.std(discounted_rewards)
 
         # TODO
         # update parameters for every time step
@@ -124,9 +124,15 @@ class PolicyNetwork(object):
         # clear buffers
         self.input_buffer = []
         self.action_buffer = []
+        self.delta_buffer = []
 
         # update reward baseline
         self.reward_baseline = (1 - self.rb_update_rate) * self.reward_baseline + self.rb_update_rate * reward
+
+        print('New parameters:')
+        print('$    w =', self.W.get_value())
+        print('$    b =', self.b.get_value())
+        print('New reward baseline:', self.reward_baseline)
 
 
 def test():

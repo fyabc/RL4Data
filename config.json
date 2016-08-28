@@ -24,6 +24,6 @@
 
         "gamma": 1.0,
 
-        "reward_baseline_update_rate": 0.2
+        "reward_baseline_update_rate": 0.5
     }
 }

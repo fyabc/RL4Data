@@ -29,13 +29,16 @@ def main(n=ParamConfig['n'], num_epochs=ParamConfig['num_epochs']):
     y_test = data['y_test']
 
     # Use small dataset to check the code
-    x_train = x_train[:1280]
-    y_train = y_train[:1280]
+    x_train = x_train[:2560]
+    y_train = y_train[:2560]
 
     # Train the network
     for epoch in range(num_epochs):
+        cnn.reset_all_parameters()
+
         for batch in iterate_minibatches(x_train, y_train, ParamConfig['train_batch_size'], shuffle=True, augment=True):
             inputs, targets = batch
+
             probability = cnn.probs_function(inputs)
 
             actions = policy.take_action(probability)
@@ -43,6 +46,7 @@ def main(n=ParamConfig['n'], num_epochs=ParamConfig['num_epochs']):
             # get masked inputs and targets
             inputs = inputs[actions]
             targets = targets[actions]
+
             print('Number of accepted cases:', len(inputs))
 
             train_err = cnn.train_function(inputs, targets)
@@ -51,7 +55,7 @@ def main(n=ParamConfig['n'], num_epochs=ParamConfig['num_epochs']):
         _, validate_acc, validate_batches = cnn.validate_or_test(x_test, y_test)
         validate_acc /= validate_batches
 
-        print('Validate accuracy:', validate_acc)
+        print('#Validate accuracy:', validate_acc)
 
         policy.update(validate_acc)
 
