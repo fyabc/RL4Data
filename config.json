@@ -22,7 +22,7 @@
         "num_epochs": 5000,
 
         "policy_optimizer": "adadelta",
-        "policy_learning_rate": 0.05,
+        "policy_learning_rate": 0.02,
         "policy_learning_rate_discount": 0.7,
         "policy_learning_rate_discount_freq": 50,
 

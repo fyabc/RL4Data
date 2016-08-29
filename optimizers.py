@@ -6,6 +6,8 @@ import numpy as np
 import theano
 import theano.tensor as T
 
+from utils import floatX
+
 __author__ = 'fyabc'
 
 
@@ -23,8 +25,6 @@ Parameters
         inputs required to compute gradients
     cost :
         objective of optimization
-    hard_attn_up :
-        additional updates required for hard attention mechanism learning
 
 Returns
 -------
@@ -36,11 +36,11 @@ Returns
 # See "ADADELTA: An adaptive learning rate method", Matt Zeiler (2012) arXiv
 # preprint http://arxiv.org/abs/1212.5701
 def adadelta(learning_rate, parameters, grads, inputs, cost):
-    zipped_grads = [theano.shared(p.get_value() * np.float32(0.), name='%s_grad' % k)
+    zipped_grads = [theano.shared(p.get_value() * floatX(0.), name='%s_grad' % k)
                     for k, p in parameters.iteritems()]
-    running_up2 = [theano.shared(p.get_value() * np.float32(0.), name='%s_rup2' % k)
+    running_up2 = [theano.shared(p.get_value() * floatX(0.), name='%s_rup2' % k)
                    for k, p in parameters.iteritems()]
-    running_grads2 = [theano.shared(p.get_value() * np.float32(0.), name='%s_rgrad2' % k)
+    running_grads2 = [theano.shared(p.get_value() * floatX(0.), name='%s_rgrad2' % k)
                       for k, p in parameters.iteritems()]
 
     zg_up = [(zg, g) for zg, g in zip(zipped_grads, grads)]
@@ -65,11 +65,11 @@ def adadelta(learning_rate, parameters, grads, inputs, cost):
 #    "Generating Sequences with Recurrent Neural Networks", Alex Graves, arxiv preprint
 #    http://arxiv.org/abs/1308.0850
 def rmsprop(learning_rate, parameters, grads, inputs, cost):
-    zipped_grads = [theano.shared(p.get_value() * np.float32(0.), name='%s_grad' % k)
+    zipped_grads = [theano.shared(p.get_value() * floatX(0.), name='%s_grad' % k)
                     for k, p in parameters.iteritems()]
-    running_grads = [theano.shared(p.get_value() * np.float32(0.), name='%s_rgrad' % k)
+    running_grads = [theano.shared(p.get_value() * floatX(0.), name='%s_rgrad' % k)
                      for k, p in parameters.iteritems()]
-    running_grads2 = [theano.shared(p.get_value() * np.float32(0.), name='%s_rgrad2' % k)
+    running_grads2 = [theano.shared(p.get_value() * floatX(0.), name='%s_rgrad2' % k)
                       for k, p in parameters.iteritems()]
 
     zg_up = [(zg, g) for zg, g in zip(zipped_grads, grads)]
@@ -78,7 +78,7 @@ def rmsprop(learning_rate, parameters, grads, inputs, cost):
 
     f_grad_shared = theano.function(inputs, cost, updates=zg_up + rg_up + rg2_up, profile=False)
 
-    updir = [theano.shared(p.get_value() * np.float32(0.), name='%s_updir' % k) for k, p in parameters.iteritems()]
+    updir = [theano.shared(p.get_value() * floatX(0.), name='%s_updir' % k) for k, p in parameters.iteritems()]
     updir_new = [(ud, 0.9 * ud - 1e-4 * zg / T.sqrt(rg2 - rg ** 2 + 1e-4)) for ud, zg, rg, rg2 in
                  zip(updir, zipped_grads, running_grads, running_grads2)]
     param_up = [(p, p + udn[1]) for p, udn in zip(parameters.itervalues(), updir_new)]
@@ -91,7 +91,7 @@ def rmsprop(learning_rate, parameters, grads, inputs, cost):
 # Theano implementation adapted from Soren Kaae Sonderby (https://github.com/skaae)
 # preprint: http://arxiv.org/abs/1412.6980
 def adam(learning_rate, parameters, grads, inputs, cost):
-    g_shared = [theano.shared(p.get_value() * np.float32(0.), name='%s_grad' % k) for k, p in parameters.iteritems()]
+    g_shared = [theano.shared(p.get_value() * floatX(0.), name='%s_grad' % k) for k, p in parameters.iteritems()]
     gs_up = [(gs, g) for gs, g in zip(g_shared, grads)]
 
     f_grad_shared = theano.function(inputs, cost, updates=gs_up)
@@ -100,15 +100,15 @@ def adam(learning_rate, parameters, grads, inputs, cost):
     b2 = 0.001
     e = 1e-8
     updates = []
-    i = theano.shared(np.float32(0.))
+    i = theano.shared(floatX(0.))
     i_t = i + 1.
     fix1 = 1. - b1 ** i_t
     fix2 = 1. - b2 ** i_t
     lr_t = lr0 * (T.sqrt(fix2) / fix1)
 
     for p, g in zip(parameters.values(), g_shared):
-        m = theano.shared(p.get_value() * np.float32(0.))
-        v = theano.shared(p.get_value() * np.float32(0.))
+        m = theano.shared(p.get_value() * floatX(0.))
+        v = theano.shared(p.get_value() * floatX(0.))
         m_t = (b1 * g) + ((1. - b1) * m)
         v_t = (b2 * T.sqr(g)) + ((1. - b2) * v)
         g_t = m_t / (T.sqrt(v_t) + e)
@@ -125,7 +125,7 @@ def adam(learning_rate, parameters, grads, inputs, cost):
 
 # Vanilla SGD
 def sgd(learning_rate, parameters, grads, inputs, cost):
-    g_shared = [theano.shared(p.get_value() * np.float32(0.), name='%s_grad' % k) for k, p in parameters.iteritems()]
+    g_shared = [theano.shared(p.get_value() * floatX(0.), name='%s_grad' % k) for k, p in parameters.iteritems()]
     gs_up = [(gs, g) for gs, g in zip(g_shared, grads)]
 
     f_grad_shared = theano.function(inputs, cost, updates=gs_up, profile=False)

@@ -9,6 +9,7 @@ from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
 from config import Config, ParamConfig
 from utils import fX, floatX, init_norm, logging, message
+from optimizers import adadelta, adam, sgd, rmsprop
 
 __author__ = 'fyabc'
 
@@ -94,6 +95,16 @@ class PolicyNetwork(object):
             on_unused_input='ignore',
         )
 
+        # optimizers from capgen
+        lr = T.scalar('lr', dtype=fX)
+
+        from collections import OrderedDict
+        param_dict = OrderedDict()
+        param_dict['W'] = self.W
+        param_dict['b'] = self.b
+
+        self.f_grad_shared, self.f_update = eval(optimizer)(lr, param_dict, grads, [inputs, actions, rewards], cost)
+
     def make_output(self, input_):
         return T.nnet.sigmoid(T.dot(input_, self.W) + self.b)
 
@@ -110,7 +121,7 @@ class PolicyNetwork(object):
         return actions
 
     def discount_learning_rate(self, discount=ParamConfig['policy_learning_rate_discount']):
-        self.learning_rate.set_value(self.learning_rate.get_value() * discount)
+        self.learning_rate.set_value(self.learning_rate.get_value() * floatX(discount))
         message('New learning rate:', self.learning_rate.get_value())
 
     @logging
@@ -124,9 +135,11 @@ class PolicyNetwork(object):
             discounted_rewards[i] = temp
             temp *= self.gamma
 
-        # TODO
         # update parameters
-        self.update_function(self.input_buffer, self.action_buffer, discounted_rewards)
+        # self.update_function(self.input_buffer, self.action_buffer, discounted_rewards)
+
+        cost = self.f_grad_shared(self.input_buffer, self.action_buffer, discounted_rewards)
+        self.f_update(self.learning_rate.get_value())
 
         # clear buffers
         self.input_buffer = []
@@ -135,11 +148,12 @@ class PolicyNetwork(object):
         # update reward baseline
         self.reward_baseline = (1 - self.rb_update_rate) * self.reward_baseline + self.rb_update_rate * reward
 
-        message('New parameters:\n'
+        message('Cost: {}\n'
+                'New parameters:\n'
                 '$    w = {}\n'
                 '$    b = {}\n'
                 'New reward baseline: {}'
-                .format(self.W.get_value(), self.b.get_value(), self.reward_baseline))
+                .format(cost, self.W.get_value(), self.b.get_value(), self.reward_baseline))
 
 
 def test():
