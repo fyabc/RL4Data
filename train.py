@@ -3,20 +3,31 @@
 from __future__ import print_function, unicode_literals
 
 import sys
+import random
 
-# import lasagne
+import numpy as np
 
 from config import Config, ParamConfig
-from utils import load_cifar10_data, iterate_minibatches
+from utils import load_cifar10_data, iterate_minibatches, message, simple_parse_args, fX
 from DeepResidualLearning_CIFAR10 import CNN
 from policyNetwork import PolicyNetwork
 
 __author__ = 'fyabc'
 
 
-def main(n=ParamConfig['n'], num_epochs=ParamConfig['num_epochs']):
+def main(
+        n=ParamConfig['n'],
+        num_epochs=ParamConfig['num_epochs'],
+):
+    # Some configures
+    input_size = ParamConfig['cnn_output_size']
+    if ParamConfig['add_label_input']:
+        input_size += 1
+
     # Create the policy network
-    policy = PolicyNetwork()
+    policy = PolicyNetwork(
+        input_size=input_size,
+    )
 
     # Create neural network model
     cnn = CNN(n)
@@ -28,18 +39,29 @@ def main(n=ParamConfig['n'], num_epochs=ParamConfig['num_epochs']):
     x_test = data['x_test']
     y_test = data['y_test']
 
-    # Use small dataset to check the code
-    x_train = x_train[:2560]
-    y_train = y_train[:2560]
+    train_size = x_train.shape[0]
+    train_epoch_size = 10240
 
     # Train the network
-    for epoch in range(num_epochs):
+    batch_size = ParamConfig['train_batch_size']
+
+    for epoch in range(1, num_epochs + 1):
         cnn.reset_all_parameters()
 
-        for batch in iterate_minibatches(x_train, y_train, ParamConfig['train_batch_size'], shuffle=True, augment=True):
+        # Use small dataset to check the code
+        x_train_epoch = x_train[random.sample(range(train_size), train_epoch_size)]
+        y_train_epoch = y_train[random.sample(range(train_size), train_epoch_size)]
+
+        for batch in iterate_minibatches(x_train_epoch, y_train_epoch, batch_size, shuffle=True, augment=True):
             inputs, targets = batch
 
             probability = cnn.probs_function(inputs)
+
+            if ParamConfig['add_label_input']:
+                label_inputs = np.zeros(shape=(batch_size, 1), dtype=fX)
+                for i in range(batch_size):
+                    label_inputs[i, 0] = probability[i, targets[i]]
+                probability = np.hstack([probability, label_inputs])
 
             actions = policy.take_action(probability)
 
@@ -47,10 +69,10 @@ def main(n=ParamConfig['n'], num_epochs=ParamConfig['num_epochs']):
             inputs = inputs[actions]
             targets = targets[actions]
 
-            print('Number of accepted cases:', len(inputs))
+            # print('Number of accepted cases:', len(inputs))
 
             train_err = cnn.train_function(inputs, targets)
-            print('Training error:', train_err)
+            # print('Training error:', train_err)
 
         _, validate_acc, validate_batches = cnn.validate_or_test(x_test, y_test)
         validate_acc /= validate_batches
@@ -59,22 +81,24 @@ def main(n=ParamConfig['n'], num_epochs=ParamConfig['num_epochs']):
 
         policy.update(validate_acc)
 
+        if epoch % ParamConfig['policy_learning_rate_discount_freq'] == 0:
+            policy.discount_learning_rate()
+
     cnn.test(x_test, y_test)
 
 
 if __name__ == '__main__':
-    if ('--help' in sys.argv) or ('-h' in sys.argv):
-        print("Trains a Deep Residual Learning network on cifar-10 using Lasagne.")
-        print("Network architecture and training parameters are as in section 4.2 in "
-              "'Deep Residual Learning for Image Recognition'.")
-        print("Usage: %s [N [MODEL]]" % sys.argv[0])
-        print()
-        print("N: Number of stacked residual building blocks per feature map (default: 5)")
-        print("MODEL: saved model file to load (for validation) (default: None)")
-    else:
-        kwargs = {}
-        if len(sys.argv) > 1:
-            kwargs['n'] = int(sys.argv[1])
-        if len(sys.argv) > 2:
-            kwargs['model'] = sys.argv[2]
-        main(**kwargs)
+    import pprint
+
+    argc = len(sys.argv)
+
+    if '-h' in sys.argv or '--help' in sys.argv:
+        print('Usage: add properties just like this:\n'
+              '    add_label_prob=False')
+
+    ParamConfig.update(simple_parse_args(sys.argv))
+
+    message('The configures and hyperparameters are:')
+    pprint.pprint(ParamConfig, stream=sys.stderr)
+
+    main()

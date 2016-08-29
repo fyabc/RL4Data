@@ -2,6 +2,7 @@
 
 from __future__ import print_function, unicode_literals
 
+import sys
 import os
 from functools import wraps
 import time
@@ -16,15 +17,17 @@ __author__ = 'fyabc'
 # fX = config.floatX
 fX = Config['floatX']
 
+logging_file = sys.stderr
+
 _depth = 0
 
 
-def logging(func):
+def logging(func, file_=sys.stderr):
     @wraps(func)
     def wrapper(*args, **kwargs):
         global _depth
 
-        print(' ' * 2 * _depth + '[Start function %s...]' % func.__name__)
+        print(' ' * 2 * _depth + '[Start function %s...]' % func.__name__, file=file_)
         _depth += 1
         start_time = time.time()
 
@@ -32,9 +35,13 @@ def logging(func):
 
         end_time = time.time()
         _depth -= 1
-        print(' ' * 2 * _depth + '[Function %s done, time: %.3fs]' % (func.__name__, end_time - start_time))
+        print(' ' * 2 * _depth + '[Function %s done, time: %.3fs]' % (func.__name__, end_time - start_time), file=file_)
         return result
     return wrapper
+
+
+def message(*args, **kwargs):
+    print(*args, file=logging_file, **kwargs)
 
 
 def floatX(value):
@@ -124,6 +131,18 @@ def iterate_minibatches(inputs, targets, batch_size, shuffle=False, augment=Fals
             inp_exc = inputs[excerpt]
 
         yield inp_exc, targets[excerpt]
+
+
+def simple_parse_args(args):
+    args_dict = {}
+
+    for arg in args:
+        if '=' in arg:
+            key, value = arg.split('=')
+
+            args_dict[key] = eval(value)
+
+    return args_dict
 
 
 def test():

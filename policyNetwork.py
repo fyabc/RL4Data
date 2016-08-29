@@ -8,7 +8,7 @@ import theano.tensor as T
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
 from config import Config, ParamConfig
-from utils import fX, floatX, init_norm, logging
+from utils import fX, floatX, init_norm, logging, message
 
 __author__ = 'fyabc'
 
@@ -50,7 +50,7 @@ class PolicyNetwork(object):
         self.input = T.vector(name='softmax_probabilities', dtype=fX)
 
         # build computation graph of output
-        self.output = T.nnet.sigmoid(T.dot(self.input, self.W) + self.b)
+        self.output = self.make_output(self.input)
         self.output_sample = self.random_generator.binomial(size=self.output.shape, p=self.output)
 
         self.output_sample_function = theano.function(
@@ -62,20 +62,21 @@ class PolicyNetwork(object):
         self.input_buffer = []
         self.action_buffer = []
 
-        # the reward
-        self.reward = T.scalar('reward', dtype=fX)
-        # the baseline of the reward
+        # build cost and update functions
         self.reward_baseline = 0.
 
-        self.action = T.iscalar('action')
+        # inputs, outputs, actions and rewards of the whole epoch
+        inputs = T.matrix('inputs', dtype=fX)
+        outputs = self.make_output(inputs)
+        actions = T.ivector('actions')
+        rewards = T.vector('rewards', dtype=fX)
 
-        self.cost = (self.action * T.log(self.output) + (1 - self.action) * T.log(1 - self.output)) * self.reward
+        cost = T.sum(rewards * (actions * T.log(outputs) + (1 - actions) * T.log(1 - outputs)))
 
         grads = T.grad(
-            self.cost,
+            cost,
             self.parameters,
             # known_grads={
-            #     # TODO
             #     self.output: (self.output_sample - self.output)
             # }
         )
@@ -86,12 +87,15 @@ class PolicyNetwork(object):
                    for parameter, grad in zip(self.parameters, grads)]
 
         self.update_function = theano.function(
-            inputs=[self.input, self.action, self.reward],
-            outputs=self.cost,
+            inputs=[inputs, actions, rewards],
+            outputs=cost,
             updates=updates,
             allow_input_downcast=True,
             on_unused_input='ignore',
         )
+
+    def make_output(self, input_):
+        return T.nnet.sigmoid(T.dot(input_, self.W) + self.b)
 
     def take_action(self, inputs):
         actions = np.zeros(shape=(inputs.shape[0],), dtype=bool)
@@ -105,6 +109,10 @@ class PolicyNetwork(object):
             self.action_buffer.append(action)
         return actions
 
+    def discount_learning_rate(self, discount=ParamConfig['policy_learning_rate_discount']):
+        self.learning_rate.set_value(self.learning_rate.get_value() * discount)
+        message('New learning rate:', self.learning_rate.get_value())
+
     @logging
     def update(self, reward):
         # TODO preprocess of reward
@@ -117,9 +125,8 @@ class PolicyNetwork(object):
             temp *= self.gamma
 
         # TODO
-        # update parameters for every time step
-        for input_, action_, reward_ in zip(self.input_buffer, self.action_buffer, discounted_rewards):
-            self.update_function(input_, action_, reward_)
+        # update parameters
+        self.update_function(self.input_buffer, self.action_buffer, discounted_rewards)
 
         # clear buffers
         self.input_buffer = []
@@ -128,10 +135,11 @@ class PolicyNetwork(object):
         # update reward baseline
         self.reward_baseline = (1 - self.rb_update_rate) * self.reward_baseline + self.rb_update_rate * reward
 
-        print('New parameters:')
-        print('$    w =', self.W.get_value())
-        print('$    b =', self.b.get_value())
-        print('New reward baseline:', self.reward_baseline)
+        message('New parameters:\n'
+                '$    w = {}\n'
+                '$    b = {}\n'
+                'New reward baseline: {}'
+                .format(self.W.get_value(), self.b.get_value(), self.reward_baseline))
 
 
 def test():
