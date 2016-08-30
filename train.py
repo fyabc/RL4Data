@@ -42,7 +42,7 @@ def main():
     y_test = data['y_test']
 
     train_size = x_train.shape[0]
-    train_epoch_size = 10240
+    train_epoch_size = ParamConfig['train_epoch_size']
 
     # Train the network
     batch_size = ParamConfig['train_batch_size']
@@ -88,10 +88,20 @@ def main():
         print('#Validate accuracy:', validate_acc)
 
         if use_policy:
-            policy.update(validate_acc)
+            # get validation probabilities
+            probability = cnn.probs_function(x_test)
 
-        if epoch % ParamConfig['policy_learning_rate_discount_freq'] == 0:
-            policy.discount_learning_rate()
+            if ParamConfig['add_label_input']:
+                label_inputs = np.zeros(shape=(y_test.shape[0], 1), dtype=fX)
+                for i in range(batch_size):
+                    label_inputs[i, 0] = probability[i, y_test[i]]
+                probability = np.hstack([probability, label_inputs])
+
+            # policy.update(validate_acc)
+            policy.update_and_validate(validate_acc, probability)
+
+            if epoch % ParamConfig['policy_learning_rate_discount_freq'] == 0:
+                policy.discount_learning_rate()
 
     cnn.test(x_test, y_test)
 

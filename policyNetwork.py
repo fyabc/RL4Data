@@ -72,7 +72,7 @@ class PolicyNetwork(object):
         actions = T.ivector('actions')
         rewards = T.vector('rewards', dtype=fX)
 
-        cost = -T.sum(rewards * (actions * T.log(outputs) + (1 - actions) * T.log(1 - outputs)))
+        cost = -T.sum(rewards * (actions * T.log(outputs) + (1.0 - actions) * T.log(1.0 - outputs)))
 
         grads = T.grad(
             cost,
@@ -154,6 +154,41 @@ class PolicyNetwork(object):
                 '$    b = {}\n'
                 'New reward baseline: {}'
                 .format(cost, self.W.get_value(), self.b.get_value(), self.reward_baseline))
+
+    def update_and_validate(self, reward, validate_probability):
+        # TODO preprocess of reward
+
+        # get discounted rewards
+        discounted_rewards = np.zeros_like(self.action_buffer, dtype=fX)
+        temp = reward - self.reward_baseline
+        for i in reversed(xrange(discounted_rewards.size)):
+            discounted_rewards[i] = temp
+            temp *= self.gamma
+
+        # update parameters
+        # self.update_function(self.input_buffer, self.action_buffer, discounted_rewards)
+
+        cost = self.f_grad_shared(self.input_buffer, self.action_buffer, discounted_rewards)
+        self.f_update(self.learning_rate.get_value())
+
+        # get validation cost
+        validate_actions = self.take_action(validate_probability)
+        validate_cost = self.f_grad_shared(validate_probability, validate_actions, [temp] * validate_actions.shape[0])
+
+        # clear buffers
+        self.input_buffer = []
+        self.action_buffer = []
+
+        # update reward baseline
+        self.reward_baseline = (1 - self.rb_update_rate) * self.reward_baseline + self.rb_update_rate * reward
+
+        message('Cost: {}\n'
+                'Validation Cost: {}\n'
+                'New parameters:\n'
+                '$    w = {}\n'
+                '$    b = {}\n'
+                'New reward baseline: {}'
+                .format(cost, validate_cost, self.W.get_value(), self.b.get_value(), self.reward_baseline))
 
 
 def test():

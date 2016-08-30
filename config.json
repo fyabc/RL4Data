@@ -8,6 +8,8 @@
     "floatX": "float32",
 
     "parameters": {
+        "train_epoch_size": 10240,
+
         "warm_start": true,
         "add_label_input": true,
 
