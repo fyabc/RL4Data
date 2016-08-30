@@ -173,7 +173,8 @@ class PolicyNetwork(object):
 
         # get validation cost
         validate_actions = self.take_action(validate_probability)
-        validate_cost = self.f_grad_shared(validate_probability, validate_actions, [temp] * validate_actions.shape[0])
+        validate_cost = self.f_grad_shared(validate_probability, validate_actions,
+                                           [floatX(temp)] * validate_actions.shape[0])
 
         # clear buffers
         self.input_buffer = []
