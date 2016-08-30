@@ -15,11 +15,13 @@ from policyNetwork import PolicyNetwork
 __author__ = 'fyabc'
 
 
-def main(
-        n=ParamConfig['n'],
-        num_epochs=ParamConfig['num_epochs'],
-):
+def main():
     # Some configures
+    use_policy = True
+
+    n = ParamConfig['n']
+    num_epochs = ParamConfig['num_epochs']
+
     input_size = ParamConfig['cnn_output_size']
     if ParamConfig['add_label_input']:
         input_size += 1
@@ -46,30 +48,36 @@ def main(
     batch_size = ParamConfig['train_batch_size']
 
     for epoch in range(1, num_epochs + 1):
-        cnn.reset_all_parameters()
+        if use_policy:
+            if ParamConfig['warm_start']:
+                cnn.load_model()
+            else:
+                cnn.reset_all_parameters()
 
         # Use small dataset to check the code
-        x_train_epoch = x_train[random.sample(range(train_size), train_epoch_size)]
-        y_train_epoch = y_train[random.sample(range(train_size), train_epoch_size)]
+        sampled_indices = random.sample(range(train_size), train_epoch_size)
+        x_train_epoch = x_train[sampled_indices]
+        y_train_epoch = y_train[sampled_indices]
 
         for batch in iterate_minibatches(x_train_epoch, y_train_epoch, batch_size, shuffle=True, augment=True):
             inputs, targets = batch
 
-            probability = cnn.probs_function(inputs)
+            if use_policy:
+                probability = cnn.probs_function(inputs)
 
-            if ParamConfig['add_label_input']:
-                label_inputs = np.zeros(shape=(batch_size, 1), dtype=fX)
-                for i in range(batch_size):
-                    label_inputs[i, 0] = probability[i, targets[i]]
-                probability = np.hstack([probability, label_inputs])
+                if ParamConfig['add_label_input']:
+                    label_inputs = np.zeros(shape=(batch_size, 1), dtype=fX)
+                    for i in range(batch_size):
+                        label_inputs[i, 0] = probability[i, targets[i]]
+                    probability = np.hstack([probability, label_inputs])
 
-            actions = policy.take_action(probability)
+                actions = policy.take_action(probability)
 
-            # get masked inputs and targets
-            inputs = inputs[actions]
-            targets = targets[actions]
+                # get masked inputs and targets
+                inputs = inputs[actions]
+                targets = targets[actions]
 
-            # print('Number of accepted cases:', len(inputs))
+                # print('Number of accepted cases:', len(inputs))
 
             train_err = cnn.train_function(inputs, targets)
             # print('Training error:', train_err)
@@ -79,7 +87,8 @@ def main(
 
         print('#Validate accuracy:', validate_acc)
 
-        policy.update(validate_acc)
+        if use_policy:
+            policy.update(validate_acc)
 
         if epoch % ParamConfig['policy_learning_rate_discount_freq'] == 0:
             policy.discount_learning_rate()

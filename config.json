@@ -1,5 +1,6 @@
 {
     "data_dir": "./data/cifar-10-batches-py",
+    "model_file": "./data/cifar10_deep_residual_model.npz",
     "total_size": 60000,
     "train_size": 50000,
     "model": null,
@@ -7,6 +8,7 @@
     "floatX": "float32",
 
     "parameters": {
+        "warm_start": true,
         "add_label_input": true,
 
         "init_learning_rate": 0.1,
@@ -28,6 +30,6 @@
 
         "gamma": 1.0,
 
-        "reward_baseline_update_rate": 0.5
+        "reward_baseline_update_rate": 0.1
     }
 }

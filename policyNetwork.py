@@ -44,7 +44,7 @@ class PolicyNetwork(object):
 
         # parameters to be learned
         self.W = theano.shared(name='W', value=init_norm(input_size) / np.sqrt(input_size))
-        self.b = theano.shared(name='b', value=floatX(0.))
+        self.b = theano.shared(name='b', value=floatX(1.))
         self.parameters = [self.W, self.b]
 
         # a single case of input softmax probabilities
@@ -72,7 +72,7 @@ class PolicyNetwork(object):
         actions = T.ivector('actions')
         rewards = T.vector('rewards', dtype=fX)
 
-        cost = T.sum(rewards * (actions * T.log(outputs) + (1 - actions) * T.log(1 - outputs)))
+        cost = -T.sum(rewards * (actions * T.log(outputs) + (1 - actions) * T.log(1 - outputs)))
 
         grads = T.grad(
             cost,
@@ -84,7 +84,7 @@ class PolicyNetwork(object):
 
         # TODO
         # optimizer
-        updates = [(parameter, parameter + self.learning_rate * grad)
+        updates = [(parameter, parameter - self.learning_rate * grad)
                    for parameter, grad in zip(self.parameters, grads)]
 
         self.update_function = theano.function(

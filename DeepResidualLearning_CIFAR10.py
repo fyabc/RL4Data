@@ -21,7 +21,7 @@ from lasagne.nonlinearities import softmax, rectify
 from lasagne.layers import batch_norm
 from lasagne.layers.helper import get_all_param_values, set_all_param_values
 
-from config import ParamConfig
+from config import Config, ParamConfig
 from utils import logging, iterate_minibatches
 
 
@@ -244,11 +244,13 @@ class CNN(object):
         set_all_param_values(self.network, self.saved_init_parameters_values, trainable=True)
 
     @logging
-    def load_model(self, model):
-        assert model is not None
+    def save_model(self, filename=Config['model_file']):
+        np.savez(filename, *get_all_param_values(self.network))
 
+    @logging
+    def load_model(self, filename=Config['model_file']):
         # load network weights from model file
-        with np.load(model) as f:
+        with np.load(filename) as f:
             param_values = [f['arr_%d' % i] for i in range(len(f.files))]
         lasagne.layers.set_all_param_values(self.network, param_values)
 
