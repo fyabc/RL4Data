@@ -22,7 +22,7 @@ from lasagne.layers import batch_norm
 from lasagne.layers.helper import get_all_param_values, set_all_param_values
 
 from config import Config, ParamConfig
-from utils import logging, iterate_minibatches
+from utils import logging, iterate_minibatches, fX
 
 
 class CNN(object):
@@ -98,6 +98,11 @@ class CNN(object):
         # first layer, output is 16 x 32 x 32
         layer = batch_norm(ConvLayer(layer_in, num_filters=16, filter_size=(3, 3), stride=(1, 1), nonlinearity=rectify,
                                      pad='same', W=lasagne.init.HeNormal(gain='relu'), flip_filters=False))
+        self.first_layer_output = lasagne.layers.get_output(layer, inputs=input_var)
+        self.first_layer_output_function = theano.function(
+            inputs=[input_var],
+            outputs=self.first_layer_output
+        )
 
         # first stack of residual blocks, output is 16 x 32 x 32
         for _ in range(n):
@@ -130,8 +135,8 @@ class CNN(object):
         # to minimize (for our multi-class problem, it is the cross-entropy loss):
         probs = lasagne.layers.get_output(self.network)
         self.probs_function = theano.function(
-                inputs=[self.input_var],
-                outputs=probs
+            inputs=[self.input_var],
+            outputs=probs
         )
 
         loss = lasagne.objectives.categorical_crossentropy(probs, self.target_var)
@@ -274,6 +279,34 @@ class CNN(object):
             test_acc += acc
             test_batches += 1
         return test_err, test_acc, test_batches
+
+    @staticmethod
+    def get_policy_input_size():
+        input_size = ParamConfig['cnn_output_size']
+        if ParamConfig['add_label_input']:
+            input_size += 1
+        if ParamConfig['use_first_layer_output']:
+            input_size += 16 * 32 * 32
+        return input_size
+
+    def get_policy_input(self, inputs, targets):
+        batch_size = targets.shape[0]
+
+        probability = self.probs_function(inputs)
+        first_layer_output = self.first_layer_output_function(inputs)
+
+        if ParamConfig['add_label_input']:
+            label_inputs = np.zeros(shape=(batch_size, 1), dtype=fX)
+            for i in range(batch_size):
+                label_inputs[i, 0] = probability[i, targets[i]]
+            probability = np.hstack([probability, label_inputs])
+
+        if ParamConfig['use_first_layer_output']:
+            shape_first = np.product(first_layer_output.shape[1:])
+            first_layer_output = first_layer_output.reshape((batch_size, shape_first))
+            probability = np.hstack([probability, first_layer_output])
+
+        return probability
 
 
 def test():

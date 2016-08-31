@@ -44,7 +44,7 @@ class PolicyNetwork(object):
 
         # parameters to be learned
         self.W = theano.shared(name='W', value=init_norm(input_size) / np.sqrt(input_size))
-        self.b = theano.shared(name='b', value=floatX(1.))
+        self.b = theano.shared(name='b', value=floatX(2.))
         self.parameters = [self.W, self.b]
 
         # a single case of input softmax probabilities
@@ -82,20 +82,7 @@ class PolicyNetwork(object):
             # }
         )
 
-        # TODO
-        # optimizer
-        updates = [(parameter, parameter - self.learning_rate * grad)
-                   for parameter, grad in zip(self.parameters, grads)]
-
-        self.update_function = theano.function(
-            inputs=[inputs, actions, rewards],
-            outputs=cost,
-            updates=updates,
-            allow_input_downcast=True,
-            on_unused_input='ignore',
-        )
-
-        # optimizers from capgen
+        # optimizers from nmt
         lr = T.scalar('lr', dtype=fX)
 
         from collections import OrderedDict
@@ -134,9 +121,6 @@ class PolicyNetwork(object):
         for i in reversed(xrange(discounted_rewards.size)):
             discounted_rewards[i] = temp
             temp *= self.gamma
-
-        # update parameters
-        # self.update_function(self.input_buffer, self.action_buffer, discounted_rewards)
 
         cost = self.f_grad_shared(self.input_buffer, self.action_buffer, discounted_rewards)
         self.f_update(self.learning_rate.get_value())
@@ -183,13 +167,22 @@ class PolicyNetwork(object):
         # update reward baseline
         self.reward_baseline = (1 - self.rb_update_rate) * self.reward_baseline + self.rb_update_rate * reward
 
-        message('Cost: {}\n'
-                'Validation Cost: {}\n'
-                'New parameters:\n'
-                '$    w = {}\n'
-                '$    b = {}\n'
-                'New reward baseline: {}'
-                .format(cost, validate_cost, self.W.get_value(), self.b.get_value(), self.reward_baseline))
+        message(
+            'Cost: {}\n'
+            'Raw Cost: {}\n'
+            'Validation Cost: {}\n'
+            'Raw Validation Cost: {}\n'
+            'New parameters:\n'
+            '$    w = {}\n'
+            '$    b = {}\n'
+            'New reward baseline: {}'
+            .format(
+                cost, cost / temp,
+                validate_cost, validate_cost / temp,
+                self.W.get_value(), self.b.get_value(),
+                self.reward_baseline
+            )
+        )
 
 
 def test():

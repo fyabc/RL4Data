@@ -145,6 +145,25 @@ def simple_parse_args(args):
     return args_dict
 
 
+class CifarDataAnalyzer(object):
+    def __init__(self, inputs, targets):
+        self.inputs = inputs
+        self.targets = targets
+        self.class_num = 10
+
+        self.data_size = self.inputs.shape[0]
+
+    def get_label_distribution(self):
+        result = np.zeros((self.class_num,))
+
+        for target in self.targets:
+            result[target] += 1
+        return result
+
+    def save(self, filename):
+        np.savez(filename, self.inputs, self.targets)
+
+
 def test():
     pass
 

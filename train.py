@@ -22,9 +22,8 @@ def main():
     n = ParamConfig['n']
     num_epochs = ParamConfig['num_epochs']
 
-    input_size = ParamConfig['cnn_output_size']
-    if ParamConfig['add_label_input']:
-        input_size += 1
+    input_size = CNN.get_policy_input_size()
+    print('Input size of policy network:', input_size)
 
     # Create the policy network
     policy = PolicyNetwork(
@@ -59,17 +58,13 @@ def main():
         x_train_epoch = x_train[sampled_indices]
         y_train_epoch = y_train[sampled_indices]
 
+        total_accepted_cases = 0
+
         for batch in iterate_minibatches(x_train_epoch, y_train_epoch, batch_size, shuffle=True, augment=True):
             inputs, targets = batch
 
             if use_policy:
-                probability = cnn.probs_function(inputs)
-
-                if ParamConfig['add_label_input']:
-                    label_inputs = np.zeros(shape=(batch_size, 1), dtype=fX)
-                    for i in range(batch_size):
-                        label_inputs[i, 0] = probability[i, targets[i]]
-                    probability = np.hstack([probability, label_inputs])
+                probability = cnn.get_policy_input(inputs, targets)
 
                 actions = policy.take_action(probability)
 
@@ -77,25 +72,21 @@ def main():
                 inputs = inputs[actions]
                 targets = targets[actions]
 
-                # print('Number of accepted cases:', len(inputs))
+                total_accepted_cases += len(inputs)
 
             train_err = cnn.train_function(inputs, targets)
             # print('Training error:', train_err)
 
-        _, validate_acc, validate_batches = cnn.validate_or_test(x_test, y_test)
+        validate_err, validate_acc, validate_batches = cnn.validate_or_test(x_test, y_test)
         validate_acc /= validate_batches
 
+        print('Validate Loss:', validate_err / validate_batches)
         print('#Validate accuracy:', validate_acc)
+        message('Number of accepted cases {} of {} cases'.format(total_accepted_cases, train_epoch_size))
 
         if use_policy:
             # get validation probabilities
-            probability = cnn.probs_function(x_test)
-
-            if ParamConfig['add_label_input']:
-                label_inputs = np.zeros(shape=(y_test.shape[0], 1), dtype=fX)
-                for i in range(batch_size):
-                    label_inputs[i, 0] = probability[i, y_test[i]]
-                probability = np.hstack([probability, label_inputs])
+            probability = cnn.get_policy_input(x_test, y_test)
 
             # policy.update(validate_acc)
             policy.update_and_validate(validate_acc, probability)

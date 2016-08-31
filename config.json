@@ -12,6 +12,8 @@
 
         "warm_start": true,
         "add_label_input": true,
+        "add_label": false,
+        "use_first_layer_output": false,
 
         "init_learning_rate": 0.1,
         "learning_rate_discount": 0.1,
@@ -25,7 +27,7 @@
         "n": 5,
         "num_epochs": 5000,
 
-        "policy_optimizer": "adadelta",
+        "policy_optimizer": "adam",
         "policy_learning_rate": 0.02,
         "policy_learning_rate_discount": 0.7,
         "policy_learning_rate_discount_freq": 50,
