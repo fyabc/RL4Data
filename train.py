@@ -17,13 +17,15 @@ __author__ = 'fyabc'
 
 def main():
     # Some configures
-    use_policy = True
+    use_policy = False
 
     n = ParamConfig['n']
-    num_epochs = ParamConfig['num_epochs']
+    num_episodes = ParamConfig['num_epochs']
 
     input_size = CNN.get_policy_input_size()
     print('Input size of policy network:', input_size)
+
+    epoch_per_episode = 2
 
     # Create the policy network
     policy = PolicyNetwork(
@@ -41,58 +43,66 @@ def main():
     y_test = data['y_test']
 
     train_size = x_train.shape[0]
-    train_epoch_size = ParamConfig['train_epoch_size']
+    train_episode_size = ParamConfig['train_epoch_size']
 
     # Train the network
     batch_size = ParamConfig['train_batch_size']
 
-    for epoch in range(1, num_epochs + 1):
-        if use_policy:
-            if ParamConfig['warm_start']:
-                cnn.load_model()
-            else:
-                cnn.reset_all_parameters()
+    cnn.load_model()
 
-        # Use small dataset to check the code
-        sampled_indices = random.sample(range(train_size), train_epoch_size)
-        x_train_epoch = x_train[sampled_indices]
-        y_train_epoch = y_train[sampled_indices]
+    for episode in range(1, num_episodes + 1):
+        print('[Episode {}]'.format(episode))
+        message('[Episode {}]'.format(episode))
 
-        total_accepted_cases = 0
+        if ParamConfig['warm_start']:
+            cnn.load_model()
+        else:
+            cnn.reset_all_parameters()
 
-        for batch in iterate_minibatches(x_train_epoch, y_train_epoch, batch_size, shuffle=True, augment=True):
-            inputs, targets = batch
+        for epoch in range(epoch_per_episode):
+            print('[Epoch {}]'.format(epoch))
+            message('[Epoch {}]'.format(epoch))
+
+            # Use small dataset to check the code
+            sampled_indices = random.sample(range(train_size), train_episode_size)
+            x_train_epoch = x_train[sampled_indices]
+            y_train_epoch = y_train[sampled_indices]
+
+            total_accepted_cases = 0
+
+            for batch in iterate_minibatches(x_train_epoch, y_train_epoch, batch_size, shuffle=True, augment=True):
+                inputs, targets = batch
+
+                if use_policy:
+                    probability = cnn.get_policy_input(inputs, targets)
+
+                    actions = policy.take_action(probability)
+
+                    # get masked inputs and targets
+                    inputs = inputs[actions]
+                    targets = targets[actions]
+
+                    total_accepted_cases += len(inputs)
+
+                train_err = cnn.train_function(inputs, targets)
+                # print('Training error:', train_err)
+
+            validate_err, validate_acc, validate_batches = cnn.validate_or_test(x_test, y_test)
+            validate_acc /= validate_batches
+
+            print('Validate Loss:', validate_err / validate_batches)
+            print('#Validate accuracy:', validate_acc)
+            message('Number of accepted cases {} of {} cases'.format(total_accepted_cases, train_episode_size))
 
             if use_policy:
-                probability = cnn.get_policy_input(inputs, targets)
+                # get validation probabilities
+                probability = cnn.get_policy_input(x_test, y_test)
 
-                actions = policy.take_action(probability)
+                # policy.update(validate_acc)
+                policy.update_and_validate(validate_acc, probability)
 
-                # get masked inputs and targets
-                inputs = inputs[actions]
-                targets = targets[actions]
-
-                total_accepted_cases += len(inputs)
-
-            train_err = cnn.train_function(inputs, targets)
-            # print('Training error:', train_err)
-
-        validate_err, validate_acc, validate_batches = cnn.validate_or_test(x_test, y_test)
-        validate_acc /= validate_batches
-
-        print('Validate Loss:', validate_err / validate_batches)
-        print('#Validate accuracy:', validate_acc)
-        message('Number of accepted cases {} of {} cases'.format(total_accepted_cases, train_epoch_size))
-
-        if use_policy:
-            # get validation probabilities
-            probability = cnn.get_policy_input(x_test, y_test)
-
-            # policy.update(validate_acc)
-            policy.update_and_validate(validate_acc, probability)
-
-            if epoch % ParamConfig['policy_learning_rate_discount_freq'] == 0:
-                policy.discount_learning_rate()
+                if episode % ParamConfig['policy_learning_rate_discount_freq'] == 0:
+                    policy.discount_learning_rate()
 
     cnn.test(x_test, y_test)
 
