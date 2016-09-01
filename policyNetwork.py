@@ -54,9 +54,14 @@ class PolicyNetwork(object):
         self.output = self.make_output(self.input)
         self.output_sample = self.random_generator.binomial(size=self.output.shape, p=self.output)
 
+        self.output_function = theano.function(
+            inputs=[self.input],
+            outputs=[self.output],
+        )
+
         self.output_sample_function = theano.function(
             inputs=[self.input],
-            outputs=[self.output_sample, self.output_sample - self.output],
+            outputs=[self.output_sample],
         )
 
         # replay buffers
@@ -99,7 +104,7 @@ class PolicyNetwork(object):
         actions = np.zeros(shape=(inputs.shape[0],), dtype=bool)
 
         for i, input_ in enumerate(inputs):
-            action, delta = self.output_sample_function(input_)
+            action = self.output_sample_function(input_)
             action = bool(action)
             actions[i] = action
 
@@ -186,7 +191,13 @@ class PolicyNetwork(object):
 
     @logging
     def save_policy(self, filename=Config['policy_model_file']):
-        np.savez(filename, self.W.get_value(), self.b.get_value())
+        np.savez(filename)
+
+    @logging
+    def load_policy(self, filename=Config['policy_model_file']):
+        with np.load(filename) as f:
+            self.W.set_value(f['arr_0'])
+            self.b.set_value(f['arr_1'])
 
 
 def test():

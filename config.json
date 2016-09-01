@@ -11,6 +11,8 @@
     "floatX": "float32",
 
     "parameters": {
+        "train_deterministic": false,
+
         "use_policy": true,
         "train_epoch_size": 10240,
         "epoch_per_episode": 1,

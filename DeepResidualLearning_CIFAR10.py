@@ -49,6 +49,8 @@ class CNN(object):
         self.train_function = None
         self.validate_function = None
 
+        self.alpha_train_function = None
+
         self.build_train_function()
         self.build_validate_function()
 
@@ -157,6 +159,24 @@ class CNN(object):
         # Compile a function performing a training step on a mini-batch (by giving
         # the updates dictionary) and returning the corresponding training loss:
         self.train_function = theano.function([self.input_var, self.target_var], loss, updates=updates)
+
+        # ##########################################################
+
+        # build train functions, which loss is `\alpha \dot orig_loss`.
+        # \alpha is the weights of each input of one minibatch. \sigma_{minibatch}(alpha) = 1.
+        # \alpha is given by the policy network.
+        alpha = T.vector('alpha', dtype=fX)
+
+        alpha_loss = lasagne.objectives.categorical_crossentropy(probs, self.target_var)
+        alpha_loss = T.dot(alpha_loss, alpha)
+
+        alpha_loss += l2_penalty
+        updates = lasagne.updates.momentum(
+                alpha_loss, params, learning_rate=self.learning_rate, momentum=ParamConfig['momentum'])
+
+        self.alpha_train_function = theano.function(
+                [self.input_var, self.target_var, alpha], alpha_loss, updates=updates)
+
 
     @logging
     def build_validate_function(self):
