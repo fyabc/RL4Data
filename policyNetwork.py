@@ -43,7 +43,7 @@ class PolicyNetwork(object):
         self.random_generator = RandomStreams(Config['seed'])
 
         # parameters to be learned
-        self.W = theano.shared(name='W', value=init_norm(input_size) / np.sqrt(input_size))
+        self.W = theano.shared(name='W', value=init_norm(input_size))
         self.b = theano.shared(name='b', value=floatX(2.))
         self.parameters = [self.W, self.b]
 
@@ -183,6 +183,10 @@ class PolicyNetwork(object):
                 self.reward_baseline
             )
         )
+
+    @logging
+    def save_policy(self, filename=Config['policy_model_file']):
+        np.savez(filename, self.W.get_value(), self.b.get_value())
 
 
 def test():

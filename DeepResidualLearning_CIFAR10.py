@@ -22,7 +22,7 @@ from lasagne.layers import batch_norm
 from lasagne.layers.helper import get_all_param_values, set_all_param_values
 
 from config import Config, ParamConfig
-from utils import logging, iterate_minibatches, fX
+from utils import logging, iterate_minibatches, fX, floatX
 
 
 class CNN(object):
@@ -285,6 +285,8 @@ class CNN(object):
         input_size = ParamConfig['cnn_output_size']
         if ParamConfig['add_label_input']:
             input_size += 1
+        if ParamConfig['add_label']:
+            input_size += 1
         if ParamConfig['use_first_layer_output']:
             input_size += 16 * 32 * 32
         return input_size
@@ -300,6 +302,10 @@ class CNN(object):
             for i in range(batch_size):
                 label_inputs[i, 0] = probability[i, targets[i]]
             probability = np.hstack([probability, label_inputs])
+
+        if ParamConfig['add_label']:
+            labels = floatX(targets) * (1.0 / ParamConfig['cnn_output_size'])
+            probability = np.hstack([probability, labels[None]])
 
         if ParamConfig['use_first_layer_output']:
             shape_first = np.product(first_layer_output.shape[1:])
