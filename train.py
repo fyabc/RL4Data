@@ -17,7 +17,7 @@ __author__ = 'fyabc'
 
 def main():
     # Some configures
-    use_policy = False
+    use_policy = ParamConfig['use_policy']
 
     n = ParamConfig['n']
     num_episodes = ParamConfig['num_epochs']
@@ -41,10 +41,10 @@ def main():
     y_train = data['y_train']
     x_test = data['x_test']
     y_test = data['y_test']
-    x_validate = x_test[:Config['validation_size']]
-    y_validate = y_test[:Config['validation_size']]
-    x_test = x_test[Config['validation_size']:]
-    y_test = y_test[Config['validation_size']:]
+    # x_validate = x_test[:Config['validation_size']]
+    # y_validate = y_test[:Config['validation_size']]
+    # x_test = x_test[Config['validation_size']:]
+    # y_test = y_test[Config['validation_size']:]
 
     train_size = x_train.shape[0]
     train_small_size = ParamConfig['train_epoch_size']
@@ -55,13 +55,11 @@ def main():
     y_train_small = y_train[sampled_indices]
 
     message('Training data size:', y_train_small.shape[0])
-    message('Validation data size:', y_validate.shape[0])
+    # message('Validation data size:', y_validate.shape[0])
     message('Test data size:', y_test.shape[0])
 
     # Train the network
     batch_size = ParamConfig['train_batch_size']
-
-    cnn.load_model()
 
     for episode in range(1, num_episodes + 1):
         print('[Episode {}]'.format(episode))
@@ -95,14 +93,6 @@ def main():
 
                     total_accepted_cases += len(inputs)
 
-                actions = np.asarray(np.random.randint(2, size=(batch_size,)), dtype='bool')
-
-                # get masked inputs and targets
-                inputs = inputs[actions]
-                targets = targets[actions]
-
-                total_accepted_cases += len(inputs)
-
                 train_err = cnn.train_function(inputs, targets)
                 # print('Training error:', train_err / batch_size)
 
@@ -126,6 +116,12 @@ def main():
 
             if episode % Config['policy_save_freq'] == 0:
                 policy.save_policy()
+
+        if not use_policy and validate_acc >= 0.60:
+            message('Saving CNN model warm start... ', end='')
+            cnn.save_model()
+            message('done')
+            break
 
     cnn.test(x_test, y_test)
 

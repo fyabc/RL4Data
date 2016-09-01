@@ -305,7 +305,7 @@ class CNN(object):
 
         if ParamConfig['add_label']:
             labels = floatX(targets) * (1.0 / ParamConfig['cnn_output_size'])
-            probability = np.hstack([probability, labels[None]])
+            probability = np.hstack([probability, labels[:, None]])
 
         if ParamConfig['use_first_layer_output']:
             shape_first = np.product(first_layer_output.shape[1:])

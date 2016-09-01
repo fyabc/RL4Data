@@ -4,13 +4,14 @@
     "policy_model_file": "./data/policy_model.npz",
     "policy_save_freq": 10,
     "total_size": 60000,
-    "train_size": 40000,
+    "train_size": 50000,
     "validation_size": 10000,
     "model": null,
     "seed": 1234,
     "floatX": "float32",
 
     "parameters": {
+        "use_policy": true,
         "train_epoch_size": 10240,
         "epoch_per_episode": 1,
 
