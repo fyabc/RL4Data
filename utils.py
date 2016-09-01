@@ -5,12 +5,13 @@ from __future__ import print_function, unicode_literals
 import sys
 import os
 from functools import wraps
+import random
 import time
 import cPickle as pkl
 import numpy as np
 # from theano import config
 
-from config import Config
+from config import Config, ParamConfig
 
 __author__ = 'fyabc'
 
@@ -101,6 +102,20 @@ def load_cifar10_data(data_dir=Config['data_dir'], train_size=Config['train_size
         'x_test': floatX(x_test),
         'y_test': y_test.astype('int32')
     }
+
+
+def get_small_train_data(x_train, y_train, train_small_size=ParamConfig['train_epoch_size']):
+    train_size = x_train.shape[0]
+
+    # Use small dataset to check the code
+    sampled_indices = random.sample(range(train_size), train_small_size)
+    return x_train[sampled_indices], y_train[sampled_indices]
+
+
+def shuffle_data(x_train, y_train, train_small_size=ParamConfig['train_epoch_size']):
+    shuffled_indices = np.arange(train_small_size)
+    np.random.shuffle(shuffled_indices)
+    return x_train[shuffled_indices], y_train[shuffled_indices]
 
 
 # ############################# Batch iterator ###############################

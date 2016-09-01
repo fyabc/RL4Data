@@ -8,7 +8,8 @@ import random
 import numpy as np
 
 from config import Config, ParamConfig
-from utils import load_cifar10_data, iterate_minibatches, message, simple_parse_args, fX
+from utils import load_cifar10_data, iterate_minibatches, message, simple_parse_args, fX, get_small_train_data, \
+    shuffle_data
 from DeepResidualLearning_CIFAR10 import CNN
 from policyNetwork import PolicyNetwork
 
@@ -29,7 +30,7 @@ def main():
 
     # Create the policy network
     policy = PolicyNetwork(
-        input_size=input_size,
+            input_size=input_size,
     )
 
     # Create neural network model
@@ -46,13 +47,9 @@ def main():
     # x_test = x_test[Config['validation_size']:]
     # y_test = y_test[Config['validation_size']:]
 
-    train_size = x_train.shape[0]
     train_small_size = ParamConfig['train_epoch_size']
 
-    # Use small dataset to check the code
-    sampled_indices = random.sample(range(train_size), train_small_size)
-    x_train_small = x_train[sampled_indices]
-    y_train_small = y_train[sampled_indices]
+    x_train_small, y_train_small = get_small_train_data(x_train, y_train)
 
     message('Training data size:', y_train_small.shape[0])
     # message('Validation data size:', y_validate.shape[0])
@@ -65,8 +62,7 @@ def main():
         print('[Episode {}]'.format(episode))
         message('[Episode {}]'.format(episode))
 
-        np.random.shuffle(x_train_small)
-        np.random.shuffle(y_train_small)
+        x_train_small, y_train_small = shuffle_data(x_train_small, y_train_small)
 
         if ParamConfig['warm_start']:
             cnn.load_model()
