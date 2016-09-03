@@ -191,11 +191,15 @@ class PolicyNetwork(object):
 
     @logging
     def save_policy(self, filename=Config['policy_model_file']):
+        filename = filename.replace('.npz', '_{}.npz'.format(self.input_size))
         np.savez(filename)
 
     @logging
     def load_policy(self, filename=Config['policy_model_file']):
+        filename = filename.replace('.npz', '_{}.npz'.format(self.input_size))
+
         with np.load(filename) as f:
+            assert self.W.get_value().shape == f['arr_0'].shape, 'The input size of the policy is not correct'
             self.W.set_value(f['arr_0'])
             self.b.set_value(f['arr_1'])
 

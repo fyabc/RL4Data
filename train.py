@@ -109,9 +109,6 @@ def main():
             if episode % ParamConfig['policy_learning_rate_discount_freq'] == 0:
                 policy.discount_learning_rate()
 
-            if episode % Config['policy_save_freq'] == 0:
-                policy.save_policy()
-
         if not use_policy and validate_acc >= 0.60:
             message('Saving CNN model warm start... ', end='')
             cnn.save_model()
@@ -192,12 +189,12 @@ def train_deterministic():
             print('Validate Loss:', validate_err / validate_batches)
             print('#Validate accuracy:', validate_acc)
 
-            if use_policy:
-                # get validation probabilities
-                probability = cnn.get_policy_input(x_test, y_test)
-
-                # policy.update(validate_acc)
-                policy.update_and_validate(validate_acc, probability)
+            # if use_policy:
+            #     # get validation probabilities
+            #     probability = cnn.get_policy_input(x_test, y_test)
+            #
+            #     # policy.update(validate_acc)
+            #     policy.update_and_validate(validate_acc, probability)
 
         if use_policy:
             if episode % ParamConfig['policy_learning_rate_discount_freq'] == 0:
