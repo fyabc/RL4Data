@@ -73,6 +73,7 @@ def main():
             message('[Epoch {}]'.format(epoch))
 
             total_accepted_cases = 0
+            distribution = np.zeros((10,), dtype='int32')
 
             for batch in iterate_minibatches(x_train_small, y_train_small, batch_size, shuffle=True, augment=True):
                 inputs, targets = batch
@@ -88,6 +89,11 @@ def main():
 
                     total_accepted_cases += len(inputs)
 
+                    # print label distributions
+                    if ParamConfig['print_label_distribution']:
+                        for target in targets:
+                            distribution[target] += 1
+
                 train_err = cnn.train_function(inputs, targets)
                 # print('Training error:', train_err / batch_size)
 
@@ -97,6 +103,7 @@ def main():
             print('Validate Loss:', validate_err / validate_batches)
             print('#Validate accuracy:', validate_acc)
             message('Number of accepted cases {} of {} cases'.format(total_accepted_cases, train_small_size))
+            message('Label distribution:', distribution)
 
             if use_policy:
                 # get validation probabilities
@@ -108,6 +115,9 @@ def main():
         if use_policy:
             if episode % ParamConfig['policy_learning_rate_discount_freq'] == 0:
                 policy.discount_learning_rate()
+
+            if Config['policy_save_freq'] > 0 and episode % Config['policy_save_freq'] == 0:
+                policy.save_policy()
 
         if not use_policy and validate_acc >= 0.60:
             message('Saving CNN model warm start... ', end='')
@@ -208,9 +218,14 @@ if __name__ == '__main__':
 
     if '-h' in sys.argv or '--help' in sys.argv:
         print('Usage: add properties just like this:\n'
-              '    add_label_prob=False')
+              '    add_label_prob=False\n'
+              '    #policy_save_freq=10\n'
+              '\n'
+              'properties starts with # are in Config, other properties are in ParamConfig.')
 
-    ParamConfig.update(simple_parse_args(sys.argv))
+    args_dict, param_args_dict = simple_parse_args(sys.argv)
+    Config.update(args_dict)
+    ParamConfig.update(param_args_dict)
 
     message('The configures and hyperparameters are:')
     pprint.pprint(ParamConfig, stream=sys.stderr)

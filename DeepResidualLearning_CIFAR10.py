@@ -177,7 +177,6 @@ class CNN(object):
         self.alpha_train_function = theano.function(
                 [self.input_var, self.target_var, alpha], alpha_loss, updates=updates)
 
-
     @logging
     def build_validate_function(self):
         """build validate functions"""

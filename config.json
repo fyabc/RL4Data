@@ -41,6 +41,8 @@
 
         "gamma": 1.0,
 
-        "reward_baseline_update_rate": 0.1
+        "reward_baseline_update_rate": 0.1,
+
+        "print_label_distribution": true
     }
 }

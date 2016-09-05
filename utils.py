@@ -150,14 +150,19 @@ def iterate_minibatches(inputs, targets, batch_size, shuffle=False, augment=Fals
 
 def simple_parse_args(args):
     args_dict = {}
+    param_args_dict = {}
 
     for arg in args:
         if '=' in arg:
-            key, value = arg.split('=')
+            if arg[0] == '#':
+                arg = arg[1:]
+                key, value = arg.split('=')
+                args_dict[key] = eval(value)
+            else:
+                key, value = arg.split('=')
+                param_args_dict[key] = eval(value)
 
-            args_dict[key] = eval(value)
-
-    return args_dict
+    return args_dict, param_args_dict
 
 
 class CifarDataAnalyzer(object):
