@@ -95,7 +95,7 @@ def adam(learning_rate, parameters, grads, inputs, cost):
     gs_up = [(gs, g) for gs, g in zip(g_shared, grads)]
 
     f_grad_shared = theano.function(inputs, cost, updates=gs_up)
-    lr0 = 0.001
+    lr0 = 0.0002
     b1 = 0.1
     b2 = 0.001
     e = 1e-8

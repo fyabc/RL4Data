@@ -89,10 +89,10 @@ def main():
 
                     total_accepted_cases += len(inputs)
 
-                    # print label distributions
-                    if ParamConfig['print_label_distribution']:
-                        for target in targets:
-                            distribution[target] += 1
+                # print label distributions
+                if ParamConfig['print_label_distribution']:
+                    for target in targets:
+                        distribution[target] += 1
 
                 train_err = cnn.train_function(inputs, targets)
                 # print('Training error:', train_err / batch_size)
@@ -106,11 +106,11 @@ def main():
             message('Label distribution:', distribution)
 
             if use_policy:
-                # get validation probabilities
-                probability = cnn.get_policy_input(x_test, y_test)
+                # # get validation probabilities
+                # probability = cnn.get_policy_input(x_test, y_test)
 
-                # policy.update(validate_acc)
-                policy.update_and_validate(validate_acc, probability)
+                policy.update(validate_acc)
+                # policy.update_and_validate(validate_acc, probability)
 
         if use_policy:
             if episode % ParamConfig['policy_learning_rate_discount_freq'] == 0:
@@ -119,7 +119,7 @@ def main():
             if Config['policy_save_freq'] > 0 and episode % Config['policy_save_freq'] == 0:
                 policy.save_policy()
 
-        if not use_policy and validate_acc >= 0.60:
+        if Config['save_model'] and not use_policy and validate_acc >= 0.35:
             message('Saving CNN model warm start... ', end='')
             cnn.save_model()
             message('done')
@@ -172,6 +172,10 @@ def train_deterministic():
 
     policy.load_policy()
 
+    message('$    w = {}\n'
+            '$    b = {}'
+            .format(policy.W.get_value(), policy.b.get_value()))
+
     for episode in range(1, num_episodes + 1):
         print('[Episode {}]'.format(episode))
         message('[Episode {}]'.format(episode))
@@ -200,16 +204,12 @@ def train_deterministic():
             print('Validate Loss:', validate_err / validate_batches)
             print('#Validate accuracy:', validate_acc)
 
+            # TODO
             # if use_policy:
-            #     # get validation probabilities
-            #     probability = cnn.get_policy_input(x_test, y_test)
-            #
-            #     # policy.update(validate_acc)
-            #     policy.update_and_validate(validate_acc, probability)
+            #     policy.update_deterministic(validate_acc)
 
-        if use_policy:
-            if episode % ParamConfig['policy_learning_rate_discount_freq'] == 0:
-                policy.discount_learning_rate()
+        if episode % ParamConfig['policy_learning_rate_discount_freq'] == 0:
+            policy.discount_learning_rate()
 
 
 if __name__ == '__main__':

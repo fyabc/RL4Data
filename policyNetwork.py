@@ -100,6 +100,10 @@ class PolicyNetwork(object):
     def make_output(self, input_):
         return T.nnet.sigmoid(T.dot(input_, self.W) + self.b)
 
+    def update_rb(self, reward):
+        """update reward baseline"""
+        self.reward_baseline = (1 - self.rb_update_rate) * self.reward_baseline + self.rb_update_rate * reward
+
     def take_action(self, inputs):
         actions = np.zeros(shape=(inputs.shape[0],), dtype=bool)
 
@@ -134,8 +138,7 @@ class PolicyNetwork(object):
         self.input_buffer = []
         self.action_buffer = []
 
-        # update reward baseline
-        self.reward_baseline = (1 - self.rb_update_rate) * self.reward_baseline + self.rb_update_rate * reward
+        self.update_rb(reward)
 
         message('Cost: {}\n'
                 'New parameters:\n'
@@ -154,9 +157,6 @@ class PolicyNetwork(object):
             discounted_rewards[i] = temp
             temp *= self.gamma
 
-        # update parameters
-        # self.update_function(self.input_buffer, self.action_buffer, discounted_rewards)
-
         cost = self.f_grad_shared(self.input_buffer, self.action_buffer, discounted_rewards)
         self.f_update(self.learning_rate.get_value())
 
@@ -169,8 +169,7 @@ class PolicyNetwork(object):
         self.input_buffer = []
         self.action_buffer = []
 
-        # update reward baseline
-        self.reward_baseline = (1 - self.rb_update_rate) * self.reward_baseline + self.rb_update_rate * reward
+        self.update_rb(reward)
 
         message(
             'Cost: {}\n'
@@ -188,6 +187,9 @@ class PolicyNetwork(object):
                 self.reward_baseline
             )
         )
+
+    def update_deterministic(self, reward):
+        pass
 
     @logging
     def save_policy(self, filename=Config['policy_model_file']):
