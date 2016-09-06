@@ -189,6 +189,7 @@ def train_deterministic():
                 probability = cnn.get_policy_input(inputs, targets)
 
                 alpha = np.asarray(map(lambda prob: policy.output_function(prob), probability), dtype=fX).flatten()
+                alpha /= np.sum(alpha)
 
                 train_err = cnn.alpha_train_function(inputs, targets, alpha)
                 # print('Training error:', train_err / batch_size)
