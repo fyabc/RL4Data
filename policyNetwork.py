@@ -61,7 +61,7 @@ class PolicyNetwork(object):
 
         self.output_sample_function = theano.function(
             inputs=[self.input],
-            outputs=[self.output_sample],
+            outputs=self.output_sample,
         )
 
         # replay buffers
