@@ -104,6 +104,19 @@ def load_cifar10_data(data_dir=Config['data_dir'], train_size=Config['train_size
     }
 
 
+def split_data(data):
+    x_train = data['x_train']
+    y_train = data['y_train']
+    x_test = data['x_test']
+    y_test = data['y_test']
+    x_validate = x_test[:Config['validation_size']]
+    y_validate = y_test[:Config['validation_size']]
+    x_test = x_test[Config['validation_size']:]
+    y_test = y_test[Config['validation_size']:]
+
+    return x_train, y_train, x_validate, y_validate, x_test, y_test
+
+
 def get_small_train_data(x_train, y_train, train_small_size=ParamConfig['train_epoch_size']):
     train_size = x_train.shape[0]
 

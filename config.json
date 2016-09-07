@@ -5,7 +5,7 @@
     "policy_save_freq": 10,
     "save_model": false,
     "total_size": 60000,
-    "train_size": 50000,
+    "train_size": 40000,
     "validation_size": 10000,
     "model": null,
     "seed": 1234,

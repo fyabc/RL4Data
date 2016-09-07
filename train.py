@@ -7,8 +7,7 @@ import sys
 import numpy as np
 
 from config import Config, ParamConfig
-from utils import load_cifar10_data, iterate_minibatches, message, simple_parse_args, get_small_train_data, \
-    shuffle_data, fX
+from utils import *
 from DeepResidualLearning_CIFAR10 import CNN
 from policyNetwork import PolicyNetwork
 
@@ -37,21 +36,14 @@ def main():
 
     # Load the dataset
     data = load_cifar10_data()
-    x_train = data['x_train']
-    y_train = data['y_train']
-    x_test = data['x_test']
-    y_test = data['y_test']
-    # x_validate = x_test[:Config['validation_size']]
-    # y_validate = y_test[:Config['validation_size']]
-    # x_test = x_test[Config['validation_size']:]
-    # y_test = y_test[Config['validation_size']:]
+    x_train, y_train, x_validate, y_validate, x_test, y_test = split_data(data)
 
     train_small_size = ParamConfig['train_epoch_size']
 
     x_train_small, y_train_small = get_small_train_data(x_train, y_train)
 
     message('Training data size:', y_train_small.shape[0])
-    # message('Validation data size:', y_validate.shape[0])
+    message('Validation data size:', y_validate.shape[0])
     message('Test data size:', y_test.shape[0])
 
     # Train the network
@@ -97,7 +89,7 @@ def main():
                 train_err = cnn.train_function(inputs, targets)
                 # print('Training error:', train_err / batch_size)
 
-            validate_err, validate_acc, validate_batches = cnn.validate_or_test(x_test, y_test)
+            validate_err, validate_acc, validate_batches = cnn.validate_or_test(x_validate, y_validate)
             validate_acc /= validate_batches
 
             print('Validate Loss:', validate_err / validate_batches)
@@ -107,7 +99,7 @@ def main():
 
             if use_policy:
                 # # get validation probabilities
-                # probability = cnn.get_policy_input(x_test, y_test)
+                # probability = cnn.get_policy_input(x_validate, y_validate)
 
                 policy.update(validate_acc)
                 # policy.update_and_validate(validate_acc, probability)
@@ -150,14 +142,7 @@ def train_deterministic():
 
     # Load the dataset
     data = load_cifar10_data()
-    x_train = data['x_train']
-    y_train = data['y_train']
-    x_test = data['x_test']
-    y_test = data['y_test']
-    # x_validate = x_test[:Config['validation_size']]
-    # y_validate = y_test[:Config['validation_size']]
-    # x_test = x_test[Config['validation_size']:]
-    # y_test = y_test[Config['validation_size']:]
+    x_train, y_train, x_validate, y_validate, x_test, y_test = split_data(data)
 
     train_small_size = ParamConfig['train_epoch_size']
 
@@ -198,7 +183,7 @@ def train_deterministic():
                 train_err = cnn.alpha_train_function(inputs, targets, alpha)
                 # print('Training error:', train_err / batch_size)
 
-            validate_err, validate_acc, validate_batches = cnn.validate_or_test(x_test, y_test)
+            validate_err, validate_acc, validate_batches = cnn.validate_or_test(x_validate, y_validate)
             validate_acc /= validate_batches
 
             print('Validate Loss:', validate_err / validate_batches)
