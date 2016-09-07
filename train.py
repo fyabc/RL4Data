@@ -56,7 +56,7 @@ def main():
         x_train_small, y_train_small = shuffle_data(x_train_small, y_train_small)
 
         if ParamConfig['warm_start']:
-            cnn.load_model()
+            cnn.load_model(Config['model_file'])
         else:
             cnn.reset_all_parameters()
 
@@ -165,7 +165,7 @@ def train_deterministic():
         print('[Episode {}]'.format(episode))
         message('[Episode {}]'.format(episode))
 
-        cnn.load_model()
+        cnn.load_model(Config['model_file'])
 
         x_train_small, y_train_small = shuffle_data(x_train_small, y_train_small)
 
@@ -214,7 +214,7 @@ if __name__ == '__main__':
     ParamConfig.update(param_args_dict)
 
     message('The configures and hyperparameters are:')
-    pprint.pprint(ParamConfig, stream=sys.stderr)
+    pprint.pprint(Config, stream=sys.stderr)
 
     if ParamConfig['train_deterministic']:
         train_deterministic()

@@ -272,7 +272,7 @@ class CNN(object):
         np.savez(filename, *get_all_param_values(self.network))
 
     @logging
-    def load_model(self, filename=Config['model_file']):
+    def load_model(self, filename):
         # load network weights from model file
         with np.load(filename) as f:
             param_values = [f['arr_%d' % i] for i in range(len(f.files))]
