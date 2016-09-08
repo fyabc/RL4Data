@@ -98,18 +98,16 @@ def main():
             message('Label distribution:', distribution)
 
             if use_policy:
-                # # get validation probabilities
-                # probability = cnn.get_policy_input(x_validate, y_validate)
-
                 policy.update(validate_acc)
-                # policy.update_and_validate(validate_acc, probability)
+
+            cnn.test(x_test, y_test)
+
+            if use_policy and Config['policy_save_freq'] > 0 and epoch % Config['policy_save_freq'] == 0:
+                policy.save_policy()
 
         if use_policy:
             if episode % ParamConfig['policy_learning_rate_discount_freq'] == 0:
                 policy.discount_learning_rate()
-
-            if Config['policy_save_freq'] > 0 and episode % Config['policy_save_freq'] == 0:
-                policy.save_policy()
 
         if Config['save_model'] and not use_policy and validate_acc >= 0.35:
             message('Saving CNN model warm start... ', end='')
@@ -189,12 +187,7 @@ def train_deterministic():
             print('Validate Loss:', validate_err / validate_batches)
             print('#Validate accuracy:', validate_acc)
 
-            # TODO
-            # if use_policy:
-            #     policy.update_deterministic(validate_acc)
-
-        if episode % ParamConfig['policy_learning_rate_discount_freq'] == 0:
-            policy.discount_learning_rate()
+            cnn.test(x_test, y_test)
 
 
 if __name__ == '__main__':

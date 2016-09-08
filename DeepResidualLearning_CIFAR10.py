@@ -281,9 +281,9 @@ class CNN(object):
     @logging
     def test(self, x_test, y_test):
         test_err, test_acc, test_batches = self.validate_or_test(x_test, y_test)
-        print("Final results:")
-        print("  test loss:\t\t\t{:.6f}".format(test_err / test_batches))
-        print("  test accuracy:\t\t{:.2f} %".format(
+        print("$Final results:")
+        print("$  test loss:\t\t\t{:.6f}".format(test_err / test_batches))
+        print("$  test accuracy:\t\t{:.2f} %".format(
                 test_acc / test_batches * 100))
 
     def validate_or_test(self, x_test, y_test):
@@ -319,7 +319,7 @@ class CNN(object):
         if ParamConfig['add_label_input']:
             label_inputs = np.zeros(shape=(batch_size, 1), dtype=fX)
             for i in range(batch_size):
-                label_inputs[i, 0] = probability[i, targets[i]]
+                label_inputs[i, 0] = np.log(probability[i, targets[i]])
             probability = np.hstack([probability, label_inputs])
 
         if ParamConfig['add_label']:

@@ -188,9 +188,6 @@ class PolicyNetwork(object):
             )
         )
 
-    def update_deterministic(self, reward):
-        pass
-
     @logging
     def save_policy(self, filename=Config['policy_model_file']):
         filename = filename.replace('.npz', '_{}.npz'.format(self.input_size))
