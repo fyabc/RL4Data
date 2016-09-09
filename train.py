@@ -40,7 +40,7 @@ def main():
 
     train_small_size = ParamConfig['train_epoch_size']
 
-    x_train_small, y_train_small = get_small_train_data(x_train, y_train)
+    x_train_small, y_train_small = get_small_train_data(x_train, y_train, train_small_size)
 
     message('Training data size:', y_train_small.shape[0])
     message('Validation data size:', y_validate.shape[0])
@@ -53,7 +53,7 @@ def main():
         print('[Episode {}]'.format(episode))
         message('[Episode {}]'.format(episode))
 
-        x_train_small, y_train_small = shuffle_data(x_train_small, y_train_small)
+        # x_train_small, y_train_small = shuffle_data(x_train_small, y_train_small)
 
         if ParamConfig['warm_start']:
             cnn.load_model(Config['model_file'])
@@ -63,6 +63,8 @@ def main():
         for epoch in range(epoch_per_episode):
             print('[Epoch {}]'.format(epoch))
             message('[Epoch {}]'.format(epoch))
+
+            x_train_small, y_train_small = shuffle_data(x_train_small, y_train_small)
 
             total_accepted_cases = 0
             distribution = np.zeros((10,), dtype='int32')
@@ -89,21 +91,24 @@ def main():
                 train_err = cnn.train_function(inputs, targets)
                 # print('Training error:', train_err / batch_size)
 
-            validate_err, validate_acc, validate_batches = cnn.validate_or_test(x_validate, y_validate)
-            validate_acc /= validate_batches
-
-            print('Validate Loss:', validate_err / validate_batches)
-            print('#Validate accuracy:', validate_acc)
-            message('Number of accepted cases {} of {} cases'.format(total_accepted_cases, train_small_size))
-            message('Label distribution:', distribution)
-
             if use_policy:
+                validate_err, validate_acc, validate_batches = cnn.validate_or_test(x_validate, y_validate)
+                validate_acc /= validate_batches
+
+                print('Validate Loss:', validate_err / validate_batches)
+                print('#Validate accuracy:', validate_acc)
+                message('Number of accepted cases {} of {} cases'.format(total_accepted_cases, train_small_size))
+                message('Label distribution:', distribution)
+
                 policy.update(validate_acc)
 
-            cnn.test(x_test, y_test)
+                if Config['policy_save_freq'] > 0 and epoch % Config['policy_save_freq'] == 0:
+                    policy.save_policy(Config['policy_model_file'])
 
-            if use_policy and Config['policy_save_freq'] > 0 and epoch % Config['policy_save_freq'] == 0:
-                policy.save_policy()
+            if (epoch + 1) == 41 and (epoch + 1) == 61:
+                cnn.update_learning_rate()
+
+            cnn.test(x_test, y_test)
 
         if use_policy:
             if episode % ParamConfig['policy_learning_rate_discount_freq'] == 0:
@@ -120,8 +125,6 @@ def main():
 
 def train_deterministic():
     # Some configures
-    use_policy = ParamConfig['use_policy']
-
     n = ParamConfig['n']
     num_episodes = ParamConfig['num_epochs']
 
@@ -144,50 +147,51 @@ def train_deterministic():
 
     train_small_size = ParamConfig['train_epoch_size']
 
-    x_train_small, y_train_small = get_small_train_data(x_train, y_train)
+    x_train_small, y_train_small = get_small_train_data(x_train, y_train, train_small_size)
 
     message('Training data size:', y_train_small.shape[0])
-    # message('Validation data size:', y_validate.shape[0])
+    message('Validation data size:', y_validate.shape[0])
     message('Test data size:', y_test.shape[0])
 
     # Train the network
     batch_size = ParamConfig['train_batch_size']
 
-    policy.load_policy()
+    policy.load_policy(Config['policy_model_file'])
 
     message('$    w = {}\n'
             '$    b = {}'
             .format(policy.W.get_value(), policy.b.get_value()))
 
-    for episode in range(1, num_episodes + 1):
-        print('[Episode {}]'.format(episode))
-        message('[Episode {}]'.format(episode))
+    cnn.load_model(Config['model_file'])
 
-        cnn.load_model(Config['model_file'])
+    # x_train_small, y_train_small = shuffle_data(x_train_small, y_train_small)
+
+    for epoch in range(epoch_per_episode):
+        print('[Epoch {}]'.format(epoch))
+        message('[Epoch {}]'.format(epoch))
 
         x_train_small, y_train_small = shuffle_data(x_train_small, y_train_small)
 
-        for epoch in range(epoch_per_episode):
-            print('[Epoch {}]'.format(epoch))
-            message('[Epoch {}]'.format(epoch))
+        for batch in iterate_minibatches(x_train_small, y_train_small, batch_size, shuffle=True, augment=True):
+            inputs, targets = batch
+            probability = cnn.get_policy_input(inputs, targets)
 
-            for batch in iterate_minibatches(x_train_small, y_train_small, batch_size, shuffle=True, augment=True):
-                inputs, targets = batch
-                probability = cnn.get_policy_input(inputs, targets)
+            alpha = np.asarray(map(lambda prob: policy.output_function(prob), probability), dtype=fX).flatten()
+            alpha /= np.sum(alpha)
 
-                alpha = np.asarray(map(lambda prob: policy.output_function(prob), probability), dtype=fX).flatten()
-                alpha /= np.sum(alpha)
+            train_err = cnn.alpha_train_function(inputs, targets, alpha)
+            # print('Training error:', train_err / batch_size)
 
-                train_err = cnn.alpha_train_function(inputs, targets, alpha)
-                # print('Training error:', train_err / batch_size)
+        if (epoch + 1) == 41 and (epoch + 1) == 61:
+            cnn.update_learning_rate()
 
-            validate_err, validate_acc, validate_batches = cnn.validate_or_test(x_validate, y_validate)
-            validate_acc /= validate_batches
+        validate_err, validate_acc, validate_batches = cnn.validate_or_test(x_validate, y_validate)
+        validate_acc /= validate_batches
 
-            print('Validate Loss:', validate_err / validate_batches)
-            print('#Validate accuracy:', validate_acc)
+        print('Validate Loss:', validate_err / validate_batches)
+        print('#Validate accuracy:', validate_acc)
 
-            cnn.test(x_test, y_test)
+        cnn.test(x_test, y_test)
 
 
 if __name__ == '__main__':

@@ -117,7 +117,7 @@ def split_data(data):
     return x_train, y_train, x_validate, y_validate, x_test, y_test
 
 
-def get_small_train_data(x_train, y_train, train_small_size=ParamConfig['train_epoch_size']):
+def get_small_train_data(x_train, y_train, train_small_size):
     train_size = x_train.shape[0]
 
     # Use small dataset to check the code
