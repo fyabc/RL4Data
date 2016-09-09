@@ -166,8 +166,10 @@ def simple_parse_args(args):
     param_args_dict = {}
 
     for arg in args:
+        arg = arg.replace('@', '"')
+
         if '=' in arg:
-            if arg[0] == '#':
+            if arg[0] == '%':
                 arg = arg[1:]
                 key, value = arg.split('=')
                 args_dict[key] = eval(value)

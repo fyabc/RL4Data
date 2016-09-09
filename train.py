@@ -91,12 +91,13 @@ def main():
                 train_err = cnn.train_function(inputs, targets)
                 # print('Training error:', train_err / batch_size)
 
-            if use_policy:
-                validate_err, validate_acc, validate_batches = cnn.validate_or_test(x_validate, y_validate)
-                validate_acc /= validate_batches
+            validate_err, validate_acc, validate_batches = cnn.validate_or_test(x_validate, y_validate)
+            validate_acc /= validate_batches
 
-                print('Validate Loss:', validate_err / validate_batches)
-                print('#Validate accuracy:', validate_acc)
+            print('Validate Loss:', validate_err / validate_batches)
+            print('#Validate accuracy:', validate_acc)
+
+            if use_policy:
                 message('Number of accepted cases {} of {} cases'.format(total_accepted_cases, train_small_size))
                 message('Label distribution:', distribution)
 
