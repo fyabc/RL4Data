@@ -203,9 +203,9 @@ if __name__ == '__main__':
     if '-h' in sys.argv or '--help' in sys.argv:
         print('Usage: add properties just like this:\n'
               '    add_label_prob=False\n'
-              '    #policy_save_freq=10\n'
+              '    %policy_save_freq=10\n'
               '\n'
-              'properties starts with # are in Config, other properties are in ParamConfig.')
+              'properties starts with % are in Config, other properties are in ParamConfig.')
 
     args_dict, param_args_dict = simple_parse_args(sys.argv)
     Config.update(args_dict)
