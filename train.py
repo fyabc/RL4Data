@@ -69,6 +69,10 @@ def main():
             total_accepted_cases = 0
             distribution = np.zeros((10,), dtype='int32')
 
+            train_err = 0
+            train_batches = 0
+            start_time = time.time()
+
             for batch in iterate_minibatches(x_train_small, y_train_small, batch_size, shuffle=True, augment=True):
                 inputs, targets = batch
 
@@ -89,11 +93,14 @@ def main():
                         distribution[target] += 1
 
                 train_err = cnn.train_function(inputs, targets)
-                # print('Training error:', train_err / batch_size)
+                train_batches += 1
 
             validate_err, validate_acc, validate_batches = cnn.validate_or_test(x_validate, y_validate)
             validate_acc /= validate_batches
 
+            print("Epoch {} of {} took {:.3f}s".format(
+                    epoch, epoch_per_episode, time.time() - start_time))
+            print('Training Loss:', train_err / train_batches)
             print('Validate Loss:', validate_err / validate_batches)
             print('#Validate accuracy:', validate_acc)
 

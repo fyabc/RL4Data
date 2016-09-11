@@ -15,7 +15,7 @@
         "train_deterministic": false,
 
         "use_policy": true,
-        "train_epoch_size": 10240,
+        "train_epoch_size": 80000,
         "epoch_per_episode": 1,
 
         "warm_start": true,
