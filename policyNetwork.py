@@ -56,7 +56,7 @@ class PolicyNetwork(object):
 
         self.output_function = theano.function(
             inputs=[self.input],
-            outputs=[self.output],
+            outputs=self.output,
         )
 
         self.output_sample_function = theano.function(

@@ -170,7 +170,10 @@ def train_deterministic():
             '$    b = {}'
             .format(policy.W.get_value(), policy.b.get_value()))
 
-    cnn.load_model(Config['model_file'])
+    if ParamConfig['warm_start']:
+        cnn.load_model(Config['model_file'])
+    else:
+        cnn.reset_all_parameters()
 
     # x_train_small, y_train_small = shuffle_data(x_train_small, y_train_small)
 
@@ -180,16 +183,28 @@ def train_deterministic():
 
         if not curriculum:
             x_train_small, y_train_small = shuffle_data(x_train_small, y_train_small)
+        else:
+            probability = [cnn.get_policy_input(inputs, targets) for inputs, targets in
+                           iterate_minibatches(x_train_small, y_train_small, batch_size,
+                           shuffle=not curriculum, augment=True)]
+            alpha = np.concatenate([policy.output_function(prob) for prob in probability], axis=0)
+            indices = [elem[0] for elem in sorted(enumerate(alpha), key=lambda e: -e[1])]
+            x_train_small = x_train_small[indices]
+            y_train_small = y_train_small[indices]
 
         train_err = 0
         train_batches = 0
         start_time = time.time()
 
-        for batch in iterate_minibatches(x_train_small, y_train_small, batch_size, shuffle=True, augment=True):
+        for batch in iterate_minibatches(x_train_small, y_train_small, batch_size,
+                                         shuffle=not curriculum, augment=True):
             inputs, targets = batch
             probability = cnn.get_policy_input(inputs, targets)
 
-            alpha = np.asarray(map(lambda prob: policy.output_function(prob), probability), dtype=fX).flatten()
+            alpha = np.asarray([policy.output_function(prob) for prob in probability], dtype=fX)
+
+            # print('Alpha:', alpha)
+
             alpha /= np.sum(alpha)
 
             train_err += cnn.alpha_train_function(inputs, targets, alpha)
