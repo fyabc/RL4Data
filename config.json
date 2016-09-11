@@ -13,6 +13,7 @@
 
     "parameters": {
         "train_deterministic": false,
+        "curriculum": false,
 
         "use_policy": true,
         "train_epoch_size": 80000,

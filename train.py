@@ -92,7 +92,7 @@ def main():
                     for target in targets:
                         distribution[target] += 1
 
-                train_err = cnn.train_function(inputs, targets)
+                train_err += cnn.train_function(inputs, targets)
                 train_batches += 1
 
             validate_err, validate_acc, validate_batches = cnn.validate_or_test(x_validate, y_validate)
@@ -134,7 +134,7 @@ def main():
 def train_deterministic():
     # Some configures
     n = ParamConfig['n']
-    num_episodes = ParamConfig['num_epochs']
+    curriculum = ParamConfig['curriculum']
 
     input_size = CNN.get_policy_input_size()
     print('Input size of policy network:', input_size)
@@ -178,7 +178,12 @@ def train_deterministic():
         print('[Epoch {}]'.format(epoch))
         message('[Epoch {}]'.format(epoch))
 
-        x_train_small, y_train_small = shuffle_data(x_train_small, y_train_small)
+        if not curriculum:
+            x_train_small, y_train_small = shuffle_data(x_train_small, y_train_small)
+
+        train_err = 0
+        train_batches = 0
+        start_time = time.time()
 
         for batch in iterate_minibatches(x_train_small, y_train_small, batch_size, shuffle=True, augment=True):
             inputs, targets = batch
@@ -187,8 +192,8 @@ def train_deterministic():
             alpha = np.asarray(map(lambda prob: policy.output_function(prob), probability), dtype=fX).flatten()
             alpha /= np.sum(alpha)
 
-            train_err = cnn.alpha_train_function(inputs, targets, alpha)
-            # print('Training error:', train_err / batch_size)
+            train_err += cnn.alpha_train_function(inputs, targets, alpha)
+            train_batches += 1
 
         if (epoch + 1) == 41 and (epoch + 1) == 61:
             cnn.update_learning_rate()
@@ -196,6 +201,9 @@ def train_deterministic():
         validate_err, validate_acc, validate_batches = cnn.validate_or_test(x_validate, y_validate)
         validate_acc /= validate_batches
 
+        print("Epoch {} of {} took {:.3f}s".format(
+                epoch, epoch_per_episode, time.time() - start_time))
+        print('Training Loss:', train_err / train_batches)
         print('Validate Loss:', validate_err / validate_batches)
         print('#Validate accuracy:', validate_acc)
 
