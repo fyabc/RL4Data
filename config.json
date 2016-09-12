@@ -5,8 +5,9 @@
     "policy_save_freq": 10,
     "save_model": false,
     "total_size": 60000,
-    "train_size": 40000,
+    "train_size": 50000,
     "validation_size": 10000,
+    "test_size": 10000,
     "model": null,
     "seed": 1234,
     "floatX": "float32",
@@ -16,7 +17,7 @@
         "curriculum": false,
 
         "use_policy": true,
-        "train_epoch_size": 80000,
+        "train_epoch_size": 100000,
         "epoch_per_episode": 1,
 
         "warm_start": true,

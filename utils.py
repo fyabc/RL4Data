@@ -59,10 +59,12 @@ def unpickle(filename):
 
 
 @logging
-def load_cifar10_data(data_dir=Config['data_dir'], train_size=Config['train_size']):
+def load_cifar10_data(data_dir=Config['data_dir']):
     if not os.path.exists(data_dir):
         raise Exception("CIFAR-10 dataset can not be found. Please download the dataset from "
                         "'https://www.cs.toronto.edu/~kriz/cifar.html'.")
+
+    train_size = Config['train_size']
 
     xs = []
     ys = []
@@ -111,8 +113,8 @@ def split_data(data):
     y_test = data['y_test']
     x_validate = x_test[:Config['validation_size']]
     y_validate = y_test[:Config['validation_size']]
-    x_test = x_test[Config['validation_size']:]
-    y_test = y_test[Config['validation_size']:]
+    x_test = x_test[-Config['test_size']:]
+    y_test = y_test[-Config['test_size']:]
 
     return x_train, y_train, x_validate, y_validate, x_test, y_test
 
@@ -125,8 +127,8 @@ def get_small_train_data(x_train, y_train, train_small_size):
     return x_train[sampled_indices], y_train[sampled_indices]
 
 
-def shuffle_data(x_train, y_train, train_small_size=ParamConfig['train_epoch_size']):
-    shuffled_indices = np.arange(train_small_size)
+def shuffle_data(x_train, y_train):
+    shuffled_indices = np.arange(y_train.shape[0])
     np.random.shuffle(shuffled_indices)
     return x_train[shuffled_indices], y_train[shuffled_indices]
 

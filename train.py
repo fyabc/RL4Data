@@ -184,11 +184,15 @@ def train_deterministic():
         if not curriculum:
             x_train_small, y_train_small = shuffle_data(x_train_small, y_train_small)
         else:
-            probability = [cnn.get_policy_input(inputs, targets) for inputs, targets in
-                           iterate_minibatches(x_train_small, y_train_small, batch_size,
-                           shuffle=not curriculum, augment=True)]
-            alpha = np.concatenate([policy.output_function(prob) for prob in probability], axis=0)
-            indices = [elem[0] for elem in sorted(enumerate(alpha), key=lambda e: -e[1])]
+            all_probabilities = [cnn.get_policy_input(inputs, targets) for inputs, targets in
+                                 iterate_minibatches(x_train_small, y_train_small, batch_size,
+                                 shuffle=not curriculum, augment=True)]
+            alpha = np.concatenate([
+                np.asarray([policy.output_function(prob) for prob in probability], dtype=fX)
+                for probability in all_probabilities
+            ], axis=0)
+            sorted_idx_alpha = sorted(enumerate(alpha), key=lambda e: -e[1])
+            indices = [elem[0] for elem in sorted_idx_alpha]
             x_train_small = x_train_small[indices]
             y_train_small = y_train_small[indices]
 
@@ -201,7 +205,12 @@ def train_deterministic():
             inputs, targets = batch
             probability = cnn.get_policy_input(inputs, targets)
 
-            alpha = np.asarray([policy.output_function(prob) for prob in probability], dtype=fX)
+            if not curriculum:
+                alpha = np.asarray([policy.output_function(prob) for prob in probability], dtype=fX)
+            else:
+                alpha = np.asarray(
+                    [e[1] for e in sorted_idx_alpha[train_batches * batch_size: (train_batches + 1) * batch_size]],
+                    dtype=fX)
 
             # print('Alpha:', alpha)
 
