@@ -197,7 +197,7 @@ def train_deterministic():
             x_train_small = x_train_small[indices]
             y_train_small = y_train_small[indices]
 
-            print('Curriculum took {:.3f}s', time.time() - start_time)
+            print('Curriculum took {:.3f}s'.format(time.time() - start_time))
 
         train_err = 0
         train_batches = 0
