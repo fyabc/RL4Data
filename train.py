@@ -184,6 +184,7 @@ def train_deterministic():
         if not curriculum:
             x_train_small, y_train_small = shuffle_data(x_train_small, y_train_small)
         else:
+            start_time = time.time()
             all_probabilities = [cnn.get_policy_input(inputs, targets) for inputs, targets in
                                  iterate_minibatches(x_train_small, y_train_small, batch_size,
                                  shuffle=not curriculum, augment=True)]
@@ -196,6 +197,8 @@ def train_deterministic():
             x_train_small = x_train_small[indices]
             y_train_small = y_train_small[indices]
 
+            print('Curriculum took {:.3f}s', time.time() - start_time)
+
         train_err = 0
         train_batches = 0
         start_time = time.time()
@@ -203,14 +206,17 @@ def train_deterministic():
         for batch in iterate_minibatches(x_train_small, y_train_small, batch_size,
                                          shuffle=not curriculum, augment=True):
             inputs, targets = batch
-            probability = cnn.get_policy_input(inputs, targets)
 
-            if not curriculum:
-                alpha = np.asarray([policy.output_function(prob) for prob in probability], dtype=fX)
-            else:
-                alpha = np.asarray(
-                    [e[1] for e in sorted_idx_alpha[train_batches * batch_size: (train_batches + 1) * batch_size]],
-                    dtype=fX)
+            # if not curriculum:
+            #     probability = cnn.get_policy_input(inputs, targets)
+            #     alpha = np.asarray([policy.output_function(prob) for prob in probability], dtype=fX)
+            # else:
+            #     alpha = np.asarray(
+            #         [e[1] for e in sorted_idx_alpha[train_batches * batch_size: (train_batches + 1) * batch_size]],
+            #         dtype=fX)
+
+            probability = cnn.get_policy_input(inputs, targets)
+            alpha = np.asarray([policy.output_function(prob) for prob in probability], dtype=fX)
 
             # print('Alpha:', alpha)
 
