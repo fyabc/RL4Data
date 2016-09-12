@@ -187,17 +187,20 @@ def train_deterministic():
             start_time = time.time()
             all_probabilities = [cnn.get_policy_input(inputs, targets) for inputs, targets in
                                  iterate_minibatches(x_train_small, y_train_small, batch_size,
-                                 shuffle=not curriculum, augment=True)]
-            alpha = np.concatenate([
+                                 shuffle=False, augment=True)]
+            all_alphas = np.concatenate([
                 np.asarray([policy.output_function(prob) for prob in probability], dtype=fX)
                 for probability in all_probabilities
             ], axis=0)
-            sorted_idx_alpha = sorted(enumerate(alpha), key=lambda e: -e[1])
-            indices = [elem[0] for elem in sorted_idx_alpha]
+            sorted_idx_alpha = sorted(enumerate(all_alphas), key=lambda e: -e[1])
+            indices = np.asarray([elem[0] for elem in sorted_idx_alpha], dtype='int64')
             x_train_small = x_train_small[indices]
             y_train_small = y_train_small[indices]
 
             print('Curriculum took {:.3f}s'.format(time.time() - start_time))
+            print('Length of indices:', len(indices))
+            print('Shape of x and y:', x_train_small.shape, y_train_small.shape)
+            print('Idx_alpha:', np.asarray(sorted_idx_alpha))
 
         train_err = 0
         train_batches = 0
@@ -207,22 +210,15 @@ def train_deterministic():
                                          shuffle=not curriculum, augment=True):
             inputs, targets = batch
 
-            # if not curriculum:
-            #     probability = cnn.get_policy_input(inputs, targets)
-            #     alpha = np.asarray([policy.output_function(prob) for prob in probability], dtype=fX)
-            # else:
-            #     alpha = np.asarray(
-            #         [e[1] for e in sorted_idx_alpha[train_batches * batch_size: (train_batches + 1) * batch_size]],
-            #         dtype=fX)
+            if not curriculum:
+                probability = cnn.get_policy_input(inputs, targets)
+                alpha = np.asarray([policy.output_function(prob) for prob in probability], dtype=fX)
 
-            probability = cnn.get_policy_input(inputs, targets)
-            alpha = np.asarray([policy.output_function(prob) for prob in probability], dtype=fX)
+                alpha /= np.sum(alpha)
 
-            # print('Alpha:', alpha)
-
-            alpha /= np.sum(alpha)
-
-            train_err += cnn.alpha_train_function(inputs, targets, alpha)
+                train_err += cnn.alpha_train_function(inputs, targets, alpha)
+            else:
+                train_err += cnn.train_function(inputs, targets)
             train_batches += 1
 
         if (epoch + 1) == 41 and (epoch + 1) == 61:
