@@ -221,7 +221,7 @@ def train_deterministic():
                 train_err += cnn.train_function(inputs, targets)
             train_batches += 1
 
-        if (epoch + 1) == 41 and (epoch + 1) == 61:
+        if (epoch + 1) in (41, 61):
             cnn.update_learning_rate()
 
         validate_err, validate_acc, validate_batches = cnn.validate_or_test(x_validate, y_validate)
