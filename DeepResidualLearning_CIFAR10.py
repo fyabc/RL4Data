@@ -269,7 +269,7 @@ class CNN(object):
 
     @logging
     def update_learning_rate(self):
-        self.learning_rate.set_value(self.learning_rate.get_value() * 0.1)
+        self.learning_rate.set_value(floatX(self.learning_rate.get_value() * 0.1))
 
     @logging
     def save_model(self, filename=Config['model_file']):
