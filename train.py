@@ -113,7 +113,7 @@ def main():
                 if Config['policy_save_freq'] > 0 and epoch % Config['policy_save_freq'] == 0:
                     policy.save_policy(Config['policy_model_file'])
 
-            if (epoch + 1) == 41 and (epoch + 1) == 61:
+            if (epoch + 1) in (41, 61):
                 cnn.update_learning_rate()
 
             cnn.test(x_test, y_test)
