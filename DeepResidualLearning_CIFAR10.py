@@ -30,6 +30,8 @@ class CNN(object):
     The neural network model.
     """
 
+    output_size = ParamConfig['cnn_output_size']
+
     def __init__(self, n=ParamConfig['n']):
         self.train_batch_size = ParamConfig['train_batch_size']
         self.validate_batch_size = ParamConfig['validate_batch_size']
@@ -309,7 +311,8 @@ class CNN(object):
         if ParamConfig['add_label_input']:
             input_size += 1
         if ParamConfig['add_label']:
-            input_size += 1
+            # input_size += 1
+            input_size += ParamConfig['cnn_output_size']
         if ParamConfig['use_first_layer_output']:
             input_size += 16 * 32 * 32
         return input_size
@@ -327,8 +330,14 @@ class CNN(object):
             probability = np.hstack([probability, label_inputs])
 
         if ParamConfig['add_label']:
-            labels = floatX(targets) * (1.0 / ParamConfig['cnn_output_size'])
-            probability = np.hstack([probability, labels[:, None]])
+            # labels = floatX(targets) * (1.0 / ParamConfig['cnn_output_size'])
+            # probability = np.hstack([probability, labels[:, None]])
+
+            labels = np.zeros(shape=(batch_size, self.output_size), dtype=fX)
+            for i, target in enumerate(targets):
+                labels[i, target] = 1.
+
+            probability = np.hstack([probability, labels])
 
         if ParamConfig['use_first_layer_output']:
             shape_first = np.product(first_layer_output.shape[1:])

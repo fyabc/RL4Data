@@ -47,5 +47,24 @@
         "reward_baseline_update_rate": 0.1,
 
         "print_label_distribution": true
+    },
+
+    "imdb": {
+        "dataset": "imdb",
+        "data_dir": "./data/imdb/imdb.pkl",
+
+        "save_to": "./data/imdb/lstm_model.npz",
+        "valid_freq": 370,
+        "save_freq": 1110,
+
+        "maxlen": 100,
+
+        "train_batch_size": 16,
+        "validate_batch_size": 64,
+
+        "optimizer": "adadelta",
+
+        "noise_std": 0.0,
+        "use_dropout": true
     }
 }

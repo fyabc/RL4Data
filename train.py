@@ -36,7 +36,7 @@ def main():
 
     # Load the dataset
     data = load_cifar10_data()
-    x_train, y_train, x_validate, y_validate, x_test, y_test = split_data(data)
+    x_train, y_train, x_validate, y_validate, x_test, y_test = split_cifar10_data(data)
 
     train_small_size = ParamConfig['train_epoch_size']
 
@@ -151,7 +151,7 @@ def train_deterministic():
 
     # Load the dataset
     data = load_cifar10_data()
-    x_train, y_train, x_validate, y_validate, x_test, y_test = split_data(data)
+    x_train, y_train, x_validate, y_validate, x_test, y_test = split_cifar10_data(data)
 
     train_small_size = ParamConfig['train_epoch_size']
 
