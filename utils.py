@@ -224,11 +224,33 @@ def load_imdb_data(data_dir=IMDBConfig['data_dir'], n_words=100000, valid_portio
         train_set_x = [train_set_x[i] for i in sorted_index]
         train_set_y = [train_set_y[i] for i in sorted_index]
 
-    train = (train_set_x, train_set_y)
-    valid = (valid_set_x, valid_set_y)
-    test = (test_set_x, test_set_y)
+    train_data = (train_set_x, train_set_y)
+    valid_data = (valid_set_x, valid_set_y)
+    test_data = (test_set_x, test_set_y)
 
-    return train, valid, test
+    return train_data, valid_data, test_data
+
+
+@logging
+def preprocess_imdb_data(train_data, valid_data, test_data):
+    train_x, train_y = train_data
+    test_x, test_y = test_data
+
+    test_size = IMDBConfig['test_size']
+    if test_size > 0:
+        # The test set is sorted by size, but we want to keep random
+        # size example.  So we must select a random selection of the
+        # examples.
+        idx = np.arange(len(test_x))
+        np.random.shuffle(idx)
+        idx = idx[:test_size]
+        test_data = ([test_x[n] for n in idx], [test_y[n] for n in idx])
+
+    ydim = np.max(train_y) + 1
+
+    IMDBConfig['ydim'] = ydim
+
+    return train_data, valid_data, test_data
 
 
 #############################
@@ -293,7 +315,17 @@ def simple_parse_args(args):
 
 
 def test():
-    pass
+    train_data, valid_data, test_data = load_imdb_data()
+    train_x, train_y = train_data
+    valid_x, valid_y = valid_data
+    test_x, test_y = test_data
+
+    print('Train:', np.asarray(train_x).shape, np.asarray(train_y).shape)
+    print('Valid:', np.asarray(valid_x).shape, np.asarray(valid_y).shape)
+    print('Test:', np.asarray(test_x).shape, np.asarray(test_y).shape)
+
+    for i in range(20):
+        print(train_x[i], train_y[i])
 
 
 if __name__ == '__main__':

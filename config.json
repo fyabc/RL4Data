@@ -65,6 +65,7 @@
         "optimizer": "adadelta",
 
         "noise_std": 0.0,
-        "use_dropout": true
+        "use_dropout": true,
+        "test_size": -1
     }
 }
