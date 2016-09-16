@@ -237,23 +237,7 @@ def train_deterministic():
 
 
 if __name__ == '__main__':
-    import pprint
-
-    argc = len(sys.argv)
-
-    if '-h' in sys.argv or '--help' in sys.argv:
-        print('Usage: add properties just like this:\n'
-              '    add_label_prob=False\n'
-              '    %policy_save_freq=10\n'
-              '\n'
-              'properties starts with % are in Config, other properties are in ParamConfig.')
-
-    args_dict, param_args_dict = simple_parse_args(sys.argv)
-    Config.update(args_dict)
-    ParamConfig.update(param_args_dict)
-
-    message('The configures and hyperparameters are:')
-    pprint.pprint(Config, stream=sys.stderr)
+    process_before_train(ParamConfig)
 
     if ParamConfig['train_deterministic']:
         train_deterministic()

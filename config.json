@@ -53,6 +53,15 @@
         "dataset": "imdb",
         "data_dir": "./data/imdb/imdb.pkl",
 
+        "dim_proj": 128,
+        "patience": 10,
+        "max_epochs": 5000,
+        "display_freq": 10,
+
+        "decay_c": 0.0,
+        "learning_rate": 0.0001,
+        "n_words": 10000,
+
         "save_to": "./data/imdb/lstm_model.npz",
         "valid_freq": 370,
         "save_freq": 1110,
@@ -65,6 +74,7 @@
         "optimizer": "adadelta",
 
         "noise_std": 0.0,
+        "reload_model": false,
         "use_dropout": true,
         "test_size": -1
     }

@@ -144,7 +144,7 @@ def shuffle_data(x_train, y_train):
 
 
 @logging
-def load_imdb_data(data_dir=IMDBConfig['data_dir'], n_words=100000, valid_portion=0.1, maxlen=None, sort_by_len=True):
+def load_imdb_data(data_dir=None, n_words=100000, valid_portion=0.1, maxlen=None, sort_by_len=True):
     """Loads the dataset
 
     :type data_dir: String
@@ -163,6 +163,8 @@ def load_imdb_data(data_dir=IMDBConfig['data_dir'], n_words=100000, valid_portio
         less padding per minibatch. Another mechanism must be used to
         shuffle the train set at each epoch.
     """
+
+    data_dir = data_dir or IMDBConfig['data_dir']
 
     import gzip
     if data_dir.endswith(".gz"):
@@ -253,9 +255,52 @@ def preprocess_imdb_data(train_data, valid_data, test_data):
     return train_data, valid_data, test_data
 
 
-#############################
-# Batch iterator of CIFAR10 #
-#############################
+def prepare_imdb_data(seqs, labels, maxlen=None):
+    """Create the matrices from the datasets.
+
+    This pad each sequence to the same length: the length of the
+    longest sequence or maxlen.
+
+    if maxlen is set, we will cut all sequence to this maximum
+    length.
+
+    This swap the axis!
+    """
+
+    # x: a list of sentences
+    lengths = [len(s) for s in seqs]
+
+    if maxlen is not None:
+        new_seqs = []
+        new_labels = []
+        new_lengths = []
+        for l, s, y in zip(lengths, seqs, labels):
+            if l < maxlen:
+                new_seqs.append(s)
+                new_labels.append(y)
+                new_lengths.append(l)
+        lengths = new_lengths
+        labels = new_labels
+        seqs = new_seqs
+
+        if len(lengths) < 1:
+            return None, None, None
+
+    n_samples = len(seqs)
+    maxlen = np.max(lengths)
+
+    x = np.zeros((maxlen, n_samples)).astype('int64')
+    x_mask = np.zeros((maxlen, n_samples)).astype(fX)
+    for idx, s in enumerate(seqs):
+        x[:lengths[idx], idx] = s
+        x_mask[:lengths[idx], idx] = 1.
+
+    return x, x_mask, labels
+
+
+##############################
+# Other utilities of CIFAR10 #
+##############################
 
 def iterate_minibatches(inputs, targets, batch_size, shuffle=False, augment=False):
     assert len(inputs) == len(targets)
@@ -286,9 +331,37 @@ def iterate_minibatches(inputs, targets, batch_size, shuffle=False, augment=Fals
         yield inp_exc, targets[excerpt]
 
 
-#####################
-# Simple arg parser #
-#####################
+###########################
+# Other utilities of IMDB #
+###########################
+
+def get_minibatches_idx(n, minibatch_size, shuffle=False):
+    """
+    Used to shuffle the dataset at each iteration.
+    """
+
+    idx_list = np.arange(n, dtype="int32")
+
+    if shuffle:
+        np.random.shuffle(idx_list)
+
+    minibatches = []
+    minibatch_start = 0
+    for i in range(n // minibatch_size):
+        minibatches.append(idx_list[minibatch_start:
+                                    minibatch_start + minibatch_size])
+        minibatch_start += minibatch_size
+
+    if minibatch_start != n:
+        # Make a minibatch out of what is left
+        minibatches.append(idx_list[minibatch_start:])
+
+    return list(enumerate(minibatches))
+
+
+########################################
+# Simple command line arguments parser #
+########################################
 
 def simple_parse_args(args):
     args_dict = {}
@@ -312,6 +385,24 @@ def simple_parse_args(args):
             the_dict[key] = eval(value)
 
     return args_dict, param_args_dict
+
+
+def process_before_train(param_config=ParamConfig):
+    import pprint
+
+    if '-h' in sys.argv or '--help' in sys.argv:
+        print('Usage: add properties just like this:\n'
+              '    add_label_prob=False\n'
+              '    %policy_save_freq=10\n'
+              '\n'
+              'properties starts with % are in Config, other properties are in ParamConfig.')
+
+    args_dict, param_args_dict = simple_parse_args(sys.argv)
+    Config.update(args_dict)
+    param_config.update(param_args_dict)
+
+    message('The configures and hyperparameters are:')
+    pprint.pprint(Config, stream=sys.stderr)
 
 
 def test():
