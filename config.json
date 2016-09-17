@@ -12,8 +12,9 @@
     "seed": 1234,
     "floatX": "float32",
 
+    "train_type": "deterministic",
+
     "parameters": {
-        "train_deterministic": false,
         "curriculum": false,
 
         "use_policy": true,

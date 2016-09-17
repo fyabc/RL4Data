@@ -32,7 +32,9 @@ class CNN(object):
 
     output_size = ParamConfig['cnn_output_size']
 
-    def __init__(self, n=ParamConfig['n']):
+    def __init__(self, n=None):
+        n = n or ParamConfig['n']
+
         self.train_batch_size = ParamConfig['train_batch_size']
         self.validate_batch_size = ParamConfig['validate_batch_size']
 
@@ -274,12 +276,13 @@ class CNN(object):
         self.learning_rate.set_value(floatX(self.learning_rate.get_value() * 0.1))
 
     @logging
-    def save_model(self, filename=Config['model_file']):
+    def save_model(self, filename=None):
+        filename = filename or Config['model_file']
         np.savez(filename, *get_all_param_values(self.network))
 
     @logging
-    def load_model(self, filename):
-        # load network weights from model file
+    def load_model(self, filename=None):
+        filename = filename or Config['model_file']
         with np.load(filename) as f:
             param_values = [f['arr_%d' % i] for i in range(len(f.files))]
         lasagne.layers.set_all_param_values(self.network, param_values)

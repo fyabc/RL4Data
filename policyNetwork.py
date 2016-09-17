@@ -189,12 +189,14 @@ class PolicyNetwork(object):
         )
 
     @logging
-    def save_policy(self, filename):
+    def save_policy(self, filename=None):
+        filename = filename or Config['policy_model_file']
         filename = filename.replace('.npz', '_{}.npz'.format(self.input_size))
         np.savez(filename, self.W.get_value(), self.b.get_value())
 
     @logging
-    def load_policy(self, filename):
+    def load_policy(self, filename=None):
+        filename = filename or Config['policy_model_file']
         filename = filename.replace('.npz', '_{}.npz'.format(self.input_size))
 
         with np.load(filename) as f:
