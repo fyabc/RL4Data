@@ -373,8 +373,8 @@ def simple_parse_args(args):
         arg = arg.replace('@', '"')
 
         if '=' in arg:
-            if arg[0] == '%':
-                arg = arg[1:]
+            if arg.startswith('G.'):
+                arg = arg[2:]
                 the_dict = args_dict
                 target_dict = Config
             else:
