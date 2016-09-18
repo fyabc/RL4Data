@@ -156,8 +156,6 @@ def train_cnn_deterministic():
     cnn = CNN()
     if ParamConfig['warm_start']:
         cnn.load_model()
-    else:
-        cnn.reset_all_parameters()
 
     # Train the network
     batch_size = ParamConfig['train_batch_size']
@@ -222,7 +220,7 @@ def train_cnn_deterministic():
 
 def train_cnn_stochastic():
     # Some configures
-    # curriculum = ParamConfig['curriculum']
+    random_drop = ParamConfig['random_drop']
 
     input_size = CNN.get_policy_input_size()
     print('Input size of policy network:', input_size)
@@ -248,8 +246,10 @@ def train_cnn_stochastic():
     cnn = CNN()
     if ParamConfig['warm_start']:
         cnn.load_model()
-    else:
-        cnn.reset_all_parameters()
+
+    # load random drop numbers
+    if random_drop:
+        random_drop_numbers = map(lambda l: int(l.strip()), list(open(ParamConfig['random_drop_number_file'], 'r')))
 
     # Train the network
     batch_size = ParamConfig['train_batch_size']
@@ -269,8 +269,12 @@ def train_cnn_stochastic():
                                          shuffle=True, augment=True):
             inputs, targets = batch
 
-            probability = cnn.get_policy_input(inputs, targets)
-            actions = policy.take_action(probability)
+            if random_drop:
+                actions = np.random.binomial(1, float(random_drop_numbers[epoch]) / x_train_small.shape[0],
+                                             targets.shape).astype(bool)
+            else:
+                probability = cnn.get_policy_input(inputs, targets)
+                actions = policy.take_action(probability)
 
             # get masked inputs and targets
             inputs = inputs[actions]

@@ -17,7 +17,10 @@ class IMDBModel(object):
         self.train_batch_size = IMDBConfig['train_batch_size']
         self.validate_batch_size = IMDBConfig['validate_batch_size']
 
+        # Some Theano functions (predictions and updates)
         self.predict_function = None
+        self.f_grad_shared = None
+        self.f_update = None
 
         # Parameters of the model (Theano shared variables)
         self.parameters = None
@@ -73,12 +76,32 @@ class IMDBModel(object):
         if save_freq == -1:
             save_freq = train_size // self.train_batch_size
 
-        uidx = 0  # the number of update done
+        update_index = 0  # the number of update done
         estop = False  # early stop
         start_time = time.time()
 
+        epoch = 0
         try:
             for epoch in range(IMDBConfig['max_epochs']):
+                n_samples = 0
+
+                # Get new shuffled index for the training set.
+                kf = get_minibatches_idx(train_size, self.train_batch_size, shuffle=True)
+
+                for _, train_index in kf:
+                    update_index += 1
+
+                    # Select the random examples for this minibatch
+                    x = [train_x[t]for t in train_index]
+                    y = [train_y[t] for t in train_index]
+
+                    # Get the data in numpy.ndarray format
+                    # This swap the axis!
+                    # Return something of shape (minibatch maxlen, n samples)
+                    x, mask, y = prepare_data(x, y)
+                    n_samples += x.shape[1]
+
+                    # TODO
                 pass
         except KeyboardInterrupt:
             print('Training interrupted')

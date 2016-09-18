@@ -16,6 +16,8 @@
 
     "parameters": {
         "curriculum": false,
+        "random_drop": false,
+        "random_drop_number_file": "drop_num.txt",
 
         "use_policy": true,
         "train_epoch_size": 100000,
