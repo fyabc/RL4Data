@@ -167,7 +167,7 @@ def prepare_imdb_data(seqs, labels, maxlen=None):
     return x, x_mask, labels
 
 
-def _p(pp, name):
+def pr(pp, name):
     return '%s_%s' % (pp, name)
 
 
