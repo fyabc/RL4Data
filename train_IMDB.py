@@ -2,13 +2,19 @@
 
 from __future__ import print_function, unicode_literals
 
+import numpy as np
+
+from config import IMDBConfig
 from IMDB import IMDBModel
-from utils import *
+from utils import process_before_train
+from utils_IMDB import load_imdb_data, preprocess_imdb_data
 
 __author__ = 'fyabc'
 
 
 def train_IMDB():
+    np.random.seed(IMDBConfig['seed'])
+
     # Loading data
     train_data, valid_data, test_data = load_imdb_data()
     train_data, valid_data, test_data = preprocess_imdb_data(train_data, valid_data, test_data)

@@ -17,13 +17,16 @@
     "parameters": {
         "curriculum": false,
         "random_drop": false,
-        "random_drop_number_file": "drop_num.txt",
+        "random_drop_number_file": "./data/drop_num.txt",
+
+        "immediate_reward": false,
+        "immediate_reward_sample_size": 1000,
 
         "use_policy": true,
         "train_epoch_size": 100000,
         "epoch_per_episode": 1,
 
-        "warm_start": true,
+        "warm_start": false,
         "add_label_input": true,
         "add_label": true,
         "use_first_layer_output": false,
@@ -53,6 +56,8 @@
     },
 
     "imdb": {
+        "seed": 123,
+
         "dataset": "imdb",
         "data_dir": "./data/imdb/imdb.pkl",
 

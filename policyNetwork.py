@@ -67,6 +67,7 @@ class PolicyNetwork(object):
         # replay buffers
         self.input_buffer = []
         self.action_buffer = []
+        self.reward_buffer = []
 
         # build cost and update functions
         self.reward_baseline = 0.
@@ -114,22 +115,36 @@ class PolicyNetwork(object):
 
             self.input_buffer.append(input_)
             self.action_buffer.append(action)
+
         return actions
 
     def discount_learning_rate(self, discount=ParamConfig['policy_learning_rate_discount']):
         self.learning_rate.set_value(self.learning_rate.get_value() * floatX(discount))
         message('New learning rate:', self.learning_rate.get_value())
 
-    @logging
-    def update(self, reward):
-        # TODO preprocess of reward
+    def set_immediate_reward(self, immediate_reward):
+        self.reward_buffer.append(immediate_reward)
 
-        # get discounted rewards
+    def get_discounted_rewards(self, final_reward):
         discounted_rewards = np.zeros_like(self.action_buffer, dtype=fX)
-        temp = reward - self.reward_baseline
-        for i in reversed(xrange(discounted_rewards.size)):
-            discounted_rewards[i] = temp
-            temp *= self.gamma
+        if ParamConfig['immediate_reward']:
+            batch_size = ParamConfig['train_batch_size']
+            for i, i_reward in enumerate(self.reward_buffer):
+                discounted_rewards[i * batch_size: (i + 1) * batch_size] = floatX(i_reward)
+
+            discounted_rewards -= np.mean(discounted_rewards)
+            discounted_rewards /= np.std(discounted_rewards)
+        else:
+            temp = final_reward - self.reward_baseline
+            for i in reversed(xrange(discounted_rewards.size)):
+                discounted_rewards[i] = temp
+                temp *= self.gamma
+
+        return discounted_rewards
+
+    @logging
+    def update(self, final_reward):
+        discounted_rewards = self.get_discounted_rewards(final_reward)
 
         cost = self.f_grad_shared(self.input_buffer, self.action_buffer, discounted_rewards)
         self.f_update(self.learning_rate.get_value())
@@ -137,8 +152,10 @@ class PolicyNetwork(object):
         # clear buffers
         self.input_buffer = []
         self.action_buffer = []
+        self.reward_buffer = []
 
-        self.update_rb(reward)
+        if ParamConfig['immediate_reward']:
+            self.update_rb(final_reward)
 
         message('Cost: {}\n'
                 'New parameters:\n'
@@ -146,47 +163,6 @@ class PolicyNetwork(object):
                 '$    b = {}\n'
                 'New reward baseline: {}'
                 .format(cost, self.W.get_value(), self.b.get_value(), self.reward_baseline))
-
-    def update_and_validate(self, reward, validate_probability):
-        # TODO preprocess of reward
-
-        # get discounted rewards
-        discounted_rewards = np.zeros_like(self.action_buffer, dtype=fX)
-        temp = reward - self.reward_baseline
-        for i in reversed(xrange(discounted_rewards.size)):
-            discounted_rewards[i] = temp
-            temp *= self.gamma
-
-        cost = self.f_grad_shared(self.input_buffer, self.action_buffer, discounted_rewards)
-        self.f_update(self.learning_rate.get_value())
-
-        # get validation cost
-        validate_actions = self.take_action(validate_probability)
-        validate_cost = self.f_grad_shared(validate_probability, validate_actions,
-                                           [floatX(temp)] * validate_actions.shape[0])
-
-        # clear buffers
-        self.input_buffer = []
-        self.action_buffer = []
-
-        self.update_rb(reward)
-
-        message(
-            'Cost: {}\n'
-            'Raw Cost: {}\n'
-            'Validation Cost: {}\n'
-            'Raw Validation Cost: {}\n'
-            'New parameters:\n'
-            '$    w = {}\n'
-            '$    b = {}\n'
-            'New reward baseline: {}'
-            .format(
-                cost, cost / temp,
-                validate_cost, validate_cost / temp,
-                self.W.get_value(), self.b.get_value(),
-                self.reward_baseline
-            )
-        )
 
     @logging
     def save_policy(self, filename=None):

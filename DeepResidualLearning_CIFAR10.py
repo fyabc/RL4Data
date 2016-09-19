@@ -329,7 +329,7 @@ class CNN(object):
         if ParamConfig['add_label_input']:
             label_inputs = np.zeros(shape=(batch_size, 1), dtype=fX)
             for i in range(batch_size):
-                assert probability[i, targets[i]] > 0, 'Probability <= 0!!!'
+                # assert probability[i, targets[i]] > 0, 'Probability <= 0!!!'
                 label_inputs[i, 0] = np.log(max(probability[i, targets[i]], 0.000000001))
             probability = np.hstack([probability, label_inputs])
 
