@@ -119,6 +119,8 @@ def train_policy():
             total_accepted_cases = 0
             distribution = np.zeros((10,), dtype='int32')
 
+            policy.start_new_epoch()
+
             train_err = 0
             train_batches = 0
             start_time = time.time()
@@ -141,7 +143,7 @@ def train_policy():
                             x_validate, y_validate, ParamConfig['immediate_reward_sample_size'])
                     _, validate_acc, validate_batches = cnn.validate_or_test(x_validate_small, y_validate_small)
                     validate_acc /= validate_batches
-                    policy.set_immediate_reward(validate_acc)
+                    policy.reward_buffer[-1].append(validate_acc)
 
                 # print label distributions
                 if ParamConfig['print_label_distribution']:

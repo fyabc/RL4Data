@@ -65,6 +65,9 @@ class PolicyNetwork(object):
         )
 
         # replay buffers
+        # action_buffer is a list of {a list of actions per minibatch} per epoch
+        # input_buffer is like action_buffer
+        # reward_buffer is like action_buffer
         self.input_buffer = []
         self.action_buffer = []
         self.reward_buffer = []
@@ -113,8 +116,8 @@ class PolicyNetwork(object):
             action = bool(action)
             actions[i] = action
 
-            self.input_buffer.append(input_)
-            self.action_buffer.append(action)
+        self.input_buffer[-1].append(inputs)
+        self.action_buffer[-1].append(actions)
 
         return actions
 
@@ -122,35 +125,54 @@ class PolicyNetwork(object):
         self.learning_rate.set_value(self.learning_rate.get_value() * floatX(discount))
         message('New learning rate:', self.learning_rate.get_value())
 
-    def set_immediate_reward(self, immediate_reward):
-        self.reward_buffer.append(immediate_reward)
-
     def get_discounted_rewards(self, final_reward):
-        discounted_rewards = np.zeros_like(self.action_buffer, dtype=fX)
-        if ParamConfig['immediate_reward']:
-            batch_size = ParamConfig['train_batch_size']
-            for i, i_reward in reversed(list(enumerate(self.reward_buffer))):
-                discounted_rewards[i * batch_size: (i + 1) * batch_size] = floatX(i_reward)
-                # TODO add gamma-discounted reward
-        else:
-            temp = final_reward - self.reward_baseline
-            for i in reversed(xrange(discounted_rewards.size)):
-                discounted_rewards[i] = temp
-                # temp *= self.gamma
+        # Shape of input buffer / action buffer is (epoch_num, batch_num)
+
+        # get discounted reward
+        discounted_rewards = [None] * len(self.action_buffer)
+
+        for epoch_num, epoch_rewards in enumerate(self.reward_buffer):
+            discounted_rewards[epoch_num] = np.zeros_like(epoch_rewards, dtype=fX)
+            temp_epoch = 0
+            for batch_num, batch_reward in reversed(list(enumerate(epoch_rewards))):
+                temp_epoch = temp_epoch * self.gamma + batch_reward
+                discounted_rewards[epoch_num][batch_num] = temp_epoch
+            discounted_rewards[epoch_num] /= len(epoch_rewards)
 
         return discounted_rewards
 
-    @logging
-    def update(self, final_reward):
-        discounted_rewards = self.get_discounted_rewards(final_reward)
+    def start_new_epoch(self):
+        self.input_buffer.append([])
+        self.action_buffer.append([])
+        self.reward_buffer.append([])
 
-        cost = self.f_grad_shared(self.input_buffer, self.action_buffer, discounted_rewards)
-        self.f_update(self.learning_rate.get_value())
-
-        # clear buffers
+    def clear_buffer(self):
         self.input_buffer = []
         self.action_buffer = []
         self.reward_buffer = []
+
+    @logging
+    def update(self, final_reward):
+        cost = 0.
+
+        if ParamConfig['immediate_reward']:
+            discounted_rewards = self.get_discounted_rewards(final_reward)
+
+            for epoch_inputs, epoch_actions, epoch_rewards in \
+                    zip(self.input_buffer, self.action_buffer, discounted_rewards):
+                for batch_inputs, batch_actions, batch_rewards in zip(epoch_inputs, epoch_actions, epoch_rewards):
+                    cost += self.f_grad_shared(batch_inputs, batch_actions, batch_rewards)
+                    self.f_update(self.learning_rate.get_value())
+        else:
+            temp = final_reward - self.reward_baseline
+            for epoch_inputs, epoch_actions in zip(self.input_buffer, self.action_buffer):
+                for batch_inputs, batch_actions in zip(epoch_inputs, epoch_actions):
+                    cost += self.f_grad_shared(batch_inputs, batch_actions,
+                                               np.full(batch_actions.shape, temp, dtype=fX))
+                    self.f_update(self.learning_rate.get_value())
+
+        # clear buffers
+        self.clear_buffer()
 
         if not ParamConfig['immediate_reward']:
             self.update_rb(final_reward)
