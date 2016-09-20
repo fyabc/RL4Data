@@ -151,7 +151,7 @@ class PolicyNetwork(object):
         self.action_buffer = []
         self.reward_buffer = []
 
-        if ParamConfig['immediate_reward']:
+        if not ParamConfig['immediate_reward']:
             self.update_rb(final_reward)
 
         message('Cost: {}\n'
