@@ -7,7 +7,7 @@ import theano
 import theano.tensor as T
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
-from config import Config, ParamConfig
+from config import Config, CifarConfig
 from utils import fX, floatX, init_norm, logging, message
 from optimizers import adadelta, adam, sgd, rmsprop
 
@@ -27,11 +27,11 @@ class PolicyNetwork(object):
 
     @logging
     def __init__(self,
-                 input_size=ParamConfig['cnn_output_size'],
-                 optimizer=ParamConfig['policy_optimizer'],
-                 learning_rate=ParamConfig['policy_learning_rate'],
-                 gamma=ParamConfig['gamma'],
-                 rb_update_rate=ParamConfig['reward_baseline_update_rate']
+                 input_size=CifarConfig['cnn_output_size'],
+                 optimizer=CifarConfig['policy_optimizer'],
+                 learning_rate=CifarConfig['policy_learning_rate'],
+                 gamma=CifarConfig['gamma'],
+                 rb_update_rate=CifarConfig['reward_baseline_update_rate']
                  ):
 
         theano.config.exception_verbosity = 'high'
@@ -121,7 +121,7 @@ class PolicyNetwork(object):
 
         return actions
 
-    def discount_learning_rate(self, discount=ParamConfig['policy_learning_rate_discount']):
+    def discount_learning_rate(self, discount=CifarConfig['policy_learning_rate_discount']):
         self.learning_rate.set_value(self.learning_rate.get_value() * floatX(discount))
         message('New learning rate:', self.learning_rate.get_value())
 
@@ -155,7 +155,7 @@ class PolicyNetwork(object):
     def update(self, final_reward):
         cost = 0.
 
-        if ParamConfig['immediate_reward']:
+        if CifarConfig['immediate_reward']:
             discounted_rewards = self.get_discounted_rewards(final_reward)
 
             for epoch_inputs, epoch_actions, epoch_rewards in \
@@ -174,7 +174,7 @@ class PolicyNetwork(object):
         # clear buffers
         self.clear_buffer()
 
-        if not ParamConfig['immediate_reward']:
+        if not CifarConfig['immediate_reward']:
             self.update_rb(final_reward)
 
         message('Cost: {}\n'
@@ -206,7 +206,7 @@ class PolicyNetwork(object):
 def test():
     pn = PolicyNetwork()
 
-    input_data = np.ones(shape=(4, ParamConfig['cnn_output_size']), dtype=fX)
+    input_data = np.ones(shape=(4, CifarConfig['cnn_output_size']), dtype=fX)
 
     print(pn.take_action(input_data))
 

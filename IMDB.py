@@ -241,8 +241,16 @@ class IMDBModel(object):
             result[key] = self.parameters[key].get_value()
         return result
 
+    @staticmethod
+    def get_policy_input_size():
+        input_size = 2
+
+        return input_size
+
     def get_policy_input(self, x, mask, y):
         probabilities = self.f_predict_prob(x, mask)
+
+        # TODO add more policy input features
 
         return probabilities
 

@@ -6,7 +6,7 @@ import sys
 
 import numpy as np
 
-from config import Config, ParamConfig
+from config import Config, CifarConfig, PolicyConfig
 from utils import *
 from DeepResidualLearning_CIFAR10 import CNN
 from policyNetwork import PolicyNetwork
@@ -16,14 +16,14 @@ __author__ = 'fyabc'
 
 def train_raw():
     # Some configures
-    epoch_per_episode = ParamConfig['epoch_per_episode']
+    epoch_per_episode = CifarConfig['epoch_per_episode']
 
     # Create neural network model
     cnn = CNN()
 
     # Load the dataset
     x_train, y_train, x_validate, y_validate, x_test, y_test = split_cifar10_data(load_cifar10_data())
-    train_small_size = ParamConfig['train_epoch_size']
+    train_small_size = CifarConfig['train_epoch_size']
     x_train_small, y_train_small = get_small_train_data(x_train, y_train, train_small_size)
 
     message('Training data size:', y_train_small.shape[0])
@@ -31,9 +31,9 @@ def train_raw():
     message('Test data size:', y_test.shape[0])
 
     # Train the network
-    batch_size = ParamConfig['train_batch_size']
+    batch_size = CifarConfig['train_batch_size']
 
-    if ParamConfig['warm_start']:
+    if CifarConfig['warm_start']:
         cnn.load_model(Config['model_file'])
     else:
         cnn.reset_all_parameters()
@@ -75,12 +75,12 @@ def train_raw():
 
 def train_policy():
     # Some configures
-    num_episodes = ParamConfig['num_epochs']
+    num_episodes = CifarConfig['num_epochs']
 
     input_size = CNN.get_policy_input_size()
     print('Input size of policy network:', input_size)
 
-    epoch_per_episode = ParamConfig['epoch_per_episode']
+    epoch_per_episode = CifarConfig['epoch_per_episode']
 
     # Create the policy network
     policy = PolicyNetwork(input_size=input_size)
@@ -90,7 +90,7 @@ def train_policy():
 
     # Load the dataset
     x_train, y_train, x_validate, y_validate, x_test, y_test = split_cifar10_data(load_cifar10_data())
-    train_small_size = ParamConfig['train_epoch_size']
+    train_small_size = CifarConfig['train_epoch_size']
     x_train_small, y_train_small = get_small_train_data(x_train, y_train, train_small_size)
 
     message('Training data size:', y_train_small.shape[0])
@@ -98,13 +98,13 @@ def train_policy():
     message('Test data size:', y_test.shape[0])
 
     # Train the network
-    batch_size = ParamConfig['train_batch_size']
+    batch_size = CifarConfig['train_batch_size']
 
     for episode in range(1, num_episodes + 1):
         print('[Episode {}]'.format(episode))
         message('[Episode {}]'.format(episode))
 
-        if ParamConfig['warm_start']:
+        if CifarConfig['warm_start']:
             cnn.load_model(Config['model_file'])
         else:
             cnn.reset_all_parameters()
@@ -138,15 +138,15 @@ def train_policy():
                 total_accepted_cases += len(inputs)
 
                 # add immediate reward
-                if ParamConfig['immediate_reward']:
+                if CifarConfig['immediate_reward']:
                     x_validate_small, y_validate_small = get_small_train_data(
-                            x_validate, y_validate, ParamConfig['immediate_reward_sample_size'])
+                            x_validate, y_validate, CifarConfig['immediate_reward_sample_size'])
                     _, validate_acc, validate_batches = cnn.validate_or_test(x_validate_small, y_validate_small)
                     validate_acc /= validate_batches
                     policy.reward_buffer[-1].append(validate_acc)
 
                 # print label distributions
-                if ParamConfig['print_label_distribution']:
+                if CifarConfig['print_label_distribution']:
                     for target in targets:
                         distribution[target] += 1
 
@@ -177,18 +177,18 @@ def train_policy():
         if Config['policy_save_freq'] > 0 and episode % Config['policy_save_freq'] == 0:
             policy.save_policy()
 
-        if episode % ParamConfig['policy_learning_rate_discount_freq'] == 0:
+        if episode % CifarConfig['policy_learning_rate_discount_freq'] == 0:
             policy.discount_learning_rate()
 
 
 def train_cnn_deterministic():
     # Some configures
-    curriculum = ParamConfig['curriculum']
+    curriculum = CifarConfig['curriculum']
 
     input_size = CNN.get_policy_input_size()
     print('Input size of policy network:', input_size)
 
-    epoch_per_episode = ParamConfig['epoch_per_episode']
+    epoch_per_episode = CifarConfig['epoch_per_episode']
 
     # Load the dataset and get small training data
     x_train, y_train, x_validate, y_validate, x_test, y_test = split_cifar10_data(load_cifar10_data())
@@ -206,11 +206,11 @@ def train_cnn_deterministic():
             .format(policy.W.get_value(), policy.b.get_value()))
 
     cnn = CNN()
-    if ParamConfig['warm_start']:
+    if CifarConfig['warm_start']:
         cnn.load_model()
 
     # Train the network
-    batch_size = ParamConfig['train_batch_size']
+    batch_size = CifarConfig['train_batch_size']
 
     for epoch in range(epoch_per_episode):
         print('[Epoch {}]'.format(epoch))
@@ -272,18 +272,18 @@ def train_cnn_deterministic():
 
 def train_cnn_stochastic():
     # Some configures
-    random_drop = ParamConfig['random_drop']
+    random_drop = CifarConfig['random_drop']
 
     input_size = CNN.get_policy_input_size()
     print('Input size of policy network:', input_size)
 
-    epoch_per_episode = ParamConfig['epoch_per_episode']
+    epoch_per_episode = CifarConfig['epoch_per_episode']
 
     # Load the dataset and get small training data
     data = load_cifar10_data()
     x_train, y_train, x_validate, y_validate, x_test, y_test = split_cifar10_data(data)
 
-    train_small_size = ParamConfig['train_epoch_size']
+    train_small_size = CifarConfig['train_epoch_size']
     x_train_small, y_train_small = get_small_train_data(x_train, y_train)
 
     message('Training data size:', y_train_small.shape[0])
@@ -298,15 +298,15 @@ def train_cnn_stochastic():
             .format(policy.W.get_value(), policy.b.get_value()))
 
     cnn = CNN()
-    if ParamConfig['warm_start']:
+    if CifarConfig['warm_start']:
         cnn.load_model()
 
     # load random drop numbers
     if random_drop:
-        random_drop_numbers = map(lambda l: int(l.strip()), list(open(ParamConfig['random_drop_number_file'], 'r')))
+        random_drop_numbers = map(lambda l: int(l.strip()), list(open(CifarConfig['random_drop_number_file'], 'r')))
 
     # Train the network
-    batch_size = ParamConfig['train_batch_size']
+    batch_size = CifarConfig['train_batch_size']
 
     for epoch in range(epoch_per_episode):
         print('[Epoch {}]'.format(epoch))
@@ -355,7 +355,7 @@ def train_cnn_stochastic():
 
 
 if __name__ == '__main__':
-    process_before_train(ParamConfig)
+    process_before_train(CifarConfig)
 
     if Config['train_type'] == 'raw':
         train_raw()

@@ -21,7 +21,7 @@ from lasagne.nonlinearities import softmax, rectify
 from lasagne.layers import batch_norm
 from lasagne.layers.helper import get_all_param_values, set_all_param_values
 
-from config import Config, ParamConfig
+from config import Config, CifarConfig
 from utils import logging, iterate_minibatches, fX, floatX, shuffle_data
 
 
@@ -30,15 +30,15 @@ class CNN(object):
     The neural network model.
     """
 
-    output_size = ParamConfig['cnn_output_size']
+    output_size = CifarConfig['cnn_output_size']
 
     def __init__(self, n=None):
-        n = n or ParamConfig['n']
+        n = n or CifarConfig['n']
 
-        self.train_batch_size = ParamConfig['train_batch_size']
-        self.validate_batch_size = ParamConfig['validate_batch_size']
+        self.train_batch_size = CifarConfig['train_batch_size']
+        self.validate_batch_size = CifarConfig['validate_batch_size']
 
-        self.learning_rate = theano.shared(lasagne.utils.floatX(ParamConfig['init_learning_rate']))
+        self.learning_rate = theano.shared(lasagne.utils.floatX(CifarConfig['init_learning_rate']))
 
         # Prepare Theano variables for inputs and targets
         self.input_var = T.tensor4('inputs')
@@ -59,7 +59,7 @@ class CNN(object):
         self.build_validate_function()
 
     @logging
-    def build_cnn(self, input_var=None, n=ParamConfig['n']):
+    def build_cnn(self, input_var=None, n=CifarConfig['n']):
         # create a residual learning building block with two stacked 3x3 conv-layers as in paper
         def residual_block(layer_, increase_dim=False, projection=False):
             input_num_filters = layer_.output_shape[1]
@@ -151,14 +151,14 @@ class CNN(object):
         # add weight decay
         all_layers = lasagne.layers.get_all_layers(self.network)
         l2_penalty = lasagne.regularization.regularize_layer_params(all_layers, lasagne.regularization.l2) * \
-            ParamConfig['l2_penalty_factor']
+                     CifarConfig['l2_penalty_factor']
         loss += l2_penalty
 
         # Create update expressions for training
         # Stochastic Gradient Descent (SGD) with momentum
         params = lasagne.layers.get_all_params(self.network, trainable=True)
         updates = lasagne.updates.momentum(
-                loss, params, learning_rate=self.learning_rate, momentum=ParamConfig['momentum'])
+                loss, params, learning_rate=self.learning_rate, momentum=CifarConfig['momentum'])
 
         # Compile a function performing a training step on a mini-batch (by giving
         # the updates dictionary) and returning the corresponding training loss:
@@ -176,7 +176,7 @@ class CNN(object):
 
         alpha_loss += l2_penalty
         updates = lasagne.updates.momentum(
-                alpha_loss, params, learning_rate=self.learning_rate, momentum=ParamConfig['momentum'])
+                alpha_loss, params, learning_rate=self.learning_rate, momentum=CifarConfig['momentum'])
 
         self.alpha_train_function = theano.function(
                 [self.input_var, self.target_var, alpha], alpha_loss, updates=updates)
@@ -228,7 +228,7 @@ class CNN(object):
             # Adjust learning rate as in paper
             # 32k and 48k iterations should be roughly equivalent to 41 and 61 epochs
             if (epoch + 1) == 41 or (epoch + 1) == 61:
-                new_lr = self.learning_rate.get_value() * ParamConfig['learning_rate_discount']
+                new_lr = self.learning_rate.get_value() * CifarConfig['learning_rate_discount']
                 print("New LR:" + str(new_lr))
                 self.learning_rate.set_value(lasagne.utils.floatX(new_lr))
 
@@ -269,7 +269,7 @@ class CNN(object):
 
     @logging
     def reset_learning_rate(self):
-        self.learning_rate.set_value(lasagne.utils.floatX(ParamConfig['init_learning_rate']))
+        self.learning_rate.set_value(lasagne.utils.floatX(CifarConfig['init_learning_rate']))
 
     @logging
     def save_model(self, filename=None):
@@ -307,17 +307,17 @@ class CNN(object):
 
     @staticmethod
     def get_policy_input_size():
-        input_size = ParamConfig['cnn_output_size']
-        if ParamConfig['add_label_input']:
+        input_size = CifarConfig['cnn_output_size']
+        if CifarConfig['add_label_input']:
             input_size += 1
-        if ParamConfig['add_label']:
+        if CifarConfig['add_label']:
             # input_size += 1
-            input_size += ParamConfig['cnn_output_size']
-        if ParamConfig['use_first_layer_output']:
+            input_size += CifarConfig['cnn_output_size']
+        if CifarConfig['use_first_layer_output']:
             input_size += 16 * 32 * 32
-        if ParamConfig['add_epoch_number']:
+        if CifarConfig['add_epoch_number']:
             input_size += 1
-        if ParamConfig['add_learning_rate']:
+        if CifarConfig['add_learning_rate']:
             input_size += 1
         return input_size
 
@@ -327,14 +327,14 @@ class CNN(object):
         probability = self.probs_function(inputs)
         first_layer_output = self.first_layer_output_function(inputs)
 
-        if ParamConfig['add_label_input']:
+        if CifarConfig['add_label_input']:
             label_inputs = np.zeros(shape=(batch_size, 1), dtype=fX)
             for i in range(batch_size):
                 # assert probability[i, targets[i]] > 0, 'Probability <= 0!!!'
                 label_inputs[i, 0] = np.log(max(probability[i, targets[i]], 1e-9))
             probability = np.hstack([probability, label_inputs])
 
-        if ParamConfig['add_label']:
+        if CifarConfig['add_label']:
             # labels = floatX(targets) * (1.0 / ParamConfig['cnn_output_size'])
             # probability = np.hstack([probability, labels[:, None]])
 
@@ -344,16 +344,16 @@ class CNN(object):
 
             probability = np.hstack([probability, labels])
 
-        if ParamConfig['use_first_layer_output']:
+        if CifarConfig['use_first_layer_output']:
             shape_first = np.product(first_layer_output.shape[1:])
             first_layer_output = first_layer_output.reshape((batch_size, shape_first))
             probability = np.hstack([probability, first_layer_output])
 
-        if ParamConfig['add_epoch_number']:
-            epoch_number_inputs = np.full((batch_size, 1), floatX(epoch) / ParamConfig['epoch_per_episode'], dtype=fX)
+        if CifarConfig['add_epoch_number']:
+            epoch_number_inputs = np.full((batch_size, 1), floatX(epoch) / CifarConfig['epoch_per_episode'], dtype=fX)
             probability = np.hstack([probability, epoch_number_inputs])
 
-        if ParamConfig['add_learning_rate']:
+        if CifarConfig['add_learning_rate']:
             learning_rate_inputs = np.full((batch_size, 1), self.learning_rate.get_value(), dtype=fX)
             probability = np.hstack([probability, learning_rate_inputs])
 

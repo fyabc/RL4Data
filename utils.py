@@ -11,7 +11,7 @@ import cPickle as pkl
 import numpy as np
 # from theano import config
 
-from config import Config, ParamConfig, IMDBConfig
+from config import Config, CifarConfig, PolicyConfig
 
 __author__ = 'fyabc'
 
@@ -130,7 +130,7 @@ def split_cifar10_data(data):
 
 
 def get_small_train_data(x_train, y_train, train_small_size=None):
-    train_small_size = train_small_size or ParamConfig['train_epoch_size']
+    train_small_size = train_small_size or CifarConfig['train_epoch_size']
 
     train_size = x_train.shape[0]
 
@@ -182,7 +182,7 @@ def iterate_minibatches(inputs, targets, batch_size, shuffle=False, augment=Fals
 # Simple command line arguments parser #
 ########################################
 
-def simple_parse_args(args):
+def simple_parse_args(args, param_config=CifarConfig):
     args_dict = {}
     param_args_dict = {}
 
@@ -194,9 +194,13 @@ def simple_parse_args(args):
                 arg = arg[2:]
                 the_dict = args_dict
                 target_dict = Config
+            elif arg.startswith('P.'):
+                arg = arg[2:]
+                the_dict = args_dict
+                target_dict = PolicyConfig
             else:
                 the_dict = param_args_dict
-                target_dict = ParamConfig
+                target_dict = param_config
             key, value = arg.split('=')
             if key not in target_dict:
                 raise Exception('The key {} is not in the parameters.'.format(key))
@@ -206,7 +210,7 @@ def simple_parse_args(args):
     return args_dict, param_args_dict
 
 
-def process_before_train(param_config=ParamConfig):
+def process_before_train(param_config=CifarConfig):
     import pprint
 
     if '-h' in sys.argv or '--help' in sys.argv:
@@ -216,7 +220,7 @@ def process_before_train(param_config=ParamConfig):
               '\n'
               'properties starts with % are in Config, other properties are in ParamConfig.')
 
-    args_dict, param_args_dict = simple_parse_args(sys.argv)
+    args_dict, param_args_dict = simple_parse_args(sys.argv, param_config)
     Config.update(args_dict)
     param_config.update(param_args_dict)
 
