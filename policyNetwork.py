@@ -129,13 +129,14 @@ class PolicyNetwork(object):
         discounted_rewards = np.zeros_like(self.action_buffer, dtype=fX)
         if ParamConfig['immediate_reward']:
             batch_size = ParamConfig['train_batch_size']
-            for i, i_reward in enumerate(self.reward_buffer):
+            for i, i_reward in reversed(list(enumerate(self.reward_buffer))):
                 discounted_rewards[i * batch_size: (i + 1) * batch_size] = floatX(i_reward)
+                # TODO add gamma-discounted reward
         else:
             temp = final_reward - self.reward_baseline
             for i in reversed(xrange(discounted_rewards.size)):
                 discounted_rewards[i] = temp
-                temp *= self.gamma
+                # temp *= self.gamma
 
         return discounted_rewards
 
