@@ -241,6 +241,11 @@ class IMDBModel(object):
             result[key] = self.parameters[key].get_value()
         return result
 
+    def get_policy_input(self, x, mask, y):
+        probabilities = self.f_predict_prob(x, mask)
+
+        return probabilities
+
 
 def test():
     IMDBConfig['ydim'] = 2

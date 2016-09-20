@@ -30,6 +30,8 @@
         "add_label_input": true,
         "add_label": true,
         "use_first_layer_output": false,
+        "add_epoch_number": false,
+        "add_learning_rate": false,
 
         "init_learning_rate": 0.1,
         "learning_rate_discount": 0.1,

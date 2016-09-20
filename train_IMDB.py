@@ -16,7 +16,7 @@ from policyNetwork import PolicyNetwork
 __author__ = 'fyabc'
 
 
-def train_IMDB():
+def train_policy_IMDB():
     np.random.seed(IMDBConfig['seed'])
 
     # Loading data
@@ -66,6 +66,8 @@ def train_IMDB():
     start_time = time.time()
 
     epoch = 0
+    history_train_costs = []
+
     try:
         for epoch in range(IMDBConfig['max_epochs']):
             n_samples = 0
@@ -96,6 +98,8 @@ def train_IMDB():
 
                 cost = imdb.f_grad_shared(x, mask, y)
                 imdb.f_update(imdb.learning_rate)
+
+                history_train_costs.append(cost)
 
                 if np.isnan(cost) or np.isinf(cost):
                     print('bad cost detected: ', cost)
@@ -167,4 +171,4 @@ def train_IMDB():
 if __name__ == '__main__':
     process_before_train(IMDBConfig)
 
-    train_IMDB()
+    train_policy_IMDB()

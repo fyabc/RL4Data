@@ -131,9 +131,6 @@ class PolicyNetwork(object):
             batch_size = ParamConfig['train_batch_size']
             for i, i_reward in enumerate(self.reward_buffer):
                 discounted_rewards[i * batch_size: (i + 1) * batch_size] = floatX(i_reward)
-
-            discounted_rewards -= np.mean(discounted_rewards)
-            discounted_rewards /= np.std(discounted_rewards)
         else:
             temp = final_reward - self.reward_baseline
             for i in reversed(xrange(discounted_rewards.size)):

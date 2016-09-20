@@ -22,7 +22,7 @@ from lasagne.layers import batch_norm
 from lasagne.layers.helper import get_all_param_values, set_all_param_values
 
 from config import Config, ParamConfig
-from utils import logging, iterate_minibatches, fX, floatX
+from utils import logging, iterate_minibatches, fX, floatX, shuffle_data
 
 
 class CNN(object):
@@ -196,14 +196,6 @@ class CNN(object):
         # Compile a second function computing the validation loss and accuracy:
         self.validate_function = theano.function([self.input_var, self.target_var], [test_loss, test_acc])
 
-    def sample_data(self, x_train, y_train):
-        pass
-
-    @logging
-    def shuffle_data(self, x_train, y_train):
-        np.random.shuffle(x_train)
-        np.random.shuffle(y_train)
-
     @logging
     def train(self, x_train, y_train, x_test, y_test, num_epochs):
         if self.train_function is None:
@@ -216,7 +208,7 @@ class CNN(object):
             print('Epoch {} of {}:'.format(epoch, num_epochs))
 
             # shuffle training data
-            self.shuffle_data(x_train, y_train)
+            x_train, y_train = shuffle_data(x_train, y_train)
 
             start_time = time.time()
 
@@ -276,6 +268,10 @@ class CNN(object):
         self.learning_rate.set_value(floatX(self.learning_rate.get_value() * 0.1))
 
     @logging
+    def reset_learning_rate(self):
+        self.learning_rate.set_value(lasagne.utils.floatX(ParamConfig['init_learning_rate']))
+
+    @logging
     def save_model(self, filename=None):
         filename = filename or Config['model_file']
         np.savez(filename, *get_all_param_values(self.network))
@@ -295,6 +291,7 @@ class CNN(object):
         print("$  test accuracy:\t\t{:.2f} %".format(
                 test_acc / test_batches * 100))
 
+    @logging
     def validate_or_test(self, x_test, y_test):
         # Calculate validation error of model:
         test_err = 0
@@ -318,9 +315,13 @@ class CNN(object):
             input_size += ParamConfig['cnn_output_size']
         if ParamConfig['use_first_layer_output']:
             input_size += 16 * 32 * 32
+        if ParamConfig['add_epoch_number']:
+            input_size += 1
+        if ParamConfig['add_learning_rate']:
+            input_size += 1
         return input_size
 
-    def get_policy_input(self, inputs, targets):
+    def get_policy_input(self, inputs, targets, epoch):
         batch_size = targets.shape[0]
 
         probability = self.probs_function(inputs)
@@ -330,7 +331,7 @@ class CNN(object):
             label_inputs = np.zeros(shape=(batch_size, 1), dtype=fX)
             for i in range(batch_size):
                 # assert probability[i, targets[i]] > 0, 'Probability <= 0!!!'
-                label_inputs[i, 0] = np.log(max(probability[i, targets[i]], 0.000000001))
+                label_inputs[i, 0] = np.log(max(probability[i, targets[i]], 1e-9))
             probability = np.hstack([probability, label_inputs])
 
         if ParamConfig['add_label']:
@@ -347,6 +348,14 @@ class CNN(object):
             shape_first = np.product(first_layer_output.shape[1:])
             first_layer_output = first_layer_output.reshape((batch_size, shape_first))
             probability = np.hstack([probability, first_layer_output])
+
+        if ParamConfig['add_epoch_number']:
+            epoch_number_inputs = np.full((batch_size, 1), floatX(epoch) / ParamConfig['epoch_per_episode'], dtype=fX)
+            probability = np.hstack([probability, epoch_number_inputs])
+
+        if ParamConfig['add_learning_rate']:
+            learning_rate_inputs = np.full((batch_size, 1), self.learning_rate.get_value(), dtype=fX)
+            probability = np.hstack([probability, learning_rate_inputs])
 
         return probability
 

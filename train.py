@@ -16,7 +16,6 @@ __author__ = 'fyabc'
 
 def train_raw():
     # Some configures
-    num_episodes = ParamConfig['num_epochs']
     epoch_per_episode = ParamConfig['epoch_per_episode']
 
     # Create neural network model
@@ -34,51 +33,42 @@ def train_raw():
     # Train the network
     batch_size = ParamConfig['train_batch_size']
 
-    for episode in range(1, num_episodes + 1):
-        print('[Episode {}]'.format(episode))
-        message('[Episode {}]'.format(episode))
+    if ParamConfig['warm_start']:
+        cnn.load_model(Config['model_file'])
+    else:
+        cnn.reset_all_parameters()
 
-        if ParamConfig['warm_start']:
-            cnn.load_model(Config['model_file'])
-        else:
-            cnn.reset_all_parameters()
+    for epoch in range(epoch_per_episode):
+        print('[Epoch {}]'.format(epoch))
+        message('[Epoch {}]'.format(epoch))
 
-        for epoch in range(epoch_per_episode):
-            print('[Epoch {}]'.format(epoch))
-            message('[Epoch {}]'.format(epoch))
+        x_train_small, y_train_small = shuffle_data(x_train_small, y_train_small)
 
-            x_train_small, y_train_small = shuffle_data(x_train_small, y_train_small)
+        train_err = 0
+        train_batches = 0
+        start_time = time.time()
 
-            distribution = np.zeros((10,), dtype='int32')
+        for batch in iterate_minibatches(x_train_small, y_train_small, batch_size, shuffle=True, augment=True):
+            inputs, targets = batch
 
-            train_err = 0
-            train_batches = 0
-            start_time = time.time()
+            train_err += cnn.train_function(inputs, targets)
+            train_batches += 1
 
-            for batch in iterate_minibatches(x_train_small, y_train_small, batch_size, shuffle=True, augment=True):
-                inputs, targets = batch
+        validate_err, validate_acc, validate_batches = cnn.validate_or_test(x_validate, y_validate)
+        validate_acc /= validate_batches
 
-                train_err += cnn.train_function(inputs, targets)
-                train_batches += 1
+        print("Epoch {} of {} took {:.3f}s".format(epoch, epoch_per_episode, time.time() - start_time))
+        print('Training Loss:', train_err / train_batches)
+        print('Validate Loss:', validate_err / validate_batches)
+        print('#Validate accuracy:', validate_acc)
 
-            validate_err, validate_acc, validate_batches = cnn.validate_or_test(x_validate, y_validate)
-            validate_acc /= validate_batches
+        if (epoch + 1) in (41, 61):
+            cnn.update_learning_rate()
 
-            print("Epoch {} of {} took {:.3f}s".format(epoch, epoch_per_episode, time.time() - start_time))
-            print('Training Loss:', train_err / train_batches)
-            print('Validate Loss:', validate_err / validate_batches)
-            print('#Validate accuracy:', validate_acc)
-
-            if (epoch + 1) in (41, 61):
-                cnn.update_learning_rate()
-
-            # cnn.test(x_test, y_test)
-
-        if Config['save_model'] and validate_acc >= 0.35:
-            message('Saving CNN model warm start... ', end='')
-            cnn.save_model()
-            message('done')
-            break
+    if Config['save_model'] and validate_acc >= 0.35:
+        message('Saving CNN model warm start... ', end='')
+        cnn.save_model()
+        message('done')
 
     cnn.test(x_test, y_test)
 
@@ -118,6 +108,7 @@ def train_policy():
             cnn.load_model(Config['model_file'])
         else:
             cnn.reset_all_parameters()
+        cnn.reset_learning_rate()
 
         for epoch in range(epoch_per_episode):
             print('[Epoch {}]'.format(epoch))
@@ -135,7 +126,7 @@ def train_policy():
             for batch in iterate_minibatches(x_train_small, y_train_small, batch_size, shuffle=True, augment=True):
                 inputs, targets = batch
 
-                probability = cnn.get_policy_input(inputs, targets)
+                probability = cnn.get_policy_input(inputs, targets, epoch)
                 actions = policy.take_action(probability)
 
                 # get masked inputs and targets
@@ -174,17 +165,18 @@ def train_policy():
             if (epoch + 1) in (41, 61):
                 cnn.update_learning_rate()
 
-            policy.update(validate_acc)
+        cnn.test(x_test, y_test)
 
-            if Config['policy_save_freq'] > 0 and epoch % Config['policy_save_freq'] == 0:
-                policy.save_policy(Config['policy_model_file'])
+        validate_err, validate_acc, validate_batches = cnn.validate_or_test(x_validate, y_validate)
+        validate_acc /= validate_batches
 
-            cnn.test(x_test, y_test)
+        policy.update(validate_acc)
+
+        if Config['policy_save_freq'] > 0 and episode % Config['policy_save_freq'] == 0:
+            policy.save_policy()
 
         if episode % ParamConfig['policy_learning_rate_discount_freq'] == 0:
             policy.discount_learning_rate()
-
-        cnn.test(x_test, y_test)
 
 
 def train_cnn_deterministic():
@@ -226,7 +218,7 @@ def train_cnn_deterministic():
             x_train_small, y_train_small = shuffle_data(x_train_small, y_train_small)
         else:
             start_time = time.time()
-            all_probabilities = [cnn.get_policy_input(inputs, targets) for inputs, targets in
+            all_probabilities = [cnn.get_policy_input(inputs, targets, epoch) for inputs, targets in
                                  iterate_minibatches(x_train_small, y_train_small, batch_size,
                                  shuffle=False, augment=True)]
             all_alphas = np.concatenate([
@@ -252,7 +244,7 @@ def train_cnn_deterministic():
             inputs, targets = batch
 
             if not curriculum:
-                probability = cnn.get_policy_input(inputs, targets)
+                probability = cnn.get_policy_input(inputs, targets, epoch)
                 alpha = np.asarray([policy.output_function(prob) for prob in probability], dtype=fX)
 
                 alpha /= np.sum(alpha)
@@ -333,7 +325,7 @@ def train_cnn_stochastic():
                 actions = np.random.binomial(1, 1 - float(random_drop_numbers[epoch]) / train_small_size,
                                              targets.shape).astype(bool)
             else:
-                probability = cnn.get_policy_input(inputs, targets)
+                probability = cnn.get_policy_input(inputs, targets, epoch)
                 actions = policy.take_action(probability)
 
             # get masked inputs and targets
