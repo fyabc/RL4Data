@@ -161,7 +161,8 @@ class PolicyNetwork(object):
             for epoch_inputs, epoch_actions, epoch_rewards in \
                     zip(self.input_buffer, self.action_buffer, discounted_rewards):
                 for batch_inputs, batch_actions, batch_rewards in zip(epoch_inputs, epoch_actions, epoch_rewards):
-                    cost += self.f_grad_shared(batch_inputs, batch_actions, batch_rewards)
+                    cost += self.f_grad_shared(batch_inputs, batch_actions,
+                                               np.full(batch_actions.shape, batch_rewards, dtype=fX))
                     self.f_update(self.learning_rate.get_value())
         else:
             temp = final_reward - self.reward_baseline

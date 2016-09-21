@@ -291,7 +291,7 @@ class CNN(object):
         print("$  test accuracy:\t\t{:.2f} %".format(
                 test_acc / test_batches * 100))
 
-    @logging
+    # @logging
     def validate_or_test(self, x_test, y_test):
         # Calculate validation error of model:
         test_err = 0

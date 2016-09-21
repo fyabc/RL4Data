@@ -49,14 +49,15 @@
         "epoch_per_episode": 1,
 
         "warm_start": false,
+
+        // Policy input features
         "add_label_input": true,
         "add_label": true,
         "use_first_layer_output": false,
-
         "add_average_cost": false,
         "add_average_accuracy": false,
-        "add_epoch_number": false,
-        "add_learning_rate": false,
+        "add_epoch_number": true,
+        "add_learning_rate": true,
 
         "init_learning_rate": 0.1,
         "learning_rate_discount": 0.1,
