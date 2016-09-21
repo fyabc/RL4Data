@@ -108,7 +108,7 @@ class PolicyNetwork(object):
         """update reward baseline"""
         self.reward_baseline = (1 - self.rb_update_rate) * self.reward_baseline + self.rb_update_rate * reward
 
-    def take_action(self, inputs):
+    def take_action(self, inputs, log_replay=True):
         actions = np.zeros(shape=(inputs.shape[0],), dtype=bool)
 
         for i, input_ in enumerate(inputs):
@@ -116,8 +116,9 @@ class PolicyNetwork(object):
             action = bool(action)
             actions[i] = action
 
-        self.input_buffer[-1].append(inputs)
-        self.action_buffer[-1].append(actions)
+        if log_replay:
+            self.input_buffer[-1].append(inputs)
+            self.action_buffer[-1].append(actions)
 
         return actions
 

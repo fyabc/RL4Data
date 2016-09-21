@@ -328,7 +328,7 @@ def train_cnn_stochastic():
                                              targets.shape).astype(bool)
             else:
                 probability = cnn.get_policy_input(inputs, targets, epoch)
-                actions = policy.take_action(probability)
+                actions = policy.take_action(probability, False)
 
             # get masked inputs and targets
             inputs = inputs[actions]
