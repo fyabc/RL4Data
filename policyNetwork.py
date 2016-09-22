@@ -132,13 +132,11 @@ class PolicyNetwork(object):
         # get discounted reward
         discounted_rewards = [None] * len(self.action_buffer)
 
-        for epoch_num, epoch_rewards in enumerate(self.reward_buffer):
-            discounted_rewards[epoch_num] = np.zeros_like(epoch_rewards, dtype=fX)
-            temp_epoch = 0
-            for batch_num, batch_reward in reversed(list(enumerate(epoch_rewards))):
-                temp_epoch = temp_epoch * self.gamma + batch_reward
-                discounted_rewards[epoch_num][batch_num] = temp_epoch
-            discounted_rewards[epoch_num] /= len(epoch_rewards)
+        temp = 0.
+        for epoch_num, epoch_rewards in reversed(list(enumerate(self.reward_buffer))):
+            epoch_sum_reward = sum(epoch_rewards)
+            temp = temp * self.gamma + epoch_sum_reward
+            discounted_rewards[epoch_num] = np.full((len(self.action_buffer[0]),), temp, dtype=fX)
 
         return discounted_rewards
 
