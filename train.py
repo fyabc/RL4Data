@@ -75,7 +75,7 @@ def train_raw():
 
 def train_policy():
     # Some configures
-    num_episodes = CifarConfig['num_epochs']
+    num_episodes = PolicyConfig['num_episodes']
 
     input_size = CNN.get_policy_input_size()
     print('Input size of policy network:', input_size)
@@ -138,9 +138,9 @@ def train_policy():
                 total_accepted_cases += len(inputs)
 
                 # add immediate reward
-                if CifarConfig['immediate_reward']:
+                if PolicyConfig['immediate_reward']:
                     x_validate_small, y_validate_small = get_small_train_data(
-                            x_validate, y_validate, CifarConfig['immediate_reward_sample_size'])
+                            x_validate, y_validate, PolicyConfig['immediate_reward_sample_size'])
                     _, validate_acc, validate_batches = cnn.validate_or_test(x_validate_small, y_validate_small)
                     validate_acc /= validate_batches
                     policy.reward_buffer[-1].append(validate_acc)
@@ -177,7 +177,7 @@ def train_policy():
         if Config['policy_save_freq'] > 0 and episode % Config['policy_save_freq'] == 0:
             policy.save_policy()
 
-        if episode % CifarConfig['policy_learning_rate_discount_freq'] == 0:
+        if episode % PolicyConfig['policy_learning_rate_discount_freq'] == 0:
             policy.discount_learning_rate()
 
 
@@ -366,4 +366,4 @@ if __name__ == '__main__':
     elif Config['train_type'] == 'stochastic':
         train_cnn_stochastic()
     else:
-        raise Exception('Unknown train type')
+        raise Exception('Unknown train type {}'.format(Config['train_type']))

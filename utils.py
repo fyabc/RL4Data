@@ -184,6 +184,7 @@ def iterate_minibatches(inputs, targets, batch_size, shuffle=False, augment=Fals
 
 def simple_parse_args(args, param_config=CifarConfig):
     args_dict = {}
+    policy_args_dict = {}
     param_args_dict = {}
 
     for arg in args:
@@ -196,7 +197,7 @@ def simple_parse_args(args, param_config=CifarConfig):
                 target_dict = Config
             elif arg.startswith('P.'):
                 arg = arg[2:]
-                the_dict = args_dict
+                the_dict = policy_args_dict
                 target_dict = PolicyConfig
             else:
                 the_dict = param_args_dict
@@ -207,10 +208,10 @@ def simple_parse_args(args, param_config=CifarConfig):
 
             the_dict[key] = eval(value)
 
-    return args_dict, param_args_dict
+    return args_dict, policy_args_dict, param_args_dict
 
 
-def process_before_train(param_config=CifarConfig):
+def process_before_train(param_config=CifarConfig, policy_config=PolicyConfig):
     import pprint
 
     if '-h' in sys.argv or '--help' in sys.argv:
@@ -220,9 +221,10 @@ def process_before_train(param_config=CifarConfig):
               '\n'
               'properties starts with % are in Config, other properties are in ParamConfig.')
 
-    args_dict, param_args_dict = simple_parse_args(sys.argv, param_config)
+    args_dict, policy_args_dict, param_args_dict = simple_parse_args(sys.argv, param_config)
     Config.update(args_dict)
     param_config.update(param_args_dict)
+    policy_config.update(policy_args_dict)
 
     message('The configures and hyperparameters are:')
     pprint.pprint(Config, stream=sys.stderr)

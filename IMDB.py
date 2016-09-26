@@ -14,12 +14,15 @@ from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 from utils import fX, floatX, logging, message
 from utils_IMDB import prepare_imdb_data as prepare_data, pr, ortho_weight, get_minibatches_idx
 from optimizers import adadelta, adam, sgd, rmsprop
-from config import IMDBConfig
+from config import IMDBConfig, PolicyConfig
 
 __author__ = 'fyabc'
 
 
 class IMDBModel(object):
+
+    output_size = 2
+
     def __init__(self, reload_model=False):
         self.train_batch_size = IMDBConfig['train_batch_size']
         self.validate_batch_size = IMDBConfig['validate_batch_size']
@@ -216,7 +219,7 @@ class IMDBModel(object):
     def save_model(self, filename=None):
         filename = filename or IMDBConfig['save_to']
 
-    def predict_error(self, data_x, data_y, batch_indices, verbose=False):
+    def predict_error(self, data_x, data_y, batch_indices):
         """
         Just compute the error
         f_pred: Theano fct computing the prediction
@@ -245,14 +248,52 @@ class IMDBModel(object):
     def get_policy_input_size():
         input_size = 2
 
+        if PolicyConfig['add_label_input']:
+            input_size += 1
+        if PolicyConfig['add_label']:
+            # input_size += 1
+            input_size += 2
+        if PolicyConfig['use_first_layer_output']:
+            input_size += 16 * 32 * 32
+        if PolicyConfig['add_epoch_number']:
+            input_size += 1
+        if PolicyConfig['add_learning_rate']:
+            input_size += 1
         return input_size
 
-    def get_policy_input(self, x, mask, y):
-        probabilities = self.f_predict_prob(x, mask)
+    def get_policy_input(self, x, mask, y, epoch):
+        batch_size = y.shape[0]
+
+        probability = self.f_predict_prob(x, mask)
 
         # TODO add more policy input features
 
-        return probabilities
+        if PolicyConfig['add_label_input']:
+            label_inputs = np.zeros(shape=(batch_size, 1), dtype=fX)
+            for i in range(batch_size):
+                # assert probability[i, targets[i]] > 0, 'Probability <= 0!!!'
+                label_inputs[i, 0] = np.log(max(probability[i, y[i]], 1e-9))
+            probability = np.hstack([probability, label_inputs])
+
+        if PolicyConfig['add_label']:
+            # labels = floatX(targets) * (1.0 / ParamConfig['cnn_output_size'])
+            # probability = np.hstack([probability, labels[:, None]])
+
+            labels = np.zeros(shape=(batch_size, self.output_size), dtype=fX)
+            for i, target in enumerate(y):
+                labels[i, target] = 1.
+
+            probability = np.hstack([probability, labels])
+
+        if PolicyConfig['add_epoch_number']:
+            epoch_number_inputs = np.full((batch_size, 1), floatX(epoch) / IMDBConfig['epoch_per_episode'], dtype=fX)
+            probability = np.hstack([probability, epoch_number_inputs])
+
+        if PolicyConfig['add_learning_rate']:
+            learning_rate_inputs = np.full((batch_size, 1), self.learning_rate, dtype=fX)
+            probability = np.hstack([probability, learning_rate_inputs])
+
+        return probability
 
 
 def test():

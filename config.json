@@ -33,22 +33,7 @@
     "train_type": "deterministic",
 
     "policy": {
-
-    },
-
-    "cifar10": {
-        "curriculum": false,
-        "random_drop": false,
-        "random_drop_number_file": "./data/drop_num.txt",
-
-        "immediate_reward": false,
-        "immediate_reward_sample_size": 1000,
-
-        "use_policy": true,
-        "train_epoch_size": 100000,
-        "epoch_per_episode": 1,
-
-        "warm_start": false,
+        "num_episodes": 100,
 
         // Policy input features
         "add_label_input": true,
@@ -58,6 +43,29 @@
         "add_average_accuracy": false,
         "add_epoch_number": true,
         "add_learning_rate": true,
+
+        "immediate_reward": false,
+        "immediate_reward_sample_size": 1000,
+
+        "policy_optimizer": "adam",
+        "policy_learning_rate": 0.02,
+        "policy_learning_rate_discount": 0.7,
+        "policy_learning_rate_discount_freq": 50,
+        "reward_baseline_update_rate": 0.1,
+
+        "gamma": 0.9
+    },
+
+    "cifar10": {
+        "curriculum": false,
+        "random_drop": false,
+        "random_drop_number_file": "./data/drop_num.txt",
+
+        "use_policy": true,
+        "train_epoch_size": 100000,
+        "epoch_per_episode": 1,
+
+        "warm_start": false,
 
         "init_learning_rate": 0.1,
         "learning_rate_discount": 0.1,
@@ -71,15 +79,6 @@
         "n": 5,
         "num_epochs": 5000,
 
-        "policy_optimizer": "adam",
-        "policy_learning_rate": 0.02,
-        "policy_learning_rate_discount": 0.7,
-        "policy_learning_rate_discount_freq": 50,
-
-        "gamma": 0.9,
-
-        "reward_baseline_update_rate": 0.1,
-
         "print_label_distribution": true
     },
 
@@ -89,9 +88,10 @@
         "dataset": "imdb",
         "data_dir": "./data/imdb/imdb.pkl",
 
+        "epoch_per_episode": 5000,
+
         "dim_proj": 128,
         "patience": 10,
-        "max_epochs": 5000,
         "display_freq": 10,
 
         "decay_c": 0.0,
@@ -112,12 +112,6 @@
         "noise_std": 0.0,
         "reload_model": false,
         "use_dropout": true,
-        "test_size": -1,
-
-        // Policy input features
-        "add_average_cost": false,
-        "add_average_accuracy": false,
-        "add_epoch_number": false,
-        "add_learning_rate": false
+        "test_size": -1
     }
 }

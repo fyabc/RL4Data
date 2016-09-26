@@ -7,7 +7,7 @@ import theano
 import theano.tensor as T
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
-from config import Config, CifarConfig
+from config import Config, CifarConfig, PolicyConfig
 from utils import fX, floatX, init_norm, logging, message
 from optimizers import adadelta, adam, sgd, rmsprop
 
@@ -27,14 +27,15 @@ class PolicyNetwork(object):
 
     @logging
     def __init__(self,
-                 input_size=CifarConfig['cnn_output_size'],
-                 optimizer=CifarConfig['policy_optimizer'],
-                 learning_rate=CifarConfig['policy_learning_rate'],
-                 gamma=CifarConfig['gamma'],
-                 rb_update_rate=CifarConfig['reward_baseline_update_rate']
+                 input_size,
+                 optimizer=PolicyConfig['policy_optimizer'],
+                 learning_rate=PolicyConfig['policy_learning_rate'],
+                 gamma=PolicyConfig['gamma'],
+                 rb_update_rate=PolicyConfig['reward_baseline_update_rate'],
+                 start_b=2.
                  ):
 
-        theano.config.exception_verbosity = 'high'
+        # theano.config.exception_verbosity = 'high'
 
         self.input_size = input_size
         self.learning_rate = theano.shared(floatX(learning_rate), name='learning_rate')
@@ -44,7 +45,7 @@ class PolicyNetwork(object):
 
         # parameters to be learned
         self.W = theano.shared(name='W', value=init_norm(input_size))
-        self.b = theano.shared(name='b', value=floatX(2.))
+        self.b = theano.shared(name='b', value=floatX(start_b))
         self.parameters = [self.W, self.b]
 
         # a single case of input softmax probabilities
@@ -122,7 +123,7 @@ class PolicyNetwork(object):
 
         return actions
 
-    def discount_learning_rate(self, discount=CifarConfig['policy_learning_rate_discount']):
+    def discount_learning_rate(self, discount=PolicyConfig['policy_learning_rate_discount']):
         self.learning_rate.set_value(self.learning_rate.get_value() * floatX(discount))
         message('New learning rate:', self.learning_rate.get_value())
 
@@ -154,7 +155,7 @@ class PolicyNetwork(object):
     def update(self, final_reward):
         cost = 0.
 
-        if CifarConfig['immediate_reward']:
+        if PolicyConfig['immediate_reward']:
             discounted_rewards = self.get_discounted_rewards(final_reward)
 
             for epoch_inputs, epoch_actions, epoch_rewards in \
@@ -174,7 +175,7 @@ class PolicyNetwork(object):
         # clear buffers
         self.clear_buffer()
 
-        if not CifarConfig['immediate_reward']:
+        if not PolicyConfig['immediate_reward']:
             self.update_rb(final_reward)
 
         message('Cost: {}\n'
@@ -204,7 +205,7 @@ class PolicyNetwork(object):
 
 
 def test():
-    pn = PolicyNetwork()
+    pn = PolicyNetwork(input_size=CifarConfig['cnn_output_size'])
 
     input_data = np.ones(shape=(4, CifarConfig['cnn_output_size']), dtype=fX)
 
