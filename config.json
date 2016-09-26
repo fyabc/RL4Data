@@ -30,7 +30,7 @@
     // 'policy':        train policy.
     // 'deterministic': run deterministic policy (alpha loss)
     // 'stochastic':    run stochastic policy (randomly drop data)
-    "train_type": "deterministic",
+    "train_type": "policy",
 
     "policy": {
         "num_episodes": 100,
