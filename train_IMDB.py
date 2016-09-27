@@ -286,8 +286,7 @@ def train_policy_IMDB():
                     if update_index % display_freq == 0:
                         print('Epoch ', epoch, 'Update ', update_index, 'Cost ', cost)
 
-                    if save_to and update_index % save_freq == 0:
-                        save_parameters(imdb, best_parameters, save_to, history_errs)
+                    # Do not save when training policy
 
                     if update_index % valid_freq == 0:
                         imdb.use_noise.set_value(0.)
