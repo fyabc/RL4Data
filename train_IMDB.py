@@ -218,18 +218,6 @@ def train_policy_IMDB():
     print('Input size of policy network:', input_size)
     policy = PolicyNetwork(input_size=input_size, start_b=0.)
 
-    # Training
-    history_errs = []
-    best_parameters = {}
-    bad_counter = 0
-
-    update_index = 0  # the number of update done
-    early_stop = False  # early stop
-    start_time = time.time()
-
-    epoch = 0
-    history_train_costs = []
-
     num_episodes = PolicyConfig['num_episodes']
 
     for episode in range(num_episodes):
@@ -237,6 +225,18 @@ def train_policy_IMDB():
         message('[Episode {}]'.format(episode))
 
         imdb.reset_parameters()
+
+        # Training
+        history_errs = []
+        best_parameters = {}
+        bad_counter = 0
+
+        update_index = 0  # the number of update done
+        early_stop = False  # early stop
+        start_time = time.time()
+
+        epoch = 0
+        history_train_costs = []
 
         try:
             for epoch in range(IMDBConfig['epoch_per_episode']):
