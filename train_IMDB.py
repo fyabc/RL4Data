@@ -236,6 +236,8 @@ def train_policy_IMDB():
         print('[Episode {}]'.format(episode))
         message('[Episode {}]'.format(episode))
 
+        imdb.reset_parameters()
+
         try:
             for epoch in range(IMDBConfig['epoch_per_episode']):
                 print('[Epoch {}]'.format(epoch))

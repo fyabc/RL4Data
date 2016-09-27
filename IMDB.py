@@ -30,6 +30,7 @@ class IMDBModel(object):
 
         # Parameters of the model (Theano shared variables)
         self.parameters = OrderedDict()
+        self.np_parameters = OrderedDict()
 
         # Build train function and parameters
         self.use_noise = None
@@ -51,39 +52,40 @@ class IMDBModel(object):
             self.load_model()
 
     def init_parameters(self):
-        np_parameters = OrderedDict()
-
         rands = np.random.rand(IMDBConfig['n_words'], IMDBConfig['dim_proj'])
 
         # embedding
-        np_parameters['Wemb'] = (0.01 * rands).astype(fX)
+        self.np_parameters['Wemb'] = (0.01 * rands).astype(fX)
 
         # LSTM
-        self.init_lstm_parameters(np_parameters)
+        self.init_lstm_parameters()
 
         # classifier
-        np_parameters['U'] = 0.01 * np.random.randn(IMDBConfig['dim_proj'], IMDBConfig['ydim']).astype(fX)
-        np_parameters['b'] = np.zeros((IMDBConfig['ydim'],)).astype(fX)
+        self.np_parameters['U'] = 0.01 * np.random.randn(IMDBConfig['dim_proj'], IMDBConfig['ydim']).astype(fX)
+        self.np_parameters['b'] = np.zeros((IMDBConfig['ydim'],)).astype(fX)
 
         # numpy parameters to shared variables
-        for key, value in np_parameters.iteritems():
+        for key, value in self.np_parameters.iteritems():
             self.parameters[key] = theano.shared(value, name=key)
 
-    @staticmethod
-    def init_lstm_parameters(np_parameters):
+    def init_lstm_parameters(self):
         prefix = 'lstm'
         W = np.concatenate([ortho_weight(IMDBConfig['dim_proj']),
                             ortho_weight(IMDBConfig['dim_proj']),
                             ortho_weight(IMDBConfig['dim_proj']),
                             ortho_weight(IMDBConfig['dim_proj'])], axis=1)
-        np_parameters[pr(prefix, 'W')] = W
+        self.np_parameters[pr(prefix, 'W')] = W
         U = np.concatenate([ortho_weight(IMDBConfig['dim_proj']),
                             ortho_weight(IMDBConfig['dim_proj']),
                             ortho_weight(IMDBConfig['dim_proj']),
                             ortho_weight(IMDBConfig['dim_proj'])], axis=1)
-        np_parameters[pr(prefix, 'U')] = U
+        self.np_parameters[pr(prefix, 'U')] = U
         b = np.zeros((4 * IMDBConfig['dim_proj'],))
-        np_parameters[pr(prefix, 'b')] = b.astype(fX)
+        self.np_parameters[pr(prefix, 'b')] = b.astype(fX)
+
+    def reset_parameters(self):
+        for key, value in self.np_parameters.iteritems():
+            self.parameters[key].set_value(value)
 
     def lstm_layer(self, state_below, mask):
         prefix = 'lstm'
