@@ -261,6 +261,10 @@ class IMDBModel(object):
             input_size += 1
         if PolicyConfig['add_learning_rate']:
             input_size += 1
+        if PolicyConfig['add_margin']:
+            input_size += 1
+        if PolicyConfig['add_average_accuracy']:
+            pass
         return input_size
 
     def get_policy_input(self, x, mask, y, epoch):
@@ -294,6 +298,19 @@ class IMDBModel(object):
         if PolicyConfig['add_learning_rate']:
             learning_rate_inputs = np.full((batch_size, 1), self.learning_rate, dtype=fX)
             probability = np.hstack([probability, learning_rate_inputs])
+
+        if PolicyConfig['add_margin']:
+            margin_inputs = np.zeros(shape=(batch_size, 1), dtype=fX)
+            for i in range(batch_size):
+                prob_i = probability[i].copy()
+                margin_inputs[i, 0] = prob_i[y[i]]
+                prob_i[y[i]] = -np.inf
+
+                margin_inputs[i, 0] -= np.max(prob_i)
+            probability = np.hstack([probability, margin_inputs])
+
+        if PolicyConfig['add_average_accuracy']:
+            pass
 
         return probability
 

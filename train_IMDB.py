@@ -20,7 +20,8 @@ def pre_process_data():
     np.random.seed(IMDBConfig['seed'])
 
     # Loading data
-    train_data, valid_data, test_data = load_imdb_data(n_words=IMDBConfig['n_words'])
+    train_data, valid_data, test_data = load_imdb_data(n_words=IMDBConfig['n_words'], valid_portion=0.05,
+                                                       maxlen=IMDBConfig['maxlen'])
     train_data, valid_data, test_data = preprocess_imdb_data(train_data, valid_data, test_data)
 
     train_x, train_y = train_data
@@ -112,7 +113,7 @@ def train_raw_IMDB():
 
     # Training
     history_errs = []
-    best_parameters = {}
+    best_parameters = None
     bad_counter = 0
 
     update_index = 0  # the number of update done
@@ -145,6 +146,8 @@ def train_raw_IMDB():
                 # Return something of shape (minibatch maxlen, n samples)
                 x, mask, y = prepare_data(x, np.asarray(y, dtype='int64'))
 
+                n_samples += x.shape[1]
+
                 cost = imdb.f_grad_shared(x, mask, y)
                 imdb.f_update(imdb.learning_rate)
 
@@ -168,7 +171,7 @@ def train_raw_IMDB():
 
                     history_errs.append([valid_err, test_err])
 
-                    if not best_parameters or valid_err <= np.array(history_errs)[:, 0].min():
+                    if best_parameters is None or valid_err <= np.array(history_errs)[:, 0].min():
                         best_parameters = imdb.get_parameter_values()
                         bad_counter = 0
 
@@ -203,15 +206,15 @@ def train_policy_IMDB():
 
     # Loading data
     train_x, train_y, valid_x, valid_y, test_x, test_y, \
-        train_size, valid_size, test_size = pre_process_data()
+    train_size, valid_size, test_size = pre_process_data()
 
     # Building model
     imdb = IMDBModel(IMDBConfig['reload_model'])
 
     # Loading configure settings
     kf_valid, kf_test, \
-        valid_freq, save_freq, display_freq, \
-        save_to, patience = pre_process_config(imdb, train_size, valid_size, test_size)
+    valid_freq, save_freq, display_freq, \
+    save_to, patience = pre_process_config(imdb, train_size, valid_size, test_size)
 
     # Build policy
     input_size = imdb.get_policy_input_size()
@@ -228,7 +231,7 @@ def train_policy_IMDB():
 
         # Training
         history_errs = []
-        best_parameters = {}
+        best_parameters = None
         bad_counter = 0
 
         update_index = 0  # the number of update done
@@ -300,7 +303,7 @@ def train_policy_IMDB():
 
                         history_errs.append([valid_err, test_err])
 
-                        if not best_parameters or valid_err <= np.array(history_errs)[:, 0].min():
+                        if best_parameters is None or valid_err <= np.array(history_errs)[:, 0].min():
                             best_parameters = imdb.get_parameter_values()
                             bad_counter = 0
 
@@ -346,15 +349,15 @@ def train_deterministic_stochastic_IMDB():
 
     # Loading data
     train_x, train_y, valid_x, valid_y, test_x, test_y, \
-        train_size, valid_size, test_size = pre_process_data()
+    train_size, valid_size, test_size = pre_process_data()
 
     # Building model
     imdb = IMDBModel(IMDBConfig['reload_model'])
 
     # Loading configure settings
     kf_valid, kf_test, \
-        valid_freq, save_freq, display_freq, \
-        save_to, patience = pre_process_config(imdb, train_size, valid_size, test_size)
+    valid_freq, save_freq, display_freq, \
+    save_to, patience = pre_process_config(imdb, train_size, valid_size, test_size)
 
     # Build policy
     input_size = imdb.get_policy_input_size()
@@ -367,7 +370,7 @@ def train_deterministic_stochastic_IMDB():
 
     # Training
     history_errs = []
-    best_parameters = {}
+    best_parameters = None
     bad_counter = 0
 
     update_index = 0  # the number of update done
@@ -410,6 +413,8 @@ def train_deterministic_stochastic_IMDB():
                     mask = mask[:, actions]
                     y = y[actions]
 
+                    n_samples += x.shape[1]
+
                     cost = imdb.f_grad_shared(x, mask, y)
                     imdb.f_update(imdb.learning_rate)
                 elif Config['train_type'] == 'deterministic':
@@ -435,7 +440,7 @@ def train_deterministic_stochastic_IMDB():
 
                     history_errs.append([valid_err, test_err])
 
-                    if not best_parameters or valid_err <= np.array(history_errs)[:, 0].min():
+                    if best_parameters is None or valid_err <= np.array(history_errs)[:, 0].min():
                         best_parameters = imdb.get_parameter_values()
                         bad_counter = 0
 
