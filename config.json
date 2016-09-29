@@ -39,7 +39,7 @@
         "add_label_input": true,
         "add_label": true,
         "use_first_layer_output": false,
-        "add_average_cost": false,
+        "add_margin": false,
         "add_average_accuracy": false,
         "add_epoch_number": true,
         "add_learning_rate": true,
