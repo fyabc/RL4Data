@@ -37,7 +37,7 @@ def pre_process_data():
     print("%d test examples" % test_size)
 
     return train_x, train_y, valid_x, valid_y, test_x, test_y, \
-           train_size, valid_size, test_size
+        train_size, valid_size, test_size
 
 
 def pre_process_config(imdb, train_size, valid_size, test_size):
@@ -101,15 +101,15 @@ def train_raw_IMDB():
 
     # Loading data
     train_x, train_y, valid_x, valid_y, test_x, test_y, \
-    train_size, valid_size, test_size = pre_process_data()
+        train_size, valid_size, test_size = pre_process_data()
 
     # Building model
     imdb = IMDBModel(IMDBConfig['reload_model'])
 
     # Loading configure settings
     kf_valid, kf_test, \
-    valid_freq, save_freq, display_freq, \
-    save_to, patience = pre_process_config(imdb, train_size, valid_size, test_size)
+        valid_freq, save_freq, display_freq, \
+        save_to, patience = pre_process_config(imdb, train_size, valid_size, test_size)
 
     # Training
     history_errs = []
@@ -206,20 +206,20 @@ def train_policy_IMDB():
 
     # Loading data
     train_x, train_y, valid_x, valid_y, test_x, test_y, \
-    train_size, valid_size, test_size = pre_process_data()
+        train_size, valid_size, test_size = pre_process_data()
 
     # Building model
     imdb = IMDBModel(IMDBConfig['reload_model'])
 
     # Loading configure settings
     kf_valid, kf_test, \
-    valid_freq, save_freq, display_freq, \
-    save_to, patience = pre_process_config(imdb, train_size, valid_size, test_size)
+        valid_freq, save_freq, display_freq, \
+        save_to, patience = pre_process_config(imdb, train_size, valid_size, test_size)
 
     # Build policy
     input_size = imdb.get_policy_input_size()
     print('Input size of policy network:', input_size)
-    policy = PolicyNetwork(input_size=input_size, start_b=0.)
+    policy = PolicyNetwork(input_size=input_size, start_b=2.)
 
     num_episodes = PolicyConfig['num_episodes']
 
@@ -349,15 +349,15 @@ def train_deterministic_stochastic_IMDB():
 
     # Loading data
     train_x, train_y, valid_x, valid_y, test_x, test_y, \
-    train_size, valid_size, test_size = pre_process_data()
+        train_size, valid_size, test_size = pre_process_data()
 
     # Building model
     imdb = IMDBModel(IMDBConfig['reload_model'])
 
     # Loading configure settings
     kf_valid, kf_test, \
-    valid_freq, save_freq, display_freq, \
-    save_to, patience = pre_process_config(imdb, train_size, valid_size, test_size)
+        valid_freq, save_freq, display_freq, \
+        save_to, patience = pre_process_config(imdb, train_size, valid_size, test_size)
 
     # Build policy
     input_size = imdb.get_policy_input_size()
