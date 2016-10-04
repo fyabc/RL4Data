@@ -381,7 +381,7 @@ def train_deterministic_stochastic_IMDB():
     history_train_costs = []
 
     try:
-        for epoch in range(IMDBConfig['epoch_per_episode']):
+        for epoch in range(1, 1 + IMDBConfig['epoch_per_episode']):
             print('[Epoch {}]'.format(epoch))
             message('[Epoch {}]'.format(epoch))
 

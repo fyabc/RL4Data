@@ -15,7 +15,7 @@
     "data_dir": "./data/cifar-10-batches-py",
     "model_file": "./data/cifar10_deep_residual_model.npz",
     "policy_model_file": "./data/policy_model.npz",
-    "policy_save_freq": 10,
+    "policy_save_freq": 1,
     "save_model": false,
     "total_size": 60000,
     "train_size": 50000,
