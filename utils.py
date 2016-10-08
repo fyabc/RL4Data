@@ -129,14 +129,15 @@ def split_cifar10_data(data):
     return x_train, y_train, x_validate, y_validate, x_test, y_test
 
 
-def get_small_train_data(x_train, y_train, train_small_size=None):
-    train_small_size = train_small_size or CifarConfig['train_epoch_size']
+def get_part_data(x_data, y_data, part_size=None):
+    if part_size is None:
+        return x_data, y_data
 
-    train_size = x_train.shape[0]
+    train_size = x_data.shape[0]
 
     # Use small dataset to check the code
-    sampled_indices = random.sample(range(train_size), train_small_size)
-    return x_train[sampled_indices], y_train[sampled_indices]
+    sampled_indices = random.sample(range(train_size), part_size)
+    return x_data[sampled_indices], y_data[sampled_indices]
 
 
 def shuffle_data(x_train, y_train):

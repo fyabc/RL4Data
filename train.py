@@ -23,8 +23,8 @@ def train_raw():
 
     # Load the dataset
     x_train, y_train, x_validate, y_validate, x_test, y_test = split_cifar10_data(load_cifar10_data())
-    train_small_size = CifarConfig['train_epoch_size']
-    x_train_small, y_train_small = get_small_train_data(x_train, y_train, train_small_size)
+    train_small_size = CifarConfig['train_small_size']
+    x_train_small, y_train_small = get_part_data(x_train, y_train, train_small_size)
 
     message('Training data size:', y_train_small.shape[0])
     message('Validation data size:', y_validate.shape[0])
@@ -90,8 +90,8 @@ def train_policy():
 
     # Load the dataset
     x_train, y_train, x_validate, y_validate, x_test, y_test = split_cifar10_data(load_cifar10_data())
-    train_small_size = CifarConfig['train_epoch_size']
-    x_train_small, y_train_small = get_small_train_data(x_train, y_train, train_small_size)
+    train_small_size = CifarConfig['train_small_size']
+    x_train_small, y_train_small = get_part_data(x_train, y_train, train_small_size)
 
     message('Training data size:', y_train_small.shape[0])
     message('Validation data size:', y_validate.shape[0])
@@ -139,7 +139,7 @@ def train_policy():
 
                 # add immediate reward
                 if PolicyConfig['immediate_reward']:
-                    x_validate_small, y_validate_small = get_small_train_data(
+                    x_validate_small, y_validate_small = get_part_data(
                             x_validate, y_validate, PolicyConfig['immediate_reward_sample_size'])
                     _, validate_acc, validate_batches = cnn.validate_or_test(x_validate_small, y_validate_small)
                     validate_acc /= validate_batches
@@ -192,7 +192,7 @@ def train_cnn_deterministic():
 
     # Load the dataset and get small training data
     x_train, y_train, x_validate, y_validate, x_test, y_test = split_cifar10_data(load_cifar10_data())
-    x_train_small, y_train_small = get_small_train_data(x_train, y_train)
+    x_train_small, y_train_small = get_part_data(x_train, y_train)
 
     message('Training data size:', y_train_small.shape[0])
     message('Validation data size:', y_validate.shape[0])
@@ -283,8 +283,8 @@ def train_cnn_stochastic():
     data = load_cifar10_data()
     x_train, y_train, x_validate, y_validate, x_test, y_test = split_cifar10_data(data)
 
-    train_small_size = CifarConfig['train_epoch_size']
-    x_train_small, y_train_small = get_small_train_data(x_train, y_train)
+    train_small_size = CifarConfig['train_small_size']
+    x_train_small, y_train_small = get_part_data(x_train, y_train)
 
     message('Training data size:', y_train_small.shape[0])
     message('Validation data size:', y_validate.shape[0])

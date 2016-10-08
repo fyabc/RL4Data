@@ -7,7 +7,7 @@ import numpy as np
 
 from config import IMDBConfig, Config, PolicyConfig
 from IMDB import IMDBModel
-from utils import process_before_train, floatX, message, get_small_train_data
+from utils import process_before_train, floatX, message, get_part_data
 from utils_IMDB import load_imdb_data, preprocess_imdb_data, get_minibatches_idx
 from utils_IMDB import prepare_imdb_data as prepare_data
 
@@ -20,7 +20,8 @@ def pre_process_data():
     np.random.seed(IMDBConfig['seed'])
 
     # Loading data
-    train_data, valid_data, test_data = load_imdb_data(n_words=IMDBConfig['n_words'], valid_portion=0.05,
+    train_data, valid_data, test_data = load_imdb_data(n_words=IMDBConfig['n_words'],
+                                                       valid_portion=IMDBConfig['valid_portion'],
                                                        maxlen=IMDBConfig['maxlen'])
     train_data, valid_data, test_data = preprocess_imdb_data(train_data, valid_data, test_data)
 
@@ -291,15 +292,17 @@ def train_policy_IMDB():
 
                     # Do not save when training policy
 
+                    # Immediate reward
+                    if PolicyConfig['immediate_reward']:
+                        imdb.use_noise.set_value(0.)
+                        valid_err = imdb.predict_error(valid_x, valid_y, kf_valid)
+                        policy.reward_buffer[-1].append(1. - valid_err)
+
                     if update_index % valid_freq == 0:
                         imdb.use_noise.set_value(0.)
                         train_err = imdb.predict_error(train_x, train_y, kf)
                         valid_err = imdb.predict_error(valid_x, valid_y, kf_valid)
                         test_err = imdb.predict_error(test_x, test_y, kf_test)
-
-                        # add immediate reward
-                        if PolicyConfig['immediate_reward']:
-                            policy.reward_buffer[-1].append(1. - valid_err)
 
                         history_errs.append([valid_err, test_err])
 
