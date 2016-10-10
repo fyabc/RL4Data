@@ -127,24 +127,22 @@ class PolicyNetwork(object):
         self.learning_rate.set_value(self.learning_rate.get_value() * floatX(discount))
         message('New learning rate:', self.learning_rate.get_value())
 
-    def get_discounted_rewards(self, final_reward):
+    def get_discounted_rewards(self):
         # Shape of input buffer / action buffer is (epoch_num, batch_num)
 
         # get discounted reward
         discounted_rewards = [None] * len(self.action_buffer)
 
         temp = 0.
-        for epoch_num, epoch_rewards in reversed(list(enumerate(self.reward_buffer))):
-            epoch_sum_reward = sum(epoch_rewards)
-            temp = temp * self.gamma + epoch_sum_reward
-            discounted_rewards[epoch_num] = np.full((len(self.action_buffer[0]),), temp, dtype=fX)
+        for epoch_num, epoch_reward in reversed(list(enumerate(self.reward_buffer))):
+            temp = temp * self.gamma + epoch_reward
+            discounted_rewards[epoch_num] = temp
 
         return discounted_rewards
 
     def start_new_epoch(self):
         self.input_buffer.append([])
         self.action_buffer.append([])
-        self.reward_buffer.append([])
 
     def clear_buffer(self):
         self.input_buffer = []
@@ -156,13 +154,13 @@ class PolicyNetwork(object):
         cost = 0.
 
         if PolicyConfig['immediate_reward']:
-            discounted_rewards = self.get_discounted_rewards(final_reward)
+            discounted_rewards = self.get_discounted_rewards()
 
-            for epoch_inputs, epoch_actions, epoch_rewards in \
+            for epoch_inputs, epoch_actions, epoch_reward in \
                     zip(self.input_buffer, self.action_buffer, discounted_rewards):
-                for batch_inputs, batch_actions, batch_rewards in zip(epoch_inputs, epoch_actions, epoch_rewards):
+                for batch_inputs, batch_actions in zip(epoch_inputs, epoch_actions):
                     cost += self.f_grad_shared(batch_inputs, batch_actions,
-                                               np.full(batch_actions.shape, batch_rewards, dtype=fX))
+                                               np.full(batch_actions.shape, epoch_reward, dtype=fX))
                     self.f_update(self.learning_rate.get_value())
         else:
             temp = final_reward - self.reward_baseline
@@ -175,15 +173,16 @@ class PolicyNetwork(object):
         # clear buffers
         self.clear_buffer()
 
-        if not PolicyConfig['immediate_reward']:
+        # This may useless?
+        if False:
             self.update_rb(final_reward)
 
         message('Cost: {}\n'
+                'Real cost (Final reward for terminal): {}\n'
                 'New parameters:\n'
                 '$    w = {}\n'
-                '$    b = {}\n'
-                'New reward baseline: {}'
-                .format(cost, self.W.get_value(), self.b.get_value(), self.reward_baseline))
+                '$    b = {}'
+                .format(cost, final_reward, self.W.get_value(), self.b.get_value()))
 
     @logging
     def save_policy(self, filename=None):

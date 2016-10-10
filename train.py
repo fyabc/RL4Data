@@ -137,14 +137,6 @@ def train_policy():
 
                 total_accepted_cases += len(inputs)
 
-                # add immediate reward
-                if PolicyConfig['immediate_reward']:
-                    x_validate_small, y_validate_small = get_part_data(
-                            x_validate, y_validate, PolicyConfig['immediate_reward_sample_size'])
-                    _, validate_acc, validate_batches = cnn.validate_or_test(x_validate_small, y_validate_small)
-                    validate_acc /= validate_batches
-                    policy.reward_buffer[-1].append(validate_acc)
-
                 # print label distributions
                 if CifarConfig['print_label_distribution']:
                     for target in targets:
@@ -156,6 +148,17 @@ def train_policy():
             validate_err, validate_acc, validate_batches = cnn.validate_or_test(x_validate, y_validate)
             validate_acc /= validate_batches
 
+            if (epoch + 1) in (41, 61):
+                cnn.update_learning_rate()
+
+            # add immediate reward
+            if PolicyConfig['immediate_reward']:
+                x_validate_small, y_validate_small = get_part_data(
+                        x_validate, y_validate, PolicyConfig['immediate_reward_sample_size'])
+                _, validate_acc, validate_batches = cnn.validate_or_test(x_validate_small, y_validate_small)
+                validate_acc /= validate_batches
+                policy.reward_buffer.append(validate_acc)
+
             print("Epoch {} of {} took {:.3f}s".format(epoch, epoch_per_episode, time.time() - start_time))
             print('Training Loss:', train_err / train_batches)
             print('Validate Loss:', validate_err / validate_batches)
@@ -163,9 +166,6 @@ def train_policy():
 
             message('Number of accepted cases {} of {} cases'.format(total_accepted_cases, train_small_size))
             message('Label distribution:', distribution)
-
-            if (epoch + 1) in (41, 61):
-                cnn.update_learning_rate()
 
         cnn.test(x_test, y_test)
 
