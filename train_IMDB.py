@@ -211,15 +211,15 @@ def train_policy_IMDB():
 
     # Loading data
     train_x, train_y, valid_x, valid_y, test_x, test_y, \
-    train_size, valid_size, test_size = pre_process_data()
+        train_size, valid_size, test_size = pre_process_data()
 
     # Building model
     imdb = IMDBModel(IMDBConfig['reload_model'])
 
     # Loading configure settings
     kf_valid, kf_test, \
-    valid_freq, save_freq, display_freq, \
-    save_to, patience = pre_process_config(imdb, train_size, valid_size, test_size)
+        valid_freq, save_freq, display_freq, \
+        save_to, patience = pre_process_config(imdb, train_size, valid_size, test_size)
 
     # Build policy
     input_size = imdb.get_policy_input_size()
@@ -233,6 +233,10 @@ def train_policy_IMDB():
         message('[Episode {}]'.format(episode))
 
         imdb.reset_parameters()
+
+        # get small training data
+        train_small_size = IMDBConfig['train_small_size']
+        train_small_x, train_small_y = get_part_data(np.asarray(train_x), np.asarray(train_y), train_small_size)
 
         # Training
         history_errs = []
@@ -256,7 +260,7 @@ def train_policy_IMDB():
                 n_samples = 0
 
                 # Get new shuffled index for the training set.
-                kf = get_minibatches_idx(train_size, imdb.train_batch_size, shuffle=True)
+                kf = get_minibatches_idx(train_small_size, imdb.train_batch_size, shuffle=True)
 
                 policy.start_new_epoch()
 
@@ -265,8 +269,8 @@ def train_policy_IMDB():
                     imdb.use_noise.set_value(floatX(1.))
 
                     # Select the random examples for this minibatch
-                    x = [train_x[t] for t in train_index]
-                    y = [train_y[t] for t in train_index]
+                    x = [train_small_x[t] for t in train_index]
+                    y = [train_small_y[t] for t in train_index]
 
                     # Get the data in numpy.ndarray format
                     # This swap the axis!
@@ -338,7 +342,7 @@ def train_policy_IMDB():
 
         train_err, valid_err, test_err = test_and_post_process(
             imdb,
-            train_size, train_x, train_y, valid_x, valid_y, test_x,
+            train_small_size, train_small_x, train_small_y, valid_x, valid_y, test_x,
             test_y,
             kf_valid, kf_test,
             history_errs, best_parameters,

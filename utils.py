@@ -134,6 +134,8 @@ def get_part_data(x_data, y_data, part_size=None):
         return x_data, y_data
 
     train_size = x_data.shape[0]
+    if train_size < part_size:
+        return x_data, y_data
 
     # Use small dataset to check the code
     sampled_indices = random.sample(range(train_size), part_size)
