@@ -235,8 +235,9 @@ def train_policy_IMDB():
         imdb.reset_parameters()
 
         # get small training data
-        train_small_size = IMDBConfig['train_small_size']
-        train_small_x, train_small_y = get_part_data(np.asarray(train_x), np.asarray(train_y), train_small_size)
+        train_small_x, train_small_y = get_part_data(np.asarray(train_x), np.asarray(train_y),
+                                                     IMDBConfig['train_small_size'])
+        train_small_size = len(train_small_x)
 
         # Training
         history_errs = []
