@@ -169,7 +169,7 @@ def train_raw_IMDB():
 
                 if update_index % valid_freq == 0:
                     imdb.use_noise.set_value(0.)
-                    train_err = imdb.predict_error(train_x, train_y, kf)
+                    # train_err = imdb.predict_error(train_x, train_y, kf)
                     valid_err = imdb.predict_error(valid_x, valid_y, kf_valid)
                     test_err = imdb.predict_error(test_x, test_y, kf_test)
 
@@ -179,7 +179,7 @@ def train_raw_IMDB():
                         best_parameters = imdb.get_parameter_values()
                         bad_counter = 0
 
-                    print('Train', train_err, 'Valid', valid_err, 'Test', test_err,
+                    print('Train', 0.00, 'Valid', valid_err, 'Test', test_err,
                           'Total_samples', total_n_samples)
 
                     if len(history_errs) > patience and valid_err >= np.array(history_errs)[:-patience, 0].min():
@@ -301,7 +301,7 @@ def train_policy_IMDB():
 
                     if update_index % valid_freq == 0:
                         imdb.use_noise.set_value(0.)
-                        train_err = imdb.predict_error(train_x, train_y, kf)
+                        # train_err = imdb.predict_error(train_x, train_y, kf)
                         valid_err = imdb.predict_error(valid_x, valid_y, kf_valid)
                         test_err = imdb.predict_error(test_x, test_y, kf_test)
 
@@ -311,7 +311,7 @@ def train_policy_IMDB():
                             best_parameters = imdb.get_parameter_values()
                             bad_counter = 0
 
-                        print('Train', train_err, 'Valid', valid_err, 'Test', test_err,
+                        print('Train', 0.00, 'Valid', valid_err, 'Test', test_err,
                               'Total_samples', total_n_samples)
 
                         if len(history_errs) > patience and valid_err >= np.array(history_errs)[:-patience, 0].min():
@@ -367,8 +367,8 @@ def train_deterministic_stochastic_IMDB():
 
     # Loading configure settings
     kf_valid, kf_test, \
-    valid_freq, save_freq, display_freq, \
-    save_to, patience = pre_process_config(imdb, train_size, valid_size, test_size)
+        valid_freq, save_freq, display_freq, \
+        save_to, patience = pre_process_config(imdb, train_size, valid_size, test_size)
 
     # Build policy
     input_size = imdb.get_policy_input_size()
@@ -448,7 +448,7 @@ def train_deterministic_stochastic_IMDB():
 
                 if update_index % valid_freq == 0:
                     imdb.use_noise.set_value(0.)
-                    train_err = imdb.predict_error(train_x, train_y, kf)
+                    # train_err = imdb.predict_error(train_x, train_y, kf)
                     valid_err = imdb.predict_error(valid_x, valid_y, kf_valid)
                     test_err = imdb.predict_error(test_x, test_y, kf_test)
 
@@ -458,7 +458,7 @@ def train_deterministic_stochastic_IMDB():
                         best_parameters = imdb.get_parameter_values()
                         bad_counter = 0
 
-                    print('Train', train_err, 'Valid', valid_err, 'Test', test_err,
+                    print('Train', 0.0, 'Valid', valid_err, 'Test', test_err,
                           'Total_samples', total_n_samples)
 
                     if len(history_errs) > patience and valid_err >= np.array(history_errs)[:-patience, 0].min():
