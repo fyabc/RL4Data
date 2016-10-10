@@ -91,7 +91,7 @@
         "test_size": 500,
         "valid_portion": 0.05,
         "n_words": 10000,
-        "maxlen": 100,
+        "maxlen": null,
 
         "epoch_per_episode": 100,
 
