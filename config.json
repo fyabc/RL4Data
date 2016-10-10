@@ -88,7 +88,7 @@
         "dataset": "imdb",
         "data_dir": "./data/imdb/imdb.pkl",
 
-        "test_size": 500,
+        "test_size": 5000,
         "valid_portion": 0.05,
         "n_words": 10000,
         "maxlen": null,
