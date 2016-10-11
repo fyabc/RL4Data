@@ -38,7 +38,7 @@ def pre_process_data():
     print("%d test examples" % test_size)
 
     return train_x, train_y, valid_x, valid_y, test_x, test_y, \
-           train_size, valid_size, test_size
+        train_size, valid_size, test_size
 
 
 def pre_process_config(imdb, train_size, valid_size, test_size):
@@ -102,15 +102,15 @@ def train_raw_IMDB():
 
     # Loading data
     train_x, train_y, valid_x, valid_y, test_x, test_y, \
-    train_size, valid_size, test_size = pre_process_data()
+        train_size, valid_size, test_size = pre_process_data()
 
     # Building model
     imdb = IMDBModel(IMDBConfig['reload_model'])
 
     # Loading configure settings
     kf_valid, kf_test, \
-    valid_freq, save_freq, display_freq, \
-    save_to, patience = pre_process_config(imdb, train_size, valid_size, test_size)
+        valid_freq, save_freq, display_freq, \
+        save_to, patience = pre_process_config(imdb, train_size, valid_size, test_size)
 
     # Training
     history_errs = []
@@ -246,10 +246,14 @@ def train_policy_IMDB():
 
         update_index = 0  # the number of update done
         early_stop = False  # early stop
-        start_time = time.time()
 
         epoch = 0
         history_train_costs = []
+
+        # Speed reward
+        first_over_index = None
+
+        start_time = time.time()
 
         try:
             total_n_samples = 0
@@ -312,6 +316,10 @@ def train_policy_IMDB():
 
                         history_errs.append([valid_err, test_err])
 
+                        # Check speed rewards
+                        if first_over_index is not None and 1. - valid_err >= PolicyConfig['speed_reward_threshold']:
+                            first_over_index = update_index
+
                         if best_parameters is None or valid_err <= np.array(history_errs)[:, 0].min():
                             best_parameters = imdb.get_parameter_values()
                             bad_counter = 0
@@ -351,7 +359,10 @@ def train_policy_IMDB():
             save_to=False)
 
         # Updating policy
-        policy.update(1. - valid_err)
+        if PolicyConfig['speed_reward']:
+            policy.update(-np.log(first_over_index))
+        else:
+            policy.update(1. - valid_err)
 
         if Config['policy_save_freq'] > 0 and episode % Config['policy_save_freq'] == 0:
             policy.save_policy()
@@ -365,7 +376,7 @@ def train_deterministic_stochastic_IMDB():
 
     # Loading data
     train_x, train_y, valid_x, valid_y, test_x, test_y, \
-    train_size, valid_size, test_size = pre_process_data()
+        train_size, valid_size, test_size = pre_process_data()
 
     # Building model
     imdb = IMDBModel(IMDBConfig['reload_model'])

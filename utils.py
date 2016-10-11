@@ -214,6 +214,11 @@ def simple_parse_args(args, param_config=CifarConfig):
     return args_dict, policy_args_dict, param_args_dict
 
 
+def check_config(param_config, policy_config):
+    assert not (policy_config['immediate_reward'] and policy_config['speed_reward']),\
+        'Speed reward must be terminal reward'
+
+
 def process_before_train(param_config=CifarConfig, policy_config=PolicyConfig):
     import pprint
 
@@ -228,6 +233,8 @@ def process_before_train(param_config=CifarConfig, policy_config=PolicyConfig):
     Config.update(args_dict)
     param_config.update(param_args_dict)
     policy_config.update(policy_args_dict)
+
+    check_config(param_config, policy_config)
 
     message('The configures and hyperparameters are:')
     pprint.pprint(Config, stream=sys.stderr)

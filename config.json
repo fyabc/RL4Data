@@ -47,6 +47,9 @@
         "immediate_reward": false,
         "immediate_reward_sample_size": 1000,
 
+        "speed_reward": false,
+        "speed_reward_threshold": 0.8,
+
         "policy_optimizer": "adam",
         "policy_learning_rate": 0.02,
         "policy_learning_rate_discount": 0.7,
