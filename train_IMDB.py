@@ -360,7 +360,7 @@ def train_policy_IMDB():
 
         # Updating policy
         if PolicyConfig['speed_reward']:
-            policy.update(np.log(epoch) - np.log(first_over_index))
+            policy.update(np.log(epoch) - np.log(first_over_index + 1))
         else:
             policy.update(1. - valid_err)
 
