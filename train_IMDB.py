@@ -317,7 +317,7 @@ def train_policy_IMDB():
                         history_errs.append([valid_err, test_err])
 
                         # Check speed rewards
-                        if first_over_index is not None and 1. - valid_err >= PolicyConfig['speed_reward_threshold']:
+                        if first_over_index is None and 1. - valid_err >= PolicyConfig['speed_reward_threshold']:
                             first_over_index = update_index
 
                         if best_parameters is None or valid_err <= np.array(history_errs)[:, 0].min():
