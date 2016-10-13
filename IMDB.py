@@ -11,7 +11,7 @@ import theano.tensor as T
 import theano
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
-from utils import fX, floatX, logging, message
+from utils import fX, floatX, logging, message, average
 from utils_IMDB import prepare_imdb_data as prepare_data, pr, ortho_weight, get_minibatches_idx
 from optimizers import adadelta, adam, sgd, rmsprop
 from config import IMDBConfig, PolicyConfig
@@ -264,10 +264,10 @@ class IMDBModel(object):
         if PolicyConfig['add_margin']:
             input_size += 1
         if PolicyConfig['add_average_accuracy']:
-            pass
+            input_size += 1
         return input_size
 
-    def get_policy_input(self, x, mask, y, epoch):
+    def get_policy_input(self, x, mask, y, epoch, history_accuracy=None):
         batch_size = y.shape[0]
 
         probability = self.f_predict_prob(x, mask)
@@ -310,7 +310,8 @@ class IMDBModel(object):
             probability = np.hstack([probability, margin_inputs])
 
         if PolicyConfig['add_average_accuracy']:
-            pass
+            avg_acc_inputs = np.full((batch_size, 1), average(history_accuracy), dtype=fX)
+            probability = np.hstack([probability, avg_acc_inputs])
 
         return probability
 

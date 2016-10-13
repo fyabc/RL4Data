@@ -58,6 +58,14 @@ def unpickle(filename):
         return pkl.load(f)
 
 
+def average(sequence):
+    if sequence is None:
+        return 0.0
+    if len(sequence) == 0:
+        return 0.0
+    return sum(sequence) / len(sequence)
+
+
 ###############################
 # Data loading and processing #
 ###############################

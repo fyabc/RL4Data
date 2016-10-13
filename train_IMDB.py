@@ -2,6 +2,7 @@
 
 from __future__ import print_function, unicode_literals
 
+import sys
 import time
 import numpy as np
 
@@ -248,7 +249,7 @@ def train_policy_IMDB():
         early_stop = False  # early stop
 
         epoch = 0
-        history_train_costs = []
+        history_accuracy = []
 
         # Speed reward
         first_over_index = None
@@ -283,7 +284,8 @@ def train_policy_IMDB():
                     x, mask, y = prepare_data(x, np.asarray(y, dtype='int64'))
 
                     # Policy take action here
-                    probability = imdb.get_policy_input(x, mask, y, epoch)
+                    probability = imdb.get_policy_input(x, mask, y, epoch, history_accuracy)
+
                     actions = policy.take_action(probability)
 
                     # get masked inputs and targets
@@ -294,10 +296,9 @@ def train_policy_IMDB():
                     n_samples += x.shape[1]
                     total_n_samples += x.shape[1]
 
-                    cost = imdb.f_grad_shared(x, mask, y)
-                    imdb.f_update(imdb.learning_rate)
-
-                    history_train_costs.append(cost)
+                    if x.shape[1] != 0:
+                        cost = imdb.f_grad_shared(x, mask, y)
+                        imdb.f_update(imdb.learning_rate)
 
                     if np.isnan(cost) or np.isinf(cost):
                         print('bad cost detected: ', cost)
@@ -315,6 +316,7 @@ def train_policy_IMDB():
                         test_err = imdb.predict_error(test_x, test_y, kf_test)
 
                         history_errs.append([valid_err, test_err])
+                        history_accuracy.append(1. - valid_err)
 
                         # Check speed rewards
                         if first_over_index is None and 1. - valid_err >= PolicyConfig['speed_reward_threshold']:
@@ -362,7 +364,7 @@ def train_policy_IMDB():
         if PolicyConfig['speed_reward']:
             if first_over_index is None:
                 first_over_index = epoch + 1
-            policy.update(-np.log(first_over_index + 1))
+            policy.update(np.log(IMDBConfig['epoch_per_episode']) - np.log(first_over_index + 1))
         else:
             policy.update(1. - valid_err)
 
