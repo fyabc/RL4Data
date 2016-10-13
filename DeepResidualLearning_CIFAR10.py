@@ -22,7 +22,7 @@ from lasagne.layers import batch_norm
 from lasagne.layers.helper import get_all_param_values, set_all_param_values
 
 from config import Config, CifarConfig, PolicyConfig
-from utils import logging, iterate_minibatches, fX, floatX, shuffle_data
+from utils import logging, iterate_minibatches, fX, floatX, shuffle_data, average
 
 
 class CNN(object):
@@ -322,10 +322,10 @@ class CNN(object):
         if PolicyConfig['add_margin']:
             input_size += 1
         if PolicyConfig['add_average_accuracy']:
-            pass
+            input_size += 1
         return input_size
 
-    def get_policy_input(self, inputs, targets, epoch):
+    def get_policy_input(self, inputs, targets, epoch, history_accuracy=None):
         batch_size = targets.shape[0]
 
         probability = self.probs_function(inputs)
@@ -372,7 +372,8 @@ class CNN(object):
             probability = np.hstack([probability, margin_inputs])
 
         if PolicyConfig['add_average_accuracy']:
-            pass
+            avg_acc_inputs = np.full((batch_size, 1), average(history_accuracy), dtype=fX)
+            probability = np.hstack([probability, avg_acc_inputs])
 
         return probability
 

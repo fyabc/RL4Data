@@ -110,6 +110,8 @@ def train_policy():
             cnn.reset_all_parameters()
         cnn.reset_learning_rate()
 
+        history_accuracy = []
+
         for epoch in range(epoch_per_episode):
             print('[Epoch {}]'.format(epoch))
             message('[Epoch {}]'.format(epoch))
@@ -128,7 +130,7 @@ def train_policy():
             for batch in iterate_minibatches(x_train_small, y_train_small, batch_size, shuffle=True, augment=True):
                 inputs, targets = batch
 
-                probability = cnn.get_policy_input(inputs, targets, epoch)
+                probability = cnn.get_policy_input(inputs, targets, epoch, history_accuracy)
                 actions = policy.take_action(probability)
 
                 # get masked inputs and targets
@@ -147,6 +149,8 @@ def train_policy():
 
             validate_err, validate_acc, validate_batches = cnn.validate_or_test(x_validate, y_validate)
             validate_acc /= validate_batches
+
+            history_accuracy.append(validate_acc)
 
             if (epoch + 1) in (41, 61):
                 cnn.update_learning_rate()
@@ -212,30 +216,13 @@ def train_cnn_deterministic():
     # Train the network
     batch_size = CifarConfig['train_batch_size']
 
+    history_accuracy = []
+
     for epoch in range(epoch_per_episode):
         print('[Epoch {}]'.format(epoch))
         message('[Epoch {}]'.format(epoch))
 
-        if not curriculum:
-            x_train_small, y_train_small = shuffle_data(x_train_small, y_train_small)
-        else:
-            start_time = time.time()
-            all_probabilities = [cnn.get_policy_input(inputs, targets, epoch) for inputs, targets in
-                                 iterate_minibatches(x_train_small, y_train_small, batch_size,
-                                 shuffle=False, augment=True)]
-            all_alphas = np.concatenate([
-                np.asarray([policy.output_function(prob) for prob in probability], dtype=fX)
-                for probability in all_probabilities
-            ], axis=0)
-            sorted_idx_alpha = sorted(enumerate(all_alphas), key=lambda e: -e[1])
-            indices = np.asarray([elem[0] for elem in sorted_idx_alpha], dtype='int64')
-            x_train_small = x_train_small[indices]
-            y_train_small = y_train_small[indices]
-
-            print('Curriculum took {:.3f}s'.format(time.time() - start_time))
-            print('Length of indices:', len(indices))
-            print('Shape of x and y:', x_train_small.shape, y_train_small.shape)
-            print('Idx_alpha:', np.asarray(sorted_idx_alpha))
+        x_train_small, y_train_small = shuffle_data(x_train_small, y_train_small)
 
         train_err = 0
         train_batches = 0
@@ -245,15 +232,12 @@ def train_cnn_deterministic():
                                          shuffle=not curriculum, augment=True):
             inputs, targets = batch
 
-            if not curriculum:
-                probability = cnn.get_policy_input(inputs, targets, epoch)
-                alpha = np.asarray([policy.output_function(prob) for prob in probability], dtype=fX)
+            probability = cnn.get_policy_input(inputs, targets, epoch, history_accuracy)
+            alpha = np.asarray([policy.output_function(prob) for prob in probability], dtype=fX)
 
-                alpha /= np.sum(alpha)
+            alpha /= np.sum(alpha)
 
-                train_err += cnn.alpha_train_function(inputs, targets, alpha)
-            else:
-                train_err += cnn.train_function(inputs, targets)
+            train_err += cnn.alpha_train_function(inputs, targets, alpha)
             train_batches += 1
 
         if (epoch + 1) in (41, 61):
@@ -261,6 +245,7 @@ def train_cnn_deterministic():
 
         validate_err, validate_acc, validate_batches = cnn.validate_or_test(x_validate, y_validate)
         validate_acc /= validate_batches
+        history_accuracy.append(validate_acc)
 
         print("Epoch {} of {} took {:.3f}s".format(epoch, epoch_per_episode, time.time() - start_time))
         print('Training Loss:', train_err / train_batches)
@@ -308,6 +293,8 @@ def train_cnn_stochastic():
     # Train the network
     batch_size = CifarConfig['train_batch_size']
 
+    history_accuracy = []
+
     for epoch in range(epoch_per_episode):
         print('[Epoch {}]'.format(epoch))
         message('[Epoch {}]'.format(epoch))
@@ -327,7 +314,7 @@ def train_cnn_stochastic():
                 actions = np.random.binomial(1, 1 - float(random_drop_numbers[epoch]) / train_small_size,
                                              targets.shape).astype(bool)
             else:
-                probability = cnn.get_policy_input(inputs, targets, epoch)
+                probability = cnn.get_policy_input(inputs, targets, epoch, history_accuracy)
                 actions = policy.take_action(probability, False)
 
             # get masked inputs and targets
@@ -344,6 +331,7 @@ def train_cnn_stochastic():
 
         validate_err, validate_acc, validate_batches = cnn.validate_or_test(x_validate, y_validate)
         validate_acc /= validate_batches
+        history_accuracy.append(validate_acc)
 
         print("Epoch {} of {} took {:.3f}s".format(epoch, epoch_per_episode, time.time() - start_time))
         print('Training Loss:', train_err / train_batches)

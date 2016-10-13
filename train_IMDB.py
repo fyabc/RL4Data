@@ -2,6 +2,7 @@
 
 from __future__ import print_function, unicode_literals
 
+import sys
 import time
 import numpy as np
 
@@ -248,7 +249,7 @@ def train_policy_IMDB():
         early_stop = False  # early stop
 
         epoch = 0
-        history_train_costs = []
+        history_accuracy = []
 
         # Speed reward
         first_over_index = None
@@ -264,10 +265,19 @@ def train_policy_IMDB():
 
                 n_samples = 0
 
+                # print('$1', episode, epoch)
+                # sys.stdout.flush()
+
                 # Get new shuffled index for the training set.
                 kf = get_minibatches_idx(train_small_size, imdb.train_batch_size, shuffle=True)
 
+                # print('$2', train_small_size, imdb.train_batch_size)
+                # sys.stdout.flush()
+
                 policy.start_new_epoch()
+
+                # print('$3', policy.reward_buffer)
+                # sys.stdout.flush()
 
                 for _, train_index in kf:
                     update_index += 1
@@ -276,6 +286,8 @@ def train_policy_IMDB():
                     # Select the random examples for this minibatch
                     x = [train_small_x[t] for t in train_index]
                     y = [train_small_y[t] for t in train_index]
+
+                    # print('$4-1')
 
                     # Get the data in numpy.ndarray format
                     # This swap the axis!
@@ -297,8 +309,6 @@ def train_policy_IMDB():
                     cost = imdb.f_grad_shared(x, mask, y)
                     imdb.f_update(imdb.learning_rate)
 
-                    history_train_costs.append(cost)
-
                     if np.isnan(cost) or np.isinf(cost):
                         print('bad cost detected: ', cost)
                         return 1., 1., 1.
@@ -315,6 +325,7 @@ def train_policy_IMDB():
                         test_err = imdb.predict_error(test_x, test_y, kf_test)
 
                         history_errs.append([valid_err, test_err])
+                        history_accuracy.append(1. - valid_err)
 
                         # Check speed rewards
                         if first_over_index is None and 1. - valid_err >= PolicyConfig['speed_reward_threshold']:
@@ -335,6 +346,7 @@ def train_policy_IMDB():
                                 break
 
                 print('Seen %d samples' % n_samples)
+                # sys.stdout.flush()
 
                 # Immediate reward
                 if PolicyConfig['immediate_reward']:

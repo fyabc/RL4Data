@@ -39,10 +39,10 @@
         "add_label_input": true,
         "add_label": true,
         "use_first_layer_output": false,
-        "add_margin": false,
-        "add_average_accuracy": false,
+        "add_margin": true,
+        "add_average_accuracy": true,
         "add_epoch_number": true,
-        "add_learning_rate": true,
+        "add_learning_rate": false,
 
         "immediate_reward": false,
         "immediate_reward_sample_size": 1000,
