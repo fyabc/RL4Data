@@ -56,7 +56,8 @@
         "policy_learning_rate_discount_freq": 50,
         "reward_baseline_update_rate": 0.1,
 
-        "gamma": 0.9
+        "gamma": 0.9,
+        "b_init": 2.0
     },
 
     "cifar10": {

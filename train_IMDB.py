@@ -225,7 +225,7 @@ def train_policy_IMDB():
     # Build policy
     input_size = imdb.get_policy_input_size()
     print('Input size of policy network:', input_size)
-    policy = PolicyNetwork(input_size=input_size, start_b=2.)
+    policy = PolicyNetwork(input_size=input_size, start_b=PolicyConfig['b_init'])
 
     num_episodes = PolicyConfig['num_episodes']
 
@@ -381,6 +381,33 @@ def train_policy_IMDB():
             policy.discount_learning_rate()
 
 
+def train_actor_critic_IMDB():
+    np.random.seed(IMDBConfig['seed'])
+
+    # Loading data
+    train_x, train_y, valid_x, valid_y, test_x, test_y, \
+        train_size, valid_size, test_size = pre_process_data()
+
+    # Building model
+    imdb = IMDBModel(IMDBConfig['reload_model'])
+
+    # Loading configure settings
+    kf_valid, kf_test, \
+        valid_freq, save_freq, display_freq, \
+        save_to, patience = pre_process_config(imdb, train_size, valid_size, test_size)
+
+    # Build policy
+    input_size = imdb.get_policy_input_size()
+    print('Input size of policy network:', input_size)
+    policy = PolicyNetwork(input_size=input_size, start_b=2.)
+
+    num_episodes = PolicyConfig['num_episodes']
+
+    for episode in range(num_episodes):
+        print('[Episode {}]'.format(episode))
+        message('[Episode {}]'.format(episode))
+
+
 def train_deterministic_stochastic_IMDB():
     np.random.seed(IMDBConfig['seed'])
 
@@ -518,6 +545,8 @@ if __name__ == '__main__':
         train_raw_IMDB()
     elif Config['train_type'] == 'policy':
         train_policy_IMDB()
+    elif Config['train_type'] == 'actor_critic':
+        train_actor_critic_IMDB()
     elif Config['train_type'] == 'deterministic':
         train_deterministic_stochastic_IMDB()
     elif Config['train_type'] == 'stochastic':
