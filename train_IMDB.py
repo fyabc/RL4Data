@@ -12,6 +12,9 @@ from utils import process_before_train, floatX, message, get_part_data
 from utils_IMDB import load_imdb_data, preprocess_imdb_data, get_minibatches_idx
 from utils_IMDB import prepare_imdb_data as prepare_data
 
+# DDPG
+from DDPG import DDPG
+
 from policyNetwork import PolicyNetwork
 
 __author__ = 'fyabc'
@@ -406,6 +409,122 @@ def train_actor_critic_IMDB():
     for episode in range(num_episodes):
         print('[Episode {}]'.format(episode))
         message('[Episode {}]'.format(episode))
+
+        imdb.reset_parameters()
+
+        # get small training data
+        train_small_x, train_small_y = get_part_data(np.asarray(train_x), np.asarray(train_y),
+                                                     IMDBConfig['train_small_size'])
+        train_small_size = len(train_small_x)
+
+        # Training
+        history_errs = []
+        best_parameters = None
+        bad_counter = 0
+
+        update_index = 0  # the number of update done
+        early_stop = False  # early stop
+
+        epoch = 0
+        history_accuracy = []
+
+        # Speed reward
+        first_over_index = None
+
+        start_time = time.time()
+
+        try:
+            total_n_samples = 0
+
+            for epoch in range(IMDBConfig['epoch_per_episode']):
+                print('[Epoch {}]'.format(epoch))
+                message('[Epoch {}]'.format(epoch))
+
+                n_samples = 0
+
+                # Get new shuffled index for the training set.
+                kf = get_minibatches_idx(train_small_size, imdb.train_batch_size, shuffle=True)
+
+                policy.start_new_epoch()
+
+                for _, train_index in kf:
+                    update_index += 1
+                    imdb.use_noise.set_value(floatX(1.))
+
+                    # Select the random examples for this minibatch
+                    x = [train_small_x[t] for t in train_index]
+                    y = [train_small_y[t] for t in train_index]
+
+                    # Get the data in numpy.ndarray format
+                    # This swap the axis!
+                    # Return something of shape (minibatch maxlen, n samples)
+                    x, mask, y = prepare_data(x, np.asarray(y, dtype='int64'))
+
+                    # Policy take action here
+                    probability = imdb.get_policy_input(x, mask, y, epoch, history_accuracy)
+
+                    actions = policy.take_action(probability)
+
+                    # get masked inputs and targets
+                    x = x[:, actions]
+                    mask = mask[:, actions]
+                    y = y[actions]
+
+                    n_samples += x.shape[1]
+                    total_n_samples += x.shape[1]
+
+                    if x.shape[1] != 0:
+                        cost = imdb.f_grad_shared(x, mask, y)
+                        imdb.f_update(imdb.learning_rate)
+
+                    if np.isnan(cost) or np.isinf(cost):
+                        print('bad cost detected: ', cost)
+                        return 1., 1., 1.
+
+                    if update_index % display_freq == 0:
+                        print('Epoch ', epoch, 'Update ', update_index, 'Cost ', cost)
+
+                    # Do not save when training policy!
+
+                    if update_index % valid_freq == 0:
+                        imdb.use_noise.set_value(0.)
+                        # train_err = imdb.predict_error(train_x, train_y, kf)
+                        valid_err = imdb.predict_error(valid_x, valid_y, kf_valid)
+                        test_err = imdb.predict_error(test_x, test_y, kf_test)
+
+                        history_errs.append([valid_err, test_err])
+                        history_accuracy.append(1. - valid_err)
+
+                        # Check speed rewards
+                        if first_over_index is None and 1. - valid_err >= PolicyConfig['speed_reward_threshold']:
+                            first_over_index = update_index
+
+                        if best_parameters is None or valid_err <= np.array(history_errs)[:, 0].min():
+                            best_parameters = imdb.get_parameter_values()
+                            bad_counter = 0
+
+                        print('Train', 0.00, 'Valid', valid_err, 'Test', test_err,
+                              'Total_samples', total_n_samples)
+
+                        if len(history_errs) > patience and valid_err >= np.array(history_errs)[:-patience, 0].min():
+                            bad_counter += 1
+                            if bad_counter > patience:
+                                print('Early Stop!')
+                                early_stop = True
+                                break
+
+                print('Seen %d samples' % n_samples)
+
+                # Immediate reward
+                if PolicyConfig['immediate_reward']:
+                    imdb.use_noise.set_value(0.)
+                    valid_err = imdb.predict_error(valid_x, valid_y, kf_valid)
+                    policy.reward_buffer.append(1. - valid_err)
+
+                if early_stop:
+                    break
+        except KeyboardInterrupt:
+            print('Training interrupted')
 
 
 def train_deterministic_stochastic_IMDB():
