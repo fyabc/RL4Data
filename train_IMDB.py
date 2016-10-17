@@ -88,7 +88,7 @@ def test_and_post_process(imdb,
     valid_err = imdb.predict_error(valid_x, valid_y, kf_valid)
     test_err = imdb.predict_error(test_x, test_y, kf_test)
 
-    print('Train ', train_err, 'Valid ', valid_err, 'Test ', test_err)
+    print('Final: Train ', train_err, 'Valid ', valid_err, 'Test ', test_err)
 
     if save_to:
         np.savez(save_to, train_err=train_err,
@@ -525,6 +525,37 @@ def train_actor_critic_IMDB():
                     break
         except KeyboardInterrupt:
             print('Training interrupted')
+
+        end_time = time.time()
+
+        train_err, valid_err, test_err = test_and_post_process(
+            imdb,
+            train_small_size, train_small_x, train_small_y, valid_x, valid_y, test_x,
+            test_y,
+            kf_valid, kf_test,
+            history_errs, best_parameters,
+            epoch, start_time, end_time,
+            save_to=False)
+
+        # Updating policy
+        if PolicyConfig['speed_reward']:
+            if first_over_index is None:
+                first_over_index = update_index + 1
+            terminal_reward = float(first_over_index) / (len(kf) * imdb.train_batch_size)
+            policy.update(-np.log(terminal_reward))
+
+            message('First over index:', first_over_index)
+            message('Length of kf:', len(kf))
+            message('Training batch size:', imdb.train_batch_size)
+            message('Terminal reward:', terminal_reward)
+        else:
+            policy.update(1. - valid_err)
+
+        if Config['policy_save_freq'] > 0 and episode % Config['policy_save_freq'] == 0:
+            policy.save_policy()
+
+        if episode % PolicyConfig['policy_learning_rate_discount_freq'] == 0:
+            policy.discount_learning_rate()
 
 
 def train_deterministic_stochastic_IMDB():

@@ -59,7 +59,9 @@
         "gamma": 0.9,
         "b_init": 2.0,
 
-        "replay_buffer_size": 1000
+        // actor-critic (DDPG) algorithm
+        "replay_buffer_size": 1000,
+        "DDPG_batch_size": 16
     },
 
     "cifar10": {

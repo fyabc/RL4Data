@@ -62,6 +62,14 @@ class ReplayBuffer(object):
         self.buffer.clear()
 
 
+class ActorNetwork(object):
+    pass
+
+
+class CriticNetwork(object):
+    pass
+
+
 class DDPG(object):
     def __init__(self, environment):
         self.environment = environment
@@ -81,7 +89,14 @@ class DDPG(object):
         self.exploration_noise = OUNoise(self.action_dim)
 
     def train(self):
-        pass
+        # Sample a random minibatch of N transitions from replay buffer
+        minibatch = self.replay_buffer.get_batch(PolicyConfig['DDPG_batch_size'])
+
+        state_batch = np.asarray([data[0] for data in minibatch])
+        action_batch = np.asarray([data[1] for data in minibatch])
+        reward_batch = np.asarray([data[2] for data in minibatch])
+        next_state_batch = np.asarray([data[3] for data in minibatch])
+        done_batch = np.asarray([data[4] for data in minibatch])
 
     def noise_action(self, state):
         pass
@@ -91,3 +106,11 @@ class DDPG(object):
 
     def perceive(self, state, action, reward, next_state, done):
         pass
+
+
+def test():
+    OUNoise.test()
+
+
+if __name__ == '__main__':
+    test()
