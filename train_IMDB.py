@@ -13,7 +13,7 @@ from utils_IMDB import load_imdb_data, preprocess_imdb_data, get_minibatches_idx
 from utils_IMDB import prepare_imdb_data as prepare_data
 
 # Actor-Critic from ChangXu
-from DDPG_ChangXu import ActorNetwork, CriticNetwork
+from critic_network import CriticNetwork
 
 from policyNetwork import PolicyNetwork
 
@@ -400,8 +400,10 @@ def train_actor_critic_IMDB():
         save_to, patience = pre_process_config(imdb, train_size, valid_size, test_size)
 
     # Build Actor and Critic network
-    actor = ActorNetwork()
-    critic = CriticNetwork()
+    input_size = imdb.get_policy_input_size()
+    print('Input size of policy network:', input_size)
+    actor = PolicyNetwork(input_size=input_size, start_b=0.)
+    critic = CriticNetwork(feature_size=input_size, batch_size=imdb.train_batch_size)
 
     num_episodes = PolicyConfig['num_episodes']
 
@@ -445,12 +447,14 @@ def train_actor_critic_IMDB():
                 kf = get_minibatches_idx(train_small_size, imdb.train_batch_size, shuffle=True)
 
                 for cur_batch_idx, train_index in kf:
+                    if len(train_index) < imdb.train_batch_size:
+                        continue
+
                     update_index += 1
 
                     # IMDB set noise before each batch
                     imdb.use_noise.set_value(floatX(1.))
 
-                    # 1. Select the random examples for this minibatch
                     x = [train_small_x[t] for t in train_index]
                     y = [train_small_y[t] for t in train_index]
 
@@ -459,36 +463,54 @@ def train_actor_critic_IMDB():
                     # Return something of shape (minibatch maxlen, n samples)
                     x, mask, y = prepare_data(x, np.asarray(y, dtype='int64'))
 
-                    # 2. Select the random examples for a different random batch
-                    random_batch_idx = np.random.randint(len(kf))
-                    while random_batch_idx == cur_batch_idx:
-                        random_batch_idx = np.random.randint(len(kf))
+                    probability = imdb.get_policy_input(x, mask, y, epoch, history_accuracy)
+                    actions = actor.take_action(probability, log_replay=False)
 
-                    random_train_index = kf[random_batch_idx][1]
-                    x_random_sample = [train_small_x[t] for t in random_train_index]
-                    y_random_sample = [train_small_y[t] for t in random_train_index]
+                    # get masked inputs and targets
+                    x_selected = x[:, actions]
+                    mask_selected = mask[:, actions]
+                    y_selected = y[actions]
 
-                    n_samples += x.shape[1]
-                    total_n_samples += x.shape[1]
+                    if x_selected.shape[1] == 0:
+                        continue
 
-                    # 3. Get loss of optimizee
-                    cost = imdb.f_grad_shared(x, mask, y)
+                    n_samples += x_selected.shape[1]
+                    total_n_samples += x_selected.shape[1]
 
-                    # 4. The optimizer take action according to the loss
-                    action = actor.take_action(cost)
-
-                    # 5. Get the gradient of optimizee parameters
-                    imdb_grad_value = imdb.f_grad(x, mask, y)
-                    print('imdb_grad_value:', imdb_grad_value)
-
+                    # Update the IMDB network with selected data
+                    cost = imdb.f_grad_shared(x_selected, mask_selected, y_selected)
                     imdb.f_update(imdb.learning_rate)
+
+                    # Get immediate reward
+                    cost_old = cost
+                    cost_new = imdb.f_cost(x, mask, y)
+                    imm_reward = cost_old - cost_new
+
+                    # Get new state, new actions, and compute new Q value
+                    probability_new = imdb.get_policy_input(x, mask, y, epoch, history_accuracy)
+                    actions_new = actor.take_action(probability_new, log_replay=False)
+
+                    Q_value_new = critic.Q_function(state=probability_new, action=actions_new)
+                    if epoch < IMDBConfig['epoch_per_episode'] - 1:
+                        label = 1.0 * Q_value_new + imm_reward
+                    else:
+                        label = imm_reward
+
+                    # Update the critic Q network
+                    Q_loss = critic.update(probability, actions, floatX(label))
+
+                    # Update actor network
+                    actor_loss = actor.update_raw(probability, actions,
+                                                  np.full(actions.shape, label, dtype=probability.dtype))
 
                     if np.isnan(cost) or np.isinf(cost):
                         print('bad cost detected: ', cost)
                         return 1., 1., 1.
 
                     if update_index % display_freq == 0:
-                        print('Epoch ', epoch, 'Update ', update_index, 'Cost ', cost)
+                        print('Epoch', epoch, '\tUpdate', update_index, '\tCost', cost, end='')
+                        print('\tCritic Q network loss', Q_loss, end='')
+                        print('\tActor network loss', actor_loss)
 
                     # Do not save when training policy!
 
@@ -500,10 +522,6 @@ def train_actor_critic_IMDB():
 
                         history_errs.append([valid_err, test_err])
                         history_accuracy.append(1. - valid_err)
-
-                        # Check speed rewards
-                        if first_over_index is None and 1. - valid_err >= PolicyConfig['speed_reward_threshold']:
-                            first_over_index = update_index
 
                         if best_parameters is None or valid_err <= np.array(history_errs)[:, 0].min():
                             best_parameters = imdb.get_parameter_values()

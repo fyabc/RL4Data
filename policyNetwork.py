@@ -202,6 +202,12 @@ class PolicyNetwork(object):
             self.W.set_value(f['arr_0'])
             self.b.set_value(f['arr_1'])
 
+    def update_raw(self, inputs, actions, rewards):
+        cost = self.f_grad_shared(inputs, actions, rewards)
+        self.f_update(self.learning_rate.get_value())
+
+        return cost
+
 
 def test():
     pn = PolicyNetwork(input_size=CifarConfig['cnn_output_size'])

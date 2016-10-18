@@ -32,20 +32,6 @@ class IMDBModel(object):
         self.parameters = OrderedDict()
         self.np_parameters = OrderedDict()
 
-        # Build train function and parameters
-        self.use_noise = None
-        self.inputs = None
-        self.mask = None
-        self.targets = None
-        self.cost = None
-
-        self.f_cost = None
-        self.f_grad = None
-        self.f_predict = None
-        self.f_predict_prob = None
-        self.f_grad_shared = None
-        self.f_update = None
-
         self.build_train_function()
 
         if reload_model:
@@ -153,8 +139,8 @@ class IMDBModel(object):
 
     @logging
     def build_train_function(self):
-        theano.config.exception_verbosity = 'high'
-        theano.config.optimizer = 'None'
+        # theano.config.exception_verbosity = 'high'
+        # theano.config.optimizer = 'None'
 
         # Initialize self.parameters
         self.init_parameters()
@@ -194,7 +180,9 @@ class IMDBModel(object):
     
         self.cost = -T.log(predict[T.arange(n_samples), self.targets] + off).mean()
 
-        # return self.use_noise, self.inputs, self.mask, self.targets, self.f_predict_prob, self.f_predict, self.cost
+        self.f_cost_without_decay = theano.function(
+            [self.inputs, self.mask, self.targets], self.cost, name='f_cost_without_decay'
+        )
 
         decay_c = IMDBConfig['decay_c']
         if decay_c > 0.:
