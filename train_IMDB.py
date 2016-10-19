@@ -402,7 +402,7 @@ def train_actor_critic_IMDB():
     # Build Actor and Critic network
     input_size = imdb.get_policy_input_size()
     print('Input size of policy network:', input_size)
-    actor = PolicyNetwork(input_size=input_size, start_b=0.)
+    actor = PolicyNetwork(input_size=input_size, start_b=PolicyConfig['b_init'])
     critic = CriticNetwork(feature_size=input_size, batch_size=imdb.train_batch_size)
 
     num_episodes = PolicyConfig['num_episodes']
@@ -428,9 +428,6 @@ def train_actor_critic_IMDB():
 
         epoch = 0
         history_accuracy = []
-
-        # Speed reward
-        first_over_index = None
 
         start_time = time.time()
 
@@ -556,7 +553,7 @@ def train_actor_critic_IMDB():
             save_to=False)
 
 
-def train_deterministic_stochastic_IMDB():
+def test_policy_IMDB():
     np.random.seed(IMDBConfig['seed'])
 
     # Loading data
@@ -696,8 +693,8 @@ if __name__ == '__main__':
     elif Config['train_type'] == 'actor_critic':
         train_actor_critic_IMDB()
     elif Config['train_type'] == 'deterministic':
-        train_deterministic_stochastic_IMDB()
+        test_policy_IMDB()
     elif Config['train_type'] == 'stochastic':
-        train_deterministic_stochastic_IMDB()
+        test_policy_IMDB()
     else:
         raise Exception('Unknown train type {}'.format(Config['train_type']))
