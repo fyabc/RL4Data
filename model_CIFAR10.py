@@ -25,9 +25,9 @@ from config import Config, CifarConfig, PolicyConfig
 from utils import logging, iterate_minibatches, fX, floatX, shuffle_data, average
 
 
-class CNN(object):
+class CIFARModel(object):
     """
-    The neural network model.
+    The CIFAR-10 neural network model (ResNet).
     """
 
     output_size = CifarConfig['cnn_output_size']
@@ -260,7 +260,7 @@ class CNN(object):
 
         return self.train_function(inputs, targets), self.probs_function(inputs)
 
-    def reset_all_parameters(self):
+    def reset_parameters(self):
         set_all_param_values(self.network, self.saved_init_parameters_values, trainable=True)
 
     @logging

@@ -201,6 +201,15 @@ class IMDBModel(object):
         self.f_grad_shared, self.f_update = eval(IMDBConfig['optimizer'])(
             lr, self.parameters, grads, [self.inputs, self.mask, self.targets], self.cost)
 
+    def update(self, x, mask, y):
+        if x.shape[1] == 0:
+            return 0.0
+
+        cost = self.f_grad_shared(x, mask, y)
+        self.f_update(self.learning_rate)
+
+        return cost
+
     @logging
     def load_model(self, filename=None):
         filename = filename or IMDBConfig['save_to']

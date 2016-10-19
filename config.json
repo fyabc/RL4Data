@@ -89,6 +89,8 @@
     "imdb": {
         "seed": 123,
 
+        "random_drop_number_file": "./data/imdb/drop_num.txt",
+
         "dataset": "imdb",
         "data_dir": "./data/imdb/imdb.pkl",
 

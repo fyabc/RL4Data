@@ -7,13 +7,13 @@ import time
 import numpy as np
 
 from config import IMDBConfig, Config, PolicyConfig
-from IMDB import IMDBModel
+from model_IMDB import IMDBModel
 from utils import process_before_train, floatX, message, get_part_data
 from utils_IMDB import load_imdb_data, preprocess_imdb_data, get_minibatches_idx
 from utils_IMDB import prepare_imdb_data as prepare_data
 
 # Actor-Critic from ChangXu
-from critic_network import CriticNetwork
+from criticNetwork import CriticNetwork
 
 from policyNetwork import PolicyNetwork
 
@@ -45,17 +45,17 @@ def pre_process_data():
         train_size, valid_size, test_size
 
 
-def pre_process_config(imdb, train_size, valid_size, test_size):
-    kf_valid = get_minibatches_idx(valid_size, imdb.validate_batch_size)
-    kf_test = get_minibatches_idx(test_size, imdb.validate_batch_size)
+def pre_process_config(model, train_size, valid_size, test_size):
+    kf_valid = get_minibatches_idx(valid_size, model.validate_batch_size)
+    kf_test = get_minibatches_idx(test_size, model.validate_batch_size)
 
     valid_freq = IMDBConfig['valid_freq']
     if valid_freq == -1:
-        valid_freq = train_size // imdb.train_batch_size
+        valid_freq = train_size // model.train_batch_size
 
     save_freq = IMDBConfig['save_freq']
     if save_freq == -1:
-        save_freq = train_size // imdb.train_batch_size
+        save_freq = train_size // model.train_batch_size
 
     display_freq = IMDBConfig['display_freq']
     save_to = IMDBConfig['save_to']
@@ -64,29 +64,29 @@ def pre_process_config(imdb, train_size, valid_size, test_size):
     return kf_valid, kf_test, valid_freq, save_freq, display_freq, save_to, patience
 
 
-def save_parameters(imdb, best_parameters, save_to, history_errs):
+def save_parameters(model, best_parameters, save_to, history_errs):
     print('Saving...')
 
     if best_parameters:
         params = best_parameters
     else:
-        params = imdb.get_parameter_values()
+        params = model.get_parameter_values()
     np.savez(save_to, history_errs=history_errs, **params)
     # pkl.dump(IMDBConfig, open('%s.pkl' % save_to, 'wb'))
     print('Done')
 
 
-def test_and_post_process(imdb,
+def test_and_post_process(model,
                           train_size, train_x, train_y, valid_x, valid_y, test_x, test_y,
                           kf_valid, kf_test,
                           history_errs, best_parameters,
                           epoch, start_time, end_time,
                           save_to):
-    kf_train_sorted = get_minibatches_idx(train_size, imdb.train_batch_size)
+    kf_train_sorted = get_minibatches_idx(train_size, model.train_batch_size)
 
-    train_err = imdb.predict_error(train_x, train_y, kf_train_sorted)
-    valid_err = imdb.predict_error(valid_x, valid_y, kf_valid)
-    test_err = imdb.predict_error(test_x, test_y, kf_test)
+    train_err = model.predict_error(train_x, train_y, kf_train_sorted)
+    valid_err = model.predict_error(valid_x, valid_y, kf_valid)
+    test_err = model.predict_error(test_x, test_y, kf_test)
 
     print('Final: Train ', train_err, 'Valid ', valid_err, 'Test ', test_err)
 
@@ -109,12 +109,12 @@ def train_raw_IMDB():
         train_size, valid_size, test_size = pre_process_data()
 
     # Building model
-    imdb = IMDBModel(IMDBConfig['reload_model'])
+    model = IMDBModel(IMDBConfig['reload_model'])
 
     # Loading configure settings
     kf_valid, kf_test, \
         valid_freq, save_freq, display_freq, \
-        save_to, patience = pre_process_config(imdb, train_size, valid_size, test_size)
+        save_to, patience = pre_process_config(model, train_size, valid_size, test_size)
 
     # Training
     history_errs = []
@@ -138,11 +138,11 @@ def train_raw_IMDB():
             n_samples = 0
 
             # Get new shuffled index for the training set.
-            kf = get_minibatches_idx(train_size, imdb.train_batch_size, shuffle=True)
+            kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
 
             for _, train_index in kf:
                 update_index += 1
-                imdb.use_noise.set_value(floatX(1.))
+                model.use_noise.set_value(floatX(1.))
 
                 # Select the random examples for this minibatch
                 x = [train_x[t] for t in train_index]
@@ -156,8 +156,7 @@ def train_raw_IMDB():
                 n_samples += x.shape[1]
                 total_n_samples += x.shape[1]
 
-                cost = imdb.f_grad_shared(x, mask, y)
-                imdb.f_update(imdb.learning_rate)
+                cost = model.update(x, mask, y)
 
                 history_train_costs.append(cost)
 
@@ -169,18 +168,18 @@ def train_raw_IMDB():
                     print('Epoch ', epoch, 'Update ', update_index, 'Cost ', cost)
 
                 if save_to and update_index % save_freq == 0:
-                    save_parameters(imdb, best_parameters, save_to, history_errs)
+                    save_parameters(model, best_parameters, save_to, history_errs)
 
                 if update_index % valid_freq == 0:
-                    imdb.use_noise.set_value(0.)
-                    # train_err = imdb.predict_error(train_x, train_y, kf)
-                    valid_err = imdb.predict_error(valid_x, valid_y, kf_valid)
-                    test_err = imdb.predict_error(test_x, test_y, kf_test)
+                    model.use_noise.set_value(0.)
+                    # train_err = model.predict_error(train_x, train_y, kf)
+                    valid_err = model.predict_error(valid_x, valid_y, kf_valid)
+                    test_err = model.predict_error(test_x, test_y, kf_test)
 
                     history_errs.append([valid_err, test_err])
 
                     if best_parameters is None or valid_err <= np.array(history_errs)[:, 0].min():
-                        best_parameters = imdb.get_parameter_values()
+                        best_parameters = model.get_parameter_values()
                         bad_counter = 0
 
                     print('Train', 0.00, 'Valid', valid_err, 'Test', test_err,
@@ -202,7 +201,7 @@ def train_raw_IMDB():
 
     end_time = time.time()
 
-    test_and_post_process(imdb,
+    test_and_post_process(model,
                           train_size, train_x, train_y, valid_x, valid_y, test_x, test_y,
                           kf_valid, kf_test,
                           history_errs, best_parameters,
@@ -218,25 +217,23 @@ def train_policy_IMDB():
         train_size, valid_size, test_size = pre_process_data()
 
     # Building model
-    imdb = IMDBModel(IMDBConfig['reload_model'])
+    model = IMDBModel(IMDBConfig['reload_model'])
 
     # Loading configure settings
     kf_valid, kf_test, \
         valid_freq, save_freq, display_freq, \
-        save_to, patience = pre_process_config(imdb, train_size, valid_size, test_size)
+        save_to, patience = pre_process_config(model, train_size, valid_size, test_size)
 
     # Build policy
-    input_size = imdb.get_policy_input_size()
+    input_size = model.get_policy_input_size()
     print('Input size of policy network:', input_size)
     policy = PolicyNetwork(input_size=input_size, start_b=PolicyConfig['b_init'])
 
-    num_episodes = PolicyConfig['num_episodes']
-
-    for episode in range(num_episodes):
+    for episode in range(PolicyConfig['num_episodes']):
         print('[Episode {}]'.format(episode))
         message('[Episode {}]'.format(episode))
 
-        imdb.reset_parameters()
+        model.reset_parameters()
 
         # get small training data
         train_small_x, train_small_y = get_part_data(np.asarray(train_x), np.asarray(train_y),
@@ -269,13 +266,13 @@ def train_policy_IMDB():
                 n_samples = 0
 
                 # Get new shuffled index for the training set.
-                kf = get_minibatches_idx(train_small_size, imdb.train_batch_size, shuffle=True)
+                kf = get_minibatches_idx(train_small_size, model.train_batch_size, shuffle=True)
 
                 policy.start_new_epoch()
 
                 for _, train_index in kf:
                     update_index += 1
-                    imdb.use_noise.set_value(floatX(1.))
+                    model.use_noise.set_value(floatX(1.))
 
                     # Select the random examples for this minibatch
                     x = [train_small_x[t] for t in train_index]
@@ -287,7 +284,7 @@ def train_policy_IMDB():
                     x, mask, y = prepare_data(x, np.asarray(y, dtype='int64'))
 
                     # Policy take action here
-                    probability = imdb.get_policy_input(x, mask, y, epoch, history_accuracy)
+                    probability = model.get_policy_input(x, mask, y, epoch, history_accuracy)
 
                     actions = policy.take_action(probability)
 
@@ -299,9 +296,7 @@ def train_policy_IMDB():
                     n_samples += x.shape[1]
                     total_n_samples += x.shape[1]
 
-                    if x.shape[1] != 0:
-                        cost = imdb.f_grad_shared(x, mask, y)
-                        imdb.f_update(imdb.learning_rate)
+                    cost = model.update(x, mask, y)
 
                     if np.isnan(cost) or np.isinf(cost):
                         print('bad cost detected: ', cost)
@@ -313,10 +308,10 @@ def train_policy_IMDB():
                     # Do not save when training policy!
 
                     if update_index % valid_freq == 0:
-                        imdb.use_noise.set_value(0.)
-                        # train_err = imdb.predict_error(train_x, train_y, kf)
-                        valid_err = imdb.predict_error(valid_x, valid_y, kf_valid)
-                        test_err = imdb.predict_error(test_x, test_y, kf_test)
+                        model.use_noise.set_value(0.)
+                        # train_err = model.predict_error(train_x, train_y, kf)
+                        valid_err = model.predict_error(valid_x, valid_y, kf_valid)
+                        test_err = model.predict_error(test_x, test_y, kf_test)
 
                         history_errs.append([valid_err, test_err])
                         history_accuracy.append(1. - valid_err)
@@ -326,7 +321,7 @@ def train_policy_IMDB():
                             first_over_index = update_index
 
                         if best_parameters is None or valid_err <= np.array(history_errs)[:, 0].min():
-                            best_parameters = imdb.get_parameter_values()
+                            best_parameters = model.get_parameter_values()
                             bad_counter = 0
 
                         print('Train', 0.00, 'Valid', valid_err, 'Test', test_err,
@@ -343,8 +338,8 @@ def train_policy_IMDB():
 
                 # Immediate reward
                 if PolicyConfig['immediate_reward']:
-                    imdb.use_noise.set_value(0.)
-                    valid_err = imdb.predict_error(valid_x, valid_y, kf_valid)
+                    model.use_noise.set_value(0.)
+                    valid_err = model.predict_error(valid_x, valid_y, kf_valid)
                     policy.reward_buffer.append(1. - valid_err)
 
                 if early_stop:
@@ -355,7 +350,7 @@ def train_policy_IMDB():
         end_time = time.time()
 
         train_err, valid_err, test_err = test_and_post_process(
-            imdb,
+            model,
             train_small_size, train_small_x, train_small_y, valid_x, valid_y, test_x,
             test_y,
             kf_valid, kf_test,
@@ -367,12 +362,12 @@ def train_policy_IMDB():
         if PolicyConfig['speed_reward']:
             if first_over_index is None:
                 first_over_index = update_index + 1
-            terminal_reward = float(first_over_index) / (len(kf) * imdb.train_batch_size)
+            terminal_reward = float(first_over_index) / (len(kf) * model.train_batch_size)
             policy.update(-np.log(terminal_reward))
 
             message('First over index:', first_over_index)
             message('Length of kf:', len(kf))
-            message('Training batch size:', imdb.train_batch_size)
+            message('Training batch size:', model.train_batch_size)
             message('Terminal reward:', terminal_reward)
         else:
             policy.update(1. - valid_err)
@@ -392,18 +387,18 @@ def train_actor_critic_IMDB():
         train_size, valid_size, test_size = pre_process_data()
 
     # Building model
-    imdb = IMDBModel(IMDBConfig['reload_model'])
+    model = IMDBModel(IMDBConfig['reload_model'])
 
     # Loading configure settings
     kf_valid, kf_test, \
         valid_freq, save_freq, display_freq, \
-        save_to, patience = pre_process_config(imdb, train_size, valid_size, test_size)
+        save_to, patience = pre_process_config(model, train_size, valid_size, test_size)
 
     # Build Actor and Critic network
-    input_size = imdb.get_policy_input_size()
+    input_size = model.get_policy_input_size()
     print('Input size of policy network:', input_size)
     actor = PolicyNetwork(input_size=input_size, start_b=PolicyConfig['b_init'])
-    critic = CriticNetwork(feature_size=input_size, batch_size=imdb.train_batch_size)
+    critic = CriticNetwork(feature_size=input_size, batch_size=model.train_batch_size)
 
     num_episodes = PolicyConfig['num_episodes']
 
@@ -411,7 +406,7 @@ def train_actor_critic_IMDB():
         print('[Episode {}]'.format(episode))
         message('[Episode {}]'.format(episode))
 
-        imdb.reset_parameters()
+        model.reset_parameters()
 
         # get small training data
         train_small_x, train_small_y = get_part_data(np.asarray(train_x), np.asarray(train_y),
@@ -441,16 +436,16 @@ def train_actor_critic_IMDB():
                 n_samples = 0
 
                 # Get new shuffled index for the training set.
-                kf = get_minibatches_idx(train_small_size, imdb.train_batch_size, shuffle=True)
+                kf = get_minibatches_idx(train_small_size, model.train_batch_size, shuffle=True)
 
                 for cur_batch_idx, train_index in kf:
-                    if len(train_index) < imdb.train_batch_size:
+                    if len(train_index) < model.train_batch_size:
                         continue
 
                     update_index += 1
 
                     # IMDB set noise before each batch
-                    imdb.use_noise.set_value(floatX(1.))
+                    model.use_noise.set_value(floatX(1.))
 
                     x = [train_small_x[t] for t in train_index]
                     y = [train_small_y[t] for t in train_index]
@@ -460,7 +455,7 @@ def train_actor_critic_IMDB():
                     # Return something of shape (minibatch maxlen, n samples)
                     x, mask, y = prepare_data(x, np.asarray(y, dtype='int64'))
 
-                    probability = imdb.get_policy_input(x, mask, y, epoch, history_accuracy)
+                    probability = model.get_policy_input(x, mask, y, epoch, history_accuracy)
                     actions = actor.take_action(probability, log_replay=False)
 
                     # get masked inputs and targets
@@ -475,16 +470,15 @@ def train_actor_critic_IMDB():
                     total_n_samples += x_selected.shape[1]
 
                     # Update the IMDB network with selected data
-                    cost = imdb.f_grad_shared(x_selected, mask_selected, y_selected)
-                    imdb.f_update(imdb.learning_rate)
+                    cost = model.update(x_selected, mask_selected, y_selected)
 
                     # Get immediate reward
                     cost_old = cost
-                    cost_new = imdb.f_cost(x, mask, y)
+                    cost_new = model.f_cost(x, mask, y)
                     imm_reward = cost_old - cost_new
 
                     # Get new state, new actions, and compute new Q value
-                    probability_new = imdb.get_policy_input(x, mask, y, epoch, history_accuracy)
+                    probability_new = model.get_policy_input(x, mask, y, epoch, history_accuracy)
                     actions_new = actor.take_action(probability_new, log_replay=False)
 
                     Q_value_new = critic.Q_function(state=probability_new, action=actions_new)
@@ -512,16 +506,16 @@ def train_actor_critic_IMDB():
                     # Do not save when training policy!
 
                     if update_index % valid_freq == 0:
-                        imdb.use_noise.set_value(0.)
-                        # train_err = imdb.predict_error(train_x, train_y, kf)
-                        valid_err = imdb.predict_error(valid_x, valid_y, kf_valid)
-                        test_err = imdb.predict_error(test_x, test_y, kf_test)
+                        model.use_noise.set_value(0.)
+                        # train_err = model.predict_error(train_x, train_y, kf)
+                        valid_err = model.predict_error(valid_x, valid_y, kf_valid)
+                        test_err = model.predict_error(test_x, test_y, kf_test)
 
                         history_errs.append([valid_err, test_err])
                         history_accuracy.append(1. - valid_err)
 
                         if best_parameters is None or valid_err <= np.array(history_errs)[:, 0].min():
-                            best_parameters = imdb.get_parameter_values()
+                            best_parameters = model.get_parameter_values()
                             bad_counter = 0
 
                         print('Train', 0.00, 'Valid', valid_err, 'Test', test_err,
@@ -544,7 +538,7 @@ def train_actor_critic_IMDB():
         end_time = time.time()
 
         train_err, valid_err, test_err = test_and_post_process(
-            imdb,
+            model,
             train_small_size, train_small_x, train_small_y, valid_x, valid_y, test_x,
             test_y,
             kf_valid, kf_test,
@@ -561,21 +555,26 @@ def test_policy_IMDB():
         train_size, valid_size, test_size = pre_process_data()
 
     # Building model
-    imdb = IMDBModel(IMDBConfig['reload_model'])
+    model = IMDBModel(IMDBConfig['reload_model'])
 
     # Loading configure settings
     kf_valid, kf_test, \
         valid_freq, save_freq, display_freq, \
-        save_to, patience = pre_process_config(imdb, train_size, valid_size, test_size)
+        save_to, patience = pre_process_config(model, train_size, valid_size, test_size)
 
-    # Build policy
-    input_size = imdb.get_policy_input_size()
-    print('Input size of policy network:', input_size)
-    policy = PolicyNetwork(input_size=input_size, start_b=0.)
-    policy.load_policy()
-    message('$    w = {}\n'
-            '$    b = {}'
-            .format(policy.W.get_value(), policy.b.get_value()))
+    if Config['train_type'] == 'random_drop':
+        # Random drop configure
+        random_drop_numbers = map(lambda l: int(l.strip()), list(open(IMDBConfig['random_drop_number_file'], 'r')))
+        random_drop_index = 0
+    else:
+        # Build policy
+        input_size = model.get_policy_input_size()
+        print('Input size of policy network:', input_size)
+        policy = PolicyNetwork(input_size=input_size, start_b=0.)
+        policy.load_policy()
+        message('$    w = {}\n'
+                '$    b = {}'
+                .format(policy.W.get_value(), policy.b.get_value()))
 
     # Training
     history_errs = []
@@ -599,11 +598,11 @@ def test_policy_IMDB():
             n_samples = 0
 
             # Get new shuffled index for the training set.
-            kf = get_minibatches_idx(train_size, imdb.train_batch_size, shuffle=True)
+            kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
 
             for _, train_index in kf:
                 update_index += 1
-                imdb.use_noise.set_value(floatX(1.))
+                model.use_noise.set_value(floatX(1.))
 
                 # Select the random examples for this minibatch
                 x = [train_x[t] for t in train_index]
@@ -615,9 +614,21 @@ def test_policy_IMDB():
                 x, mask, y = prepare_data(x, np.asarray(y, dtype='int64'))
 
                 # Policy take action here
-                probability = imdb.get_policy_input(x, mask, y, epoch)
-                if Config['train_type'] == 'stochastic':
-                    actions = policy.take_action(probability, False)
+                probability = model.get_policy_input(x, mask, y, epoch)
+
+                if Config['train_type'] == 'deterministic':
+                    raise NotImplementedError('Deterministic is not implemented')
+                else:
+                    if Config['train_type'] == 'stochastic':
+                        actions = policy.take_action(probability, False)
+                    elif Config['train_type'] == 'random_drop':
+                        if random_drop_index >= len(random_drop_numbers):
+                            rate = 1.
+                        else:
+                            rate = 1. - float(random_drop_numbers[random_drop_index]) / (
+                                valid_freq * model.train_batch_size),
+
+                        actions = np.random.binomial(1, rate, y.shape).astype(bool)
 
                     # get masked inputs and targets
                     x = x[:, actions]
@@ -627,10 +638,7 @@ def test_policy_IMDB():
                     n_samples += x.shape[1]
                     total_n_samples += x.shape[1]
 
-                    cost = imdb.f_grad_shared(x, mask, y)
-                    imdb.f_update(imdb.learning_rate)
-                elif Config['train_type'] == 'deterministic':
-                    raise NotImplementedError('Deterministic is not implemented')
+                    cost = model.update(x, mask, y)
 
                 history_train_costs.append(cost)
 
@@ -642,22 +650,25 @@ def test_policy_IMDB():
                     print('Epoch ', epoch, 'Update ', update_index, 'Cost ', cost)
 
                 if save_to and update_index % save_freq == 0:
-                    save_parameters(imdb, best_parameters, save_to, history_errs)
+                    save_parameters(model, best_parameters, save_to, history_errs)
 
                 if update_index % valid_freq == 0:
-                    imdb.use_noise.set_value(0.)
-                    # train_err = imdb.predict_error(train_x, train_y, kf)
-                    valid_err = imdb.predict_error(valid_x, valid_y, kf_valid)
-                    test_err = imdb.predict_error(test_x, test_y, kf_test)
+                    model.use_noise.set_value(0.)
+                    # train_err = model.predict_error(train_x, train_y, kf)
+                    valid_err = model.predict_error(valid_x, valid_y, kf_valid)
+                    test_err = model.predict_error(test_x, test_y, kf_test)
 
                     history_errs.append([valid_err, test_err])
 
                     if best_parameters is None or valid_err <= np.array(history_errs)[:, 0].min():
-                        best_parameters = imdb.get_parameter_values()
+                        best_parameters = model.get_parameter_values()
                         bad_counter = 0
 
                     print('Train', 0.0, 'Valid', valid_err, 'Test', test_err,
                           'Total_samples', total_n_samples)
+
+                    if Config['train_type'] == 'random_drop':
+                        random_drop_index += 1
 
                     if len(history_errs) > patience and valid_err >= np.array(history_errs)[:-patience, 0].min():
                         bad_counter += 1
@@ -675,7 +686,7 @@ def test_policy_IMDB():
 
     end_time = time.time()
 
-    test_and_post_process(imdb,
+    test_and_post_process(model,
                           train_size, train_x, train_y, valid_x, valid_y, test_x, test_y,
                           kf_valid, kf_test,
                           history_errs, best_parameters,
@@ -695,6 +706,8 @@ if __name__ == '__main__':
     elif Config['train_type'] == 'deterministic':
         test_policy_IMDB()
     elif Config['train_type'] == 'stochastic':
+        test_policy_IMDB()
+    elif Config['train_type'] == 'random_drop':
         test_policy_IMDB()
     else:
         raise Exception('Unknown train type {}'.format(Config['train_type']))

@@ -28,30 +28,34 @@ class PolicyNetwork(object):
     @logging
     def __init__(self,
                  input_size,
-                 optimizer=PolicyConfig['policy_optimizer'],
-                 learning_rate=PolicyConfig['policy_learning_rate'],
-                 gamma=PolicyConfig['gamma'],
-                 rb_update_rate=PolicyConfig['reward_baseline_update_rate'],
-                 start_b=2.
+                 optimizer=None,
+                 learning_rate=None,
+                 gamma=None,
+                 rb_update_rate=None,
+                 start_b=None,
                  ):
-
         # theano.config.exception_verbosity = 'high'
 
+        # Load hyperparameters
         self.input_size = input_size
+
+        learning_rate = learning_rate or PolicyConfig['policy_learning_rate']
         self.learning_rate = theano.shared(floatX(learning_rate), name='learning_rate')
-        self.gamma = gamma
-        self.rb_update_rate = rb_update_rate
+
+        self.optimizer = optimizer or PolicyConfig['policy_optimizer']
+        self.gamma = gamma or PolicyConfig['gamma']
+        self.rb_update_rate = rb_update_rate or PolicyConfig['reward_baseline_update_rate']
         self.random_generator = RandomStreams(Config['seed'])
 
-        # parameters to be learned
+        # Parameters to be learned
         self.W = theano.shared(name='W', value=init_norm(input_size))
-        self.b = theano.shared(name='b', value=floatX(start_b))
+        self.b = theano.shared(name='b', value=floatX(start_b or 2.0))
         self.parameters = [self.W, self.b]
 
-        # a single case of input softmax probabilities
+        # A single case of input softmax probabilities
         self.input = T.vector(name='softmax_probabilities', dtype=fX)
 
-        # build computation graph of output
+        # Build output function
         self.output = self.make_output(self.input)
         self.output_sample = self.random_generator.binomial(size=self.output.shape, p=self.output)
 
