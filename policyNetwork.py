@@ -104,7 +104,7 @@ class PolicyNetwork(object):
         param_dict['W'] = self.W
         param_dict['b'] = self.b
 
-        self.f_grad_shared, self.f_update = eval(optimizer)(lr, param_dict, grads, [inputs, actions, rewards], cost)
+        self.f_grad_shared, self.f_update = eval(self.optimizer)(lr, param_dict, grads, [inputs, actions, rewards], cost)
 
     def make_output(self, input_):
         return T.nnet.sigmoid(T.dot(input_, self.W) + self.b)
