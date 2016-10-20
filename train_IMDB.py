@@ -231,22 +231,17 @@ def train_SPL_IMDB():
 
     update_index = 0  # the number of update done
     early_stop = False  # early stop
-    start_time = time.time()
 
     epoch = 0
     history_train_costs = []
 
+    # Self-paced learning iterate on minibatches
+    total_iteration_number = IMDBConfig['epoch_per_episode'] * (train_size / model.train_batch_size)
+
+    start_time = time.time()
+
     try:
         total_n_samples = 0
-
-        # Self-paced learning iterate on minibatches
-        # total_iteration = epoch_per_episode(80) * batch_per_epoch(data_size / train_batch_size)
-        total_iteration_number = IMDBConfig['epoch_per_episode'] * (train_size / model.train_batch_size)
-
-        for iteration in range(total_iteration_number):
-            print('[Iteration {}]'.format(iteration))
-            message('[Iteration {}]'.format(iteration))
-            pass
 
         for epoch in range(IMDBConfig['epoch_per_episode']):
             print('[Epoch {}]'.format(epoch))
@@ -258,6 +253,9 @@ def train_SPL_IMDB():
             kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
 
             for _, train_index in kf:
+                if update_index >= total_iteration_number:
+                    break
+
                 update_index += 1
                 model.use_noise.set_value(floatX(1.))
 
@@ -273,7 +271,11 @@ def train_SPL_IMDB():
                 n_samples += x.shape[1]
                 total_n_samples += x.shape[1]
 
-                cost = model.update(x, mask, y)
+                cost = model.f_grad_shared(x, mask, y)
+
+                # Self-paced learning take action here
+                if True:
+                    model.f_update(model.learning_rate)
 
                 history_train_costs.append(cost)
 
@@ -324,7 +326,6 @@ def train_SPL_IMDB():
                           history_errs, best_parameters,
                           epoch, start_time, end_time,
                           save_to)
-
 
 
 def train_policy_IMDB():
