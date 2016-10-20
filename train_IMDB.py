@@ -209,6 +209,124 @@ def train_raw_IMDB():
                           save_to)
 
 
+def train_SPL_IMDB():
+    np.random.seed(IMDBConfig['seed'])
+
+    # Loading data
+    train_x, train_y, valid_x, valid_y, test_x, test_y, \
+        train_size, valid_size, test_size = pre_process_data()
+
+    # Building model
+    model = IMDBModel(IMDBConfig['reload_model'])
+
+    # Loading configure settings
+    kf_valid, kf_test, \
+        valid_freq, save_freq, display_freq, \
+        save_to, patience = pre_process_config(model, train_size, valid_size, test_size)
+
+    # Training
+    history_errs = []
+    best_parameters = None
+    bad_counter = 0
+
+    update_index = 0  # the number of update done
+    early_stop = False  # early stop
+    start_time = time.time()
+
+    epoch = 0
+    history_train_costs = []
+
+    try:
+        total_n_samples = 0
+
+        # Self-paced learning iterate on minibatches
+        # total_iteration = epoch_per_episode(80) * batch_per_epoch(data_size / train_batch_size)
+        total_iteration_number = IMDBConfig['epoch_per_episode'] * (train_size / model.train_batch_size)
+
+        for iteration in range(total_iteration_number):
+            print('[Iteration {}]'.format(iteration))
+            message('[Iteration {}]'.format(iteration))
+            pass
+
+        for epoch in range(IMDBConfig['epoch_per_episode']):
+            print('[Epoch {}]'.format(epoch))
+            message('[Epoch {}]'.format(epoch))
+
+            n_samples = 0
+
+            # Get new shuffled index for the training set.
+            kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
+
+            for _, train_index in kf:
+                update_index += 1
+                model.use_noise.set_value(floatX(1.))
+
+                # Select the random examples for this minibatch
+                x = [train_x[t] for t in train_index]
+                y = [train_y[t] for t in train_index]
+
+                # Get the data in numpy.ndarray format
+                # This swap the axis!
+                # Return something of shape (minibatch maxlen, n samples)
+                x, mask, y = prepare_data(x, np.asarray(y, dtype='int64'))
+
+                n_samples += x.shape[1]
+                total_n_samples += x.shape[1]
+
+                cost = model.update(x, mask, y)
+
+                history_train_costs.append(cost)
+
+                if np.isnan(cost) or np.isinf(cost):
+                    print('bad cost detected: ', cost)
+                    return 1., 1., 1.
+
+                if update_index % display_freq == 0:
+                    print('Epoch ', epoch, 'Update ', update_index, 'Cost ', cost)
+
+                if save_to and update_index % save_freq == 0:
+                    save_parameters(model, best_parameters, save_to, history_errs)
+
+                if update_index % valid_freq == 0:
+                    model.use_noise.set_value(0.)
+                    # train_err = model.predict_error(train_x, train_y, kf)
+                    valid_err = model.predict_error(valid_x, valid_y, kf_valid)
+                    test_err = model.predict_error(test_x, test_y, kf_test)
+
+                    history_errs.append([valid_err, test_err])
+
+                    if best_parameters is None or valid_err <= np.array(history_errs)[:, 0].min():
+                        best_parameters = model.get_parameter_values()
+                        bad_counter = 0
+
+                    print('Train', 0.00, 'Valid', valid_err, 'Test', test_err,
+                          'Total_samples', total_n_samples)
+
+                    if len(history_errs) > patience and valid_err >= np.array(history_errs)[:-patience, 0].min():
+                        bad_counter += 1
+                        if bad_counter > patience:
+                            print('Early Stop!')
+                            early_stop = True
+                            break
+
+            print('Seen %d samples' % n_samples)
+
+            if early_stop:
+                break
+    except KeyboardInterrupt:
+        print('Training interrupted')
+
+    end_time = time.time()
+
+    test_and_post_process(model,
+                          train_size, train_x, train_y, valid_x, valid_y, test_x, test_y,
+                          kf_valid, kf_test,
+                          history_errs, best_parameters,
+                          epoch, start_time, end_time,
+                          save_to)
+
+
+
 def train_policy_IMDB():
     np.random.seed(IMDBConfig['seed'])
 
@@ -491,7 +609,7 @@ def train_actor_critic_IMDB():
 
                     Q_value_new = critic.Q_function(state=probability_new, action=actions_new)
                     if epoch < IMDBConfig['epoch_per_episode'] - 1:
-                        label = 1.0 * Q_value_new + imm_reward
+                        label = PolicyConfig['actor_gamma'] * Q_value_new + imm_reward
                     else:
                         label = imm_reward
 

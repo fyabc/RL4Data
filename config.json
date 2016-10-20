@@ -61,6 +61,8 @@
 
         // Actor-Critic configurations
 
+        "actor_gamma": 1.0,
+
         // Use cost gap before and after update as immediate reward
         // Another immediate reward is the accuracy of sampled validation set
         "cost_gap_AC_reward": true
