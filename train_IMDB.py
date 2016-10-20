@@ -394,6 +394,8 @@ def train_actor_critic_IMDB():
         valid_freq, save_freq, display_freq, \
         save_to, patience = pre_process_config(model, train_size, valid_size, test_size)
 
+    kf_valid_part = get_minibatches_idx(PolicyConfig['immediate_reward_sample_size'], model.validate_batch_size)
+
     # Build Actor and Critic network
     input_size = model.get_policy_input_size()
     print('Input size of policy network:', input_size)
@@ -473,9 +475,15 @@ def train_actor_critic_IMDB():
                     cost = model.update(x_selected, mask_selected, y_selected)
 
                     # Get immediate reward
-                    cost_old = cost
-                    cost_new = model.f_cost(x, mask, y)
-                    imm_reward = cost_old - cost_new
+                    if PolicyConfig['cost_gap_AC_reward']:
+                        cost_old = cost
+                        cost_new = model.f_cost(x, mask, y)
+                        imm_reward = cost_old - cost_new
+                    else:
+                        valid_part_x, valid_part_y = get_part_data(
+                            valid_x, valid_y, PolicyConfig['immediate_reward_sample_size'])
+                        valid_err = model.predict_error(valid_part_x, valid_part_y, kf_valid_part)
+                        imm_reward = 1. - valid_err
 
                     # Get new state, new actions, and compute new Q value
                     probability_new = model.get_policy_input(x, mask, y, epoch, history_accuracy)

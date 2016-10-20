@@ -57,7 +57,13 @@
         "reward_baseline_update_rate": 0.1,
 
         "gamma": 0.9,
-        "b_init": 2.0
+        "b_init": 2.0,
+
+        // Actor-Critic configurations
+
+        // Use cost gap before and after update as immediate reward
+        // Another immediate reward is the accuracy of sampled validation set
+        "cost_gap_AC_reward": true
     },
 
     "cifar10": {

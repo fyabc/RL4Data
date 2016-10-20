@@ -10,6 +10,7 @@ from config import Config, CifarConfig, PolicyConfig
 from utils import *
 from model_CIFAR10 import CIFARModel
 from policyNetwork import PolicyNetwork
+from criticNetwork import CriticNetwork
 
 __author__ = 'fyabc'
 
