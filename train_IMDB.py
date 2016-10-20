@@ -481,7 +481,7 @@ def train_actor_critic_IMDB():
                         imm_reward = cost_old - cost_new
                     else:
                         valid_part_x, valid_part_y = get_part_data(
-                            valid_x, valid_y, PolicyConfig['immediate_reward_sample_size'])
+                            np.asarray(valid_x), np.asarray(valid_y), PolicyConfig['immediate_reward_sample_size'])
                         valid_err = model.predict_error(valid_part_x, valid_part_y, kf_valid_part)
                         imm_reward = 1. - valid_err
 
