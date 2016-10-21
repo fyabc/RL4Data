@@ -124,9 +124,12 @@ def train_raw_IMDB():
         # Self-paced learning iterate on data cases
         total_iteration_number = IMDBConfig['epoch_per_episode'] * train_size
 
+        start_cost = 0.6
+        end_cost = -np.log(0.01)
+
         # Get the cost threshold \lambda.
         def cost_threshold(iteration):
-            return -np.log(0.01) * iteration / total_iteration_number
+            return start_cost + (end_cost - start_cost) * iteration / total_iteration_number
 
     # Training
     history_errs = []
