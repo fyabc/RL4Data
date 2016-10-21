@@ -109,11 +109,7 @@ def train_raw_IMDB():
         train_size, valid_size, test_size = pre_process_data()
 
     # Building model
-    # [NOTE]: In self-paced learning, we iterate on data cases (batch_size == 1).
-    model = IMDBModel(
-        IMDBConfig['reload_model'],
-        train_batch_size=1 if Config['train_type'] == 'self_paced' else None
-    )
+    model = IMDBModel(IMDBConfig['reload_model'])
 
     # Loading configure settings
     kf_valid, kf_test, \
@@ -122,7 +118,7 @@ def train_raw_IMDB():
 
     if Config['train_type'] == 'self_paced':
         # Self-paced learning iterate on data cases
-        total_iteration_number = IMDBConfig['epoch_per_episode'] * train_size
+        total_iteration_number = IMDBConfig['epoch_per_episode'] * train_size / model.train_batch_size
 
         start_cost = 0.6
         end_cost = -np.log(0.01)
@@ -167,18 +163,24 @@ def train_raw_IMDB():
                 # Return something of shape (minibatch maxlen, n samples)
                 x, mask, y = prepare_data(x, np.asarray(y, dtype='int64'))
 
-                cost = model.f_grad_shared(x, mask, y)
-
                 # Self-paced learning check
-                if Config['train_type'] != 'self_paced' or cost < cost_threshold(update_index):
-                    model.f_update(model.learning_rate)
+                if Config['train_type'] == 'self_paced':
+                    cost_list = model.f_cost_list_without_decay(x, mask, y)
+                    actions = cost_list < cost_threshold(update_index)
 
-                    n_samples += x.shape[1]
-                    total_n_samples += x.shape[1]
+                    # get masked inputs and targets
+                    x = x[:, actions]
+                    mask = mask[:, actions]
+                    y = y[actions]
+
+                n_samples += x.shape[1]
+                total_n_samples += x.shape[1]
+
+                cost = model.update(x, mask, y)
 
                 history_train_costs.append(cost)
 
-                if np.isnan(cost) or np.isinf(cost):
+                if cost is not None and (np.isnan(cost) or np.isinf(cost)):
                     print('bad cost detected: ', cost)
                     return 1., 1., 1.
 
@@ -261,10 +263,8 @@ def train_policy_IMDB():
         history_errs = []
         best_parameters = None
         bad_counter = 0
-
         update_index = 0  # the number of update done
         early_stop = False  # early stop
-
         epoch = 0
         history_accuracy = []
 
@@ -315,7 +315,7 @@ def train_policy_IMDB():
 
                     cost = model.update(x, mask, y)
 
-                    if np.isnan(cost) or np.isinf(cost):
+                    if cost is not None and (np.isnan(cost) or np.isinf(cost)):
                         print('bad cost detected: ', cost)
                         return 1., 1., 1.
 
@@ -436,10 +436,8 @@ def train_actor_critic_IMDB():
         history_errs = []
         best_parameters = None
         bad_counter = 0
-
         update_index = 0  # the number of update done
         early_stop = False  # early stop
-
         epoch = 0
         history_accuracy = []
 
@@ -519,7 +517,7 @@ def train_actor_critic_IMDB():
                     actor_loss = actor.update_raw(probability, actions,
                                                   np.full(actions.shape, label, dtype=probability.dtype))
 
-                    if np.isnan(cost) or np.isinf(cost):
+                    if cost is not None and (np.isnan(cost) or np.isinf(cost)):
                         print('bad cost detected: ', cost)
                         return 1., 1., 1.
 
@@ -605,13 +603,11 @@ def test_policy_IMDB():
     history_errs = []
     best_parameters = None
     bad_counter = 0
-
     update_index = 0  # the number of update done
     early_stop = False  # early stop
-    start_time = time.time()
-
     epoch = 0
-    history_train_costs = []
+    history_accuracy = []
+    start_time = time.time()
 
     try:
         total_n_samples = 0
@@ -639,7 +635,7 @@ def test_policy_IMDB():
                 x, mask, y = prepare_data(x, np.asarray(y, dtype='int64'))
 
                 # Policy take action here
-                probability = model.get_policy_input(x, mask, y, epoch)
+                probability = model.get_policy_input(x, mask, y, epoch, history_accuracy)
 
                 if Config['train_type'] == 'deterministic':
                     raise NotImplementedError('Deterministic is not implemented')
@@ -665,9 +661,7 @@ def test_policy_IMDB():
 
                     cost = model.update(x, mask, y)
 
-                history_train_costs.append(cost)
-
-                if np.isnan(cost) or np.isinf(cost):
+                if cost is not None and np.isnan(cost) or np.isinf(cost):
                     print('bad cost detected: ', cost)
                     return 1., 1., 1.
 
@@ -684,6 +678,7 @@ def test_policy_IMDB():
                     test_err = model.predict_error(test_x, test_y, kf_test)
 
                     history_errs.append([valid_err, test_err])
+                    history_accuracy.append(1. - valid_err)
 
                     if best_parameters is None or valid_err <= np.array(history_errs)[:, 0].min():
                         best_parameters = model.get_parameter_values()

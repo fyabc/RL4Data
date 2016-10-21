@@ -180,8 +180,13 @@ class IMDBModel(object):
         off = 1e-8
         if predict.dtype == 'float16':
             off = 1e-6
+
+        cost_list = -T.log(predict[T.arange(n_samples), self.targets] + off)
+        self.f_cost_list_without_decay = theano.function(
+            [self.inputs, self.mask, self.targets], cost_list, name='f_cost_list_without_decay'
+        )
     
-        self.cost = -T.log(predict[T.arange(n_samples), self.targets] + off).mean()
+        self.cost = cost_list.mean()
 
         self.f_cost_without_decay = theano.function(
             [self.inputs, self.mask, self.targets], self.cost, name='f_cost_without_decay'
@@ -206,7 +211,7 @@ class IMDBModel(object):
 
     def update(self, x, mask, y):
         if x.shape[1] == 0:
-            return 0.0
+            return None
 
         cost = self.f_grad_shared(x, mask, y)
         self.f_update(self.learning_rate)
