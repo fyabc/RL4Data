@@ -23,8 +23,11 @@ class IMDBModel(object):
 
     output_size = 2
 
-    def __init__(self, reload_model=False):
-        self.train_batch_size = IMDBConfig['train_batch_size']
+    def __init__(self,
+                 reload_model=False,
+                 train_batch_size=None,
+                 ):
+        self.train_batch_size = train_batch_size or IMDBConfig['train_batch_size']
         self.validate_batch_size = IMDBConfig['validate_batch_size']
         self.learning_rate = floatX(IMDBConfig['learning_rate'])
 

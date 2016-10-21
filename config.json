@@ -118,7 +118,7 @@
         "decay_c": 0.0,
         "learning_rate": 0.0001,
 
-        "save_to": "./data/imdb/lstm_model.npz",
+        "save_to": false, //"./data/imdb/lstm_model.npz",
         "valid_freq": 370,
         "save_freq": 1110,
 
