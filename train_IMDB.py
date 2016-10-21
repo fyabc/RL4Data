@@ -187,7 +187,6 @@ def train_raw_IMDB():
 
                 if update_index % valid_freq == 0:
                     model.use_noise.set_value(0.)
-                    # train_err = model.predict_error(train_x, train_y, kf)
                     valid_err = model.predict_error(valid_x, valid_y, kf_valid)
                     test_err = model.predict_error(test_x, test_y, kf_test)
 
