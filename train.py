@@ -21,8 +21,7 @@ def train_raw_CIFAR10():
 
     # Load the dataset
     x_train, y_train, x_validate, y_validate, x_test, y_test = split_cifar10_data(load_cifar10_data())
-    train_small_size = CifarConfig['train_small_size']
-    x_train_small, y_train_small = get_part_data(x_train, y_train, train_small_size)
+    x_train_small, y_train_small = x_train, y_train
 
     message('Training data size:', y_train_small.shape[0])
     message('Validation data size:', y_validate.shape[0])
@@ -45,6 +44,9 @@ def train_raw_CIFAR10():
     else:
         model.reset_parameters()
 
+    # Iteration (number of batches)
+    iteration = 0
+
     for epoch in range(CifarConfig['epoch_per_episode']):
         print('[Epoch {}]'.format(epoch))
         message('[Epoch {}]'.format(epoch))
@@ -57,14 +59,24 @@ def train_raw_CIFAR10():
 
         for batch in iterate_minibatches(x_train_small, y_train_small,
                                          CifarConfig['train_batch_size'], shuffle=True, augment=True):
+            iteration += 1
+
             inputs, targets = batch
 
             if Config['train_type'] == 'self_paced':
                 cost_list = model.f_cost_list_without_decay(inputs, targets)
 
-                print(cost_list, type(cost_list))
+                actions = cost_list < cost_threshold(iteration)
 
-            train_err += model.train_function(inputs, targets)
+                inputs = inputs[actions]
+                targets = targets[actions]
+
+            part_train_err = model.train_function(inputs, targets)
+
+            if iteration % CifarConfig['display_freq'] == 0:
+                print('Train error of iteration {} is {}'.format(iteration, part_train_err))
+
+            train_err += part_train_err
             train_batches += 1
 
         validate_err, validate_acc, validate_batches = model.validate_or_test(x_validate, y_validate)

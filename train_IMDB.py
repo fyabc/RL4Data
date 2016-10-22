@@ -125,7 +125,10 @@ def train_raw_IMDB():
 
         # Get the cost threshold \lambda.
         def cost_threshold(iteration):
-            return start_cost + (end_cost - start_cost) * iteration / total_iteration_number
+            if PolicyConfig['epoch_update']:
+                return start_cost + (end_cost - start_cost) * iteration / IMDBConfig['epoch_per_episode']
+            else:
+                return start_cost + (end_cost - start_cost) * iteration / total_iteration_number
 
     # Training
     history_errs = []
@@ -166,20 +169,13 @@ def train_raw_IMDB():
                 # Self-paced learning check
                 if Config['train_type'] == 'self_paced':
                     cost_list = model.f_cost_list_without_decay(x, mask, y)
-                    print('cost_list', cost_list)
-                    print('Average cost', cost_list.mean())
 
-                    actions = cost_list < cost_threshold(update_index)
-
-                    print('y', y)
-                    print('actions', actions)
+                    actions = cost_list < cost_threshold(epoch if PolicyConfig['epoch_update'] else update_index)
 
                     # get masked inputs and targets
                     x = x[:, actions]
                     mask = mask[:, actions]
                     y = y[actions]
-
-                    print('Selected y', y)
 
                 n_samples += x.shape[1]
                 total_n_samples += x.shape[1]

@@ -49,12 +49,6 @@ class CIFARModel(object):
 
         self.saved_init_parameters_values = get_all_param_values(self.network, trainable=True)
 
-        self.probs_function = None
-        self.train_function = None
-        self.validate_function = None
-
-        self.alpha_train_function = None
-
         self.build_train_function()
         self.build_validate_function()
 

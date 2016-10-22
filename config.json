@@ -67,18 +67,25 @@
         "cost_gap_AC_reward": true,
 
         /// Self-paced learning configurations
+        "epoch_update": false,
+
         "start_cost": 0.6,
         "end_cost": 4.60517     // -log(0.01)
     },
 
     "cifar10": {
+        "total_size": 60000,
+        "train_size": 50000,
+        "validation_size": 10000,
+        "test_size": 10000,
+
         "curriculum": false,
         "random_drop": false,
         "random_drop_number_file": "./data/drop_num.txt",
 
         "use_policy": true,
         "train_small_size": 40000,
-        "epoch_per_episode": 1,
+        "epoch_per_episode": 82,
 
         "warm_start": false,
 
@@ -94,7 +101,9 @@
         "n": 5,
         "num_epochs": 5000,
 
-        "print_label_distribution": true
+        "print_label_distribution": true,
+
+        "display_freq": 20
     },
 
     "imdb": {
