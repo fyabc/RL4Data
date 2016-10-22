@@ -12,16 +12,7 @@
     /// [NOTE]: in exp, use @ to represent double quotes " (used in string values)
     /// [NOTE]: you must NOT have any spaces in the expression above.
 
-    "data_dir": "./data/cifar-10-batches-py",
-    "model_file": "./data/cifar10_deep_residual_model.npz",
-    "policy_model_file": "./data/policy_model.npz",
-    "policy_save_freq": 1,
-    "save_model": false,
-    "total_size": 60000,
-    "train_size": 50000,
-    "validation_size": 10000,
-    "test_size": 10000,
-    "model": null,
+    /// Basic configurations.
     "seed": 1234,
     "floatX": "float32",
 
@@ -31,6 +22,13 @@
     /// 'deterministic': run deterministic policy (alpha loss)
     /// 'stochastic':    run stochastic policy (randomly drop data)
     "train_type": "policy",
+
+    /// TODO: Configuration to be moved into "cifar10"
+    "model_file": "./data/cifar10_deep_residual_model.npz",
+    "policy_model_file": "./data/policy_model.npz",
+    "policy_save_freq": 1,
+    "save_model": false,
+    "model": null,
 
     "policy": {
         "num_episodes": 100,
@@ -74,6 +72,8 @@
     },
 
     "cifar10": {
+        "data_dir": "./data/cifar-10-batches-py",
+
         "total_size": 60000,
         "train_size": 50000,
         "validation_size": 10000,
