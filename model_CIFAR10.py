@@ -146,6 +146,9 @@ class CIFARModel(object):
         )
 
         loss = lasagne.objectives.categorical_crossentropy(probs, self.target_var)
+
+        self.f_cost_list_without_decay = theano.function([self.input_var, self.target_var], loss)
+
         loss = loss.mean()
 
         # add weight decay

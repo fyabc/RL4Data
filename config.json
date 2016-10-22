@@ -1,16 +1,16 @@
 {
-    // How tp set configures in command line
-    // When set global configures:
-    //  G.key=exp
-    // When set policy configures:
-    //  P.key=exp
-    // When set configures in current model ("cifar10" in CIFAR-10, "imdb" in IMDB):
-    //  key=exp
-    //
-    // key is the name of the parameter, exp is the value.
-    // [NOTE]: exp must be a legal Python expression, the value of the key is eval(exp).
-    // [NOTE]: in exp, use @ to represent double quotes " (used in string values)
-    // [NOTE]: you must NOT have any spaces in the expression above.
+    /// How to set configures in command line
+    /// When set global configures:
+    ///  G.key=exp
+    /// When set policy configures:
+    ///  P.key=exp
+    /// When set configures in current model ("cifar10" in CIFAR-10, "imdb" in IMDB):
+    ///  key=exp
+    ///
+    /// key is the name of the parameter, exp is the value.
+    /// [NOTE]: exp must be a legal Python expression, the value of the key is eval(exp).
+    /// [NOTE]: in exp, use @ to represent double quotes " (used in string values)
+    /// [NOTE]: you must NOT have any spaces in the expression above.
 
     "data_dir": "./data/cifar-10-batches-py",
     "model_file": "./data/cifar10_deep_residual_model.npz",
@@ -25,17 +25,17 @@
     "seed": 1234,
     "floatX": "float32",
 
-    // Train types.
-    // 'raw':           train ResNet directly.
-    // 'policy':        train policy.
-    // 'deterministic': run deterministic policy (alpha loss)
-    // 'stochastic':    run stochastic policy (randomly drop data)
+    /// Train types.
+    /// 'raw':           train ResNet directly.
+    /// 'policy':        train policy.
+    /// 'deterministic': run deterministic policy (alpha loss)
+    /// 'stochastic':    run stochastic policy (randomly drop data)
     "train_type": "policy",
 
     "policy": {
         "num_episodes": 100,
 
-        // Policy input features
+        /// Policy input features
         "add_label_input": true,
         "add_label": true,
         "use_first_layer_output": false,
@@ -59,13 +59,16 @@
         "gamma": 0.9,
         "b_init": 2.0,
 
-        // Actor-Critic configurations
-
+        /// Actor-Critic configurations
         "actor_gamma": 1.0,
 
         // Use cost gap before and after update as immediate reward
         // Another immediate reward is the accuracy of sampled validation set
-        "cost_gap_AC_reward": true
+        "cost_gap_AC_reward": true,
+
+        /// Self-paced learning configurations
+        "start_cost": 0.6,
+        "end_cost": 4.60517     // -log(0.01)
     },
 
     "cifar10": {

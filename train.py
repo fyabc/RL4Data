@@ -28,6 +28,17 @@ def train_raw_CIFAR10():
     message('Validation data size:', y_validate.shape[0])
     message('Test data size:', y_test.shape[0])
 
+    if Config['train_type'] == 'self_paced':
+        # Self-paced learning iterate on data cases
+        total_iteration_number = CifarConfig['epoch_per_episode'] * len(x_train) / model.train_batch_size
+
+        start_cost = 2.0
+        end_cost = -np.log(0.01)
+
+        # Get the cost threshold \lambda.
+        def cost_threshold(iteration):
+            return start_cost + (end_cost - start_cost) * iteration / total_iteration_number
+
     # Train the network
     if CifarConfig['warm_start']:
         model.load_model(Config['model_file'])
@@ -47,6 +58,11 @@ def train_raw_CIFAR10():
         for batch in iterate_minibatches(x_train_small, y_train_small,
                                          CifarConfig['train_batch_size'], shuffle=True, augment=True):
             inputs, targets = batch
+
+            if Config['train_type'] == 'self_paced':
+                cost_list = model.f_cost_list_without_decay(inputs, targets)
+
+                print(cost_list, type(cost_list))
 
             train_err += model.train_function(inputs, targets)
             train_batches += 1
