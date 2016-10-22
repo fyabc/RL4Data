@@ -359,6 +359,8 @@ if __name__ == '__main__':
 
     if Config['train_type'] == 'raw':
         train_raw_CIFAR10()
+    elif Config['train_type'] == 'self_paced':
+        train_raw_CIFAR10()
     elif Config['train_type'] == 'policy':
         train_policy_CIFAR10()
     elif Config['train_type'] == 'deterministic':

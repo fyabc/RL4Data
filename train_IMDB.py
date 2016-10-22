@@ -560,6 +560,9 @@ def train_actor_critic_IMDB():
 
         end_time = time.time()
 
+        if Config['policy_save_freq'] > 0 and episode % Config['policy_save_freq'] == 0:
+            actor.save_policy()
+
         train_err, valid_err, test_err = test_and_post_process(
             model,
             train_small_size, train_small_x, train_small_y, valid_x, valid_y, test_x,
@@ -719,10 +722,10 @@ if __name__ == '__main__':
 
     if Config['train_type'] == 'raw':
         train_raw_IMDB()
-    elif Config['train_type'] == 'policy':
-        train_policy_IMDB()
     elif Config['train_type'] == 'self_paced':
         train_raw_IMDB()
+    elif Config['train_type'] == 'policy':
+        train_policy_IMDB()
     elif Config['train_type'] == 'actor_critic':
         train_actor_critic_IMDB()
     elif Config['train_type'] == 'deterministic':
