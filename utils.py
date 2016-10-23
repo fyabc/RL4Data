@@ -71,12 +71,12 @@ def average(sequence):
 ###############################
 
 @logging
-def load_cifar10_data(data_dir=Config['data_dir']):
+def load_cifar10_data(data_dir=CifarConfig['data_dir']):
     if not os.path.exists(data_dir):
         raise Exception("CIFAR-10 dataset can not be found. Please download the dataset from "
                         "'https://www.cs.toronto.edu/~kriz/cifar.html'.")
 
-    train_size = Config['train_size']
+    train_size = CifarConfig['train_size']
 
     xs = []
     ys = []
@@ -125,14 +125,14 @@ def split_cifar10_data(data):
     y_test = data['y_test']
 
     # One: validate is not part of train
-    x_validate = x_test[:Config['validation_size']]
-    y_validate = y_test[:Config['validation_size']]
-    x_test = x_test[-Config['test_size']:]
-    y_test = y_test[-Config['test_size']:]
+    x_validate = x_test[:CifarConfig['validation_size']]
+    y_validate = y_test[:CifarConfig['validation_size']]
+    x_test = x_test[-CifarConfig['test_size']:]
+    y_test = y_test[-CifarConfig['test_size']:]
 
     # # Another: validate is part of train
-    # x_validate = x_train[:Config['validation_size']]
-    # y_validate = y_train[:Config['validation_size']]
+    # x_validate = x_train[:CifarConfig['validation_size']]
+    # y_validate = y_train[:CifarConfig['validation_size']]
 
     return x_train, y_train, x_validate, y_validate, x_test, y_test
 
