@@ -5,6 +5,7 @@ from __future__ import print_function, unicode_literals
 import sys
 import time
 import numpy as np
+import heapq
 
 from config import IMDBConfig, Config, PolicyConfig
 from model_IMDB import IMDBModel
@@ -118,17 +119,11 @@ def train_raw_IMDB():
 
     if Config['train_type'] == 'self_paced':
         # Self-paced learning iterate on data cases
-        total_iteration_number = IMDBConfig['epoch_per_episode'] * train_size / model.train_batch_size
-
-        start_cost = 0.6
-        end_cost = -np.log(0.01)
+        total_iteration_number = IMDBConfig['epoch_per_episode'] * train_size // model.train_batch_size
 
         # Get the cost threshold \lambda.
         def cost_threshold(iteration):
-            if PolicyConfig['epoch_update']:
-                return start_cost + (end_cost - start_cost) * iteration / IMDBConfig['epoch_per_episode']
-            else:
-                return start_cost + (end_cost - start_cost) * iteration / total_iteration_number
+            return 1 + (model.train_batch_size - 1) * iteration / total_iteration_number
 
     # Training
     history_errs = []
@@ -170,7 +165,8 @@ def train_raw_IMDB():
                 if Config['train_type'] == 'self_paced':
                     cost_list = model.f_cost_list_without_decay(x, mask, y)
 
-                    actions = cost_list < cost_threshold(epoch if PolicyConfig['epoch_update'] else update_index)
+                    selected_number = cost_threshold(update_index)
+                    actions = cost_list <= min(heapq.nsmallest(selected_number, cost_list))
 
                     # get masked inputs and targets
                     x = x[:, actions]

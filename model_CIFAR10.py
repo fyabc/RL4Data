@@ -145,6 +145,8 @@ class CIFARModel(object):
 
         loss = loss.mean()
 
+        self.f_cost_without_decay = theano.function([self.input_var, self.target_var], loss)
+
         # add weight decay
         all_layers = lasagne.layers.get_all_layers(self.network)
         l2_penalty = lasagne.regularization.regularize_layer_params(all_layers, lasagne.regularization.l2) * \
