@@ -72,6 +72,20 @@ def average(sequence):
 
 @logging
 def load_cifar10_data(data_dir=CifarConfig['data_dir']):
+    """
+
+    Args:
+        data_dir: directory of the CIFAR-10 data.
+
+    Returns:
+        A dict, which contains train data and test data.
+        Shapes of data:
+            x_train:    (100000, 3, 32, 32)
+            y_train:    (100000,)
+            x_test:     (10000, 3, 32, 32)
+            y_test:     (10000,)
+    """
+
     if not os.path.exists(data_dir):
         raise Exception("CIFAR-10 dataset can not be found. Please download the dataset from "
                         "'https://www.cs.toronto.edu/~kriz/cifar.html'.")
@@ -109,6 +123,8 @@ def load_cifar10_data(data_dir=CifarConfig['data_dir']):
 
     x_test = x[train_size:, :, :, :]
     y_test = y[train_size:]
+
+    print(x_train.shape, y_train.shape, x_test.shape, y_test.shape)
 
     return {
         'x_train': floatX(x_train),

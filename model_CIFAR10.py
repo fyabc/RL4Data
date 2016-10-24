@@ -25,18 +25,76 @@ from config import Config, CifarConfig, PolicyConfig
 from utils import logging, iterate_minibatches, fX, floatX, shuffle_data, average
 
 
-class CIFARModel(object):
+class CIFARModelBase(object):
     """
-    The CIFAR-10 neural network model (ResNet).
+    The base class of CIFAR-10 network model.
     """
 
     output_size = CifarConfig['cnn_output_size']
 
-    def __init__(self, n=None):
-        n = n or CifarConfig['n']
+    def __init__(self,
+                 train_batch_size=None,
+                 validate_batch_size=None):
+        # Functions and parameters that must be provided.
+        self.train_batch_size = train_batch_size or CifarConfig['train_batch_size']
+        self.validate_batch_size = validate_batch_size or CifarConfig['validate_batch_size']
 
-        self.train_batch_size = CifarConfig['train_batch_size']
-        self.validate_batch_size = CifarConfig['validate_batch_size']
+        self.probs_function = None
+        self.train_function = None
+        self.alpha_train_function = None
+        self.f_cost_without_decay = None
+
+    def reset_parameters(self):
+        pass
+
+    def save_model(self, filename=None):
+        pass
+
+    def load_model(self, filename=None):
+        pass
+
+    def test(self, x_test, y_test):
+        pass
+
+    def validate_or_test(self, x_test, y_test):
+        pass
+
+    @staticmethod
+    def get_policy_input_size():
+        input_size = CifarConfig['cnn_output_size']
+        if PolicyConfig['add_label_input']:
+            input_size += 1
+        if PolicyConfig['add_label']:
+            # input_size += 1
+            input_size += CifarConfig['cnn_output_size']
+        if PolicyConfig['use_first_layer_output']:
+            input_size += 16 * 32 * 32
+        if PolicyConfig['add_epoch_number']:
+            input_size += 1
+        if PolicyConfig['add_learning_rate']:
+            input_size += 1
+        if PolicyConfig['add_margin']:
+            input_size += 1
+        if PolicyConfig['add_average_accuracy']:
+            input_size += 1
+        return input_size
+
+    def get_policy_input(self, inputs, targets, epoch, history_accuracy=None):
+        pass
+
+
+class CIFARModel(CIFARModelBase):
+    """
+    The CIFAR-10 neural network model (ResNet).
+    """
+
+    def __init__(self,
+                 n=None,
+                 train_batch_size=None,
+                 validate_batch_size=None):
+        super(CIFARModel, self).__init__(train_batch_size, validate_batch_size)
+
+        n = n or CifarConfig['n']
 
         self.learning_rate = theano.shared(lasagne.utils.floatX(CifarConfig['init_learning_rate']))
 
@@ -65,21 +123,21 @@ class CIFARModel(object):
                 out_num_filters = input_num_filters
 
             stack_1 = batch_norm(
-                    ConvLayer(layer_, num_filters=out_num_filters, filter_size=(3, 3), stride=first_stride,
-                              nonlinearity=rectify, pad='same', W=lasagne.init.HeNormal(gain='relu'),
-                              flip_filters=False))
+                ConvLayer(layer_, num_filters=out_num_filters, filter_size=(3, 3), stride=first_stride,
+                          nonlinearity=rectify, pad='same', W=lasagne.init.HeNormal(gain='relu'),
+                          flip_filters=False))
             stack_2 = batch_norm(
-                    ConvLayer(stack_1, num_filters=out_num_filters, filter_size=(3, 3), stride=(1, 1),
-                              nonlinearity=None,
-                              pad='same', W=lasagne.init.HeNormal(gain='relu'), flip_filters=False))
+                ConvLayer(stack_1, num_filters=out_num_filters, filter_size=(3, 3), stride=(1, 1),
+                          nonlinearity=None,
+                          pad='same', W=lasagne.init.HeNormal(gain='relu'), flip_filters=False))
 
             # add shortcut connections
             if increase_dim:
                 if projection:
                     # projection shortcut, as option B in paper
                     projection = batch_norm(
-                            ConvLayer(layer_, num_filters=out_num_filters, filter_size=(1, 1), stride=(2, 2),
-                                      nonlinearity=None, pad='same', b=None, flip_filters=False))
+                        ConvLayer(layer_, num_filters=out_num_filters, filter_size=(1, 1), stride=(2, 2),
+                                  nonlinearity=None, pad='same', b=None, flip_filters=False))
                     block = NonlinearityLayer(ElemwiseSumLayer([stack_2, projection]), nonlinearity=rectify)
                 else:
                     # identity shortcut, as option A in paper
@@ -123,9 +181,9 @@ class CIFARModel(object):
 
         # fully connected layer
         return DenseLayer(
-                layer, num_units=10,
-                W=lasagne.init.HeNormal(),
-                nonlinearity=softmax)
+            layer, num_units=10,
+            W=lasagne.init.HeNormal(),
+            nonlinearity=softmax)
 
     @logging
     def build_train_function(self):
@@ -150,14 +208,14 @@ class CIFARModel(object):
         # add weight decay
         all_layers = lasagne.layers.get_all_layers(self.network)
         l2_penalty = lasagne.regularization.regularize_layer_params(all_layers, lasagne.regularization.l2) * \
-                     CifarConfig['l2_penalty_factor']
+            CifarConfig['l2_penalty_factor']
         loss += l2_penalty
 
         # Create update expressions for training
         # Stochastic Gradient Descent (SGD) with momentum
         params = lasagne.layers.get_all_params(self.network, trainable=True)
         updates = lasagne.updates.momentum(
-                loss, params, learning_rate=self.learning_rate, momentum=CifarConfig['momentum'])
+            loss, params, learning_rate=self.learning_rate, momentum=CifarConfig['momentum'])
 
         # Compile a function performing a training step on a mini-batch (by giving
         # the updates dictionary) and returning the corresponding training loss:
@@ -175,10 +233,10 @@ class CIFARModel(object):
 
         alpha_loss += l2_penalty
         updates = lasagne.updates.momentum(
-                alpha_loss, params, learning_rate=self.learning_rate, momentum=CifarConfig['momentum'])
+            alpha_loss, params, learning_rate=self.learning_rate, momentum=CifarConfig['momentum'])
 
         self.alpha_train_function = theano.function(
-                [self.input_var, self.target_var, alpha], alpha_loss, updates=updates)
+            [self.input_var, self.target_var, alpha], alpha_loss, updates=updates)
 
     @logging
     def build_validate_function(self):
@@ -288,7 +346,7 @@ class CIFARModel(object):
         print("$Final results:")
         print("$  test loss:\t\t\t{:.6f}".format(test_err / test_batches))
         print("$  test accuracy:\t\t{:.2f} %".format(
-                test_acc / test_batches * 100))
+            test_acc / test_batches * 100))
 
     # @logging
     def validate_or_test(self, x_test, y_test):
@@ -303,26 +361,6 @@ class CIFARModel(object):
             test_acc += acc
             test_batches += 1
         return test_err, test_acc, test_batches
-
-    @staticmethod
-    def get_policy_input_size():
-        input_size = CifarConfig['cnn_output_size']
-        if PolicyConfig['add_label_input']:
-            input_size += 1
-        if PolicyConfig['add_label']:
-            # input_size += 1
-            input_size += CifarConfig['cnn_output_size']
-        if PolicyConfig['use_first_layer_output']:
-            input_size += 16 * 32 * 32
-        if PolicyConfig['add_epoch_number']:
-            input_size += 1
-        if PolicyConfig['add_learning_rate']:
-            input_size += 1
-        if PolicyConfig['add_margin']:
-            input_size += 1
-        if PolicyConfig['add_average_accuracy']:
-            input_size += 1
-        return input_size
 
     def get_policy_input(self, inputs, targets, epoch, history_accuracy=None):
         batch_size = targets.shape[0]
@@ -375,6 +413,25 @@ class CIFARModel(object):
             probability = np.hstack([probability, avg_acc_inputs])
 
         return probability
+
+
+class VanillaCNNModel(CIFARModelBase):
+    """
+    The CIFAR-10 neural network model (Vanilla CNN).
+    """
+
+    def __init__(self):
+        super(VanillaCNNModel, self).__init__()
+
+        # Prepare Theano variables for inputs and targets
+        self.input_var = T.tensor4('inputs')
+        self.target_var = T.ivector('targets')
+
+        self.network = self.build_cnn(self.input_var)
+
+    def build_cnn(self, input_var=None):
+        # Building the network
+        layer_in = InputLayer(shape=(None, 3, 32, 32), input_var=input_var)
 
 
 def test():
