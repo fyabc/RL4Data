@@ -67,6 +67,7 @@ def train_raw_CIFAR10():
                 selected_number = cost_threshold(iteration)
                 actions = cost_list <= min(heapq.nsmallest(selected_number, cost_list))
 
+                # Get masked inputs and targets
                 inputs = inputs[actions]
                 targets = targets[actions]
 

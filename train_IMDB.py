@@ -163,10 +163,24 @@ def train_raw_IMDB():
 
                 # Self-paced learning check
                 if Config['train_type'] == 'self_paced':
-                    cost_list = model.f_cost_list_without_decay(x, mask, y)
-
                     selected_number = cost_threshold(update_index)
-                    actions = cost_list <= min(heapq.nsmallest(selected_number, cost_list))
+
+                    cost_list = model.f_cost_list_without_decay(x, mask, y)
+                    positive_cost_list = cost_list[y == 1]
+                    negative_cost_list = cost_list[y == 0]
+
+                    actions = np.full(y.shape, False, dtype=bool)
+
+                    if positive_cost_list.size != 0:
+                        positive_threshold = heapq.nsmallest(selected_number, positive_cost_list)[-1]
+                        for i in range(len(y)):
+                            if y[i] == 1 and cost_list[i] <= positive_threshold:
+                                actions[i] = True
+                    if negative_cost_list.size != 0:
+                        negative_threshold = heapq.nsmallest(selected_number, negative_cost_list)[-1]
+                        for i in range(len(y)):
+                            if y[i] == 0 and cost_list[i] <= negative_threshold:
+                                actions[i] = True
 
                     # get masked inputs and targets
                     x = x[:, actions]
