@@ -615,7 +615,7 @@ def test_policy_IMDB():
     try:
         total_n_samples = 0
 
-        for epoch in range(1, 1 + IMDBConfig['epoch_per_episode']):
+        for epoch in range(IMDBConfig['epoch_per_episode']):
             print('[Epoch {}]'.format(epoch))
             message('[Epoch {}]'.format(epoch))
 
