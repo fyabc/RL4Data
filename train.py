@@ -315,7 +315,7 @@ def train_actor_critic_CIFAR10():
                                               np.full(actions.shape, label, dtype=probability.dtype))
 
                 if iteration % CifarConfig['display_freq'] == 0:
-                    print('Epoch {}\tIteration {}\tCost {}\tCritic loss {}\tActor loss {}'
+                    message('Epoch {}\tIteration {}\tCost {}\tCritic loss {}\tActor loss {}'
                           .format(epoch, iteration, part_train_err, Q_loss, actor_loss))
 
             validate_loss, validate_acc, validate_batches = model.validate_or_test(x_validate, y_validate)
@@ -338,12 +338,12 @@ def train_actor_critic_CIFAR10():
                 validate_acc /= validate_batches
                 actor.reward_buffer.append(validate_acc)
 
-            print("Epoch {} of {} took {:.3f}s"
-                  .format(epoch, CifarConfig['epoch_per_episode'], time.time() - start_time))
-            print('Training Loss:', train_loss)
-            print('History Training Loss:', history_train_loss / train_batches)
-            print('Validate Loss:', validate_loss / validate_batches)
-            print('#Validate accuracy:', validate_acc)
+            message("Epoch {} of {} took {:.3f}s"
+                    .format(epoch, CifarConfig['epoch_per_episode'], time.time() - start_time))
+            message('Training Loss:', train_loss)
+            message('History Training Loss:', history_train_loss / train_batches)
+            message('Validate Loss:', validate_loss / validate_batches)
+            message('#Validate accuracy:', validate_acc)
 
             message('Number of accepted cases {} of {} cases'.format(total_accepted_cases, train_small_size))
 
@@ -446,12 +446,12 @@ def test_policy_CIFAR10():
         validate_acc /= validate_batches
         history_accuracy.append(validate_acc)
 
-        print("Epoch {} of {} took {:.3f}s".format(epoch, CifarConfig['epoch_per_episode'], time.time() - start_time))
-        print('Training Loss:', train_loss)
-        print('History Training Loss:', history_train_loss / train_batches)
-        print('Validate Loss:', validate_loss / validate_batches)
-        print('#Validate accuracy:', validate_acc)
-        print('Number of accepted cases: {} of {} total'.format(total_accepted_cases, x_train_small.shape[0]))
+        message("Epoch {} of {} took {:.3f}s".format(epoch, CifarConfig['epoch_per_episode'], time.time() - start_time))
+        message('Training Loss:', train_loss)
+        message('History Training Loss:', history_train_loss / train_batches)
+        message('Validate Loss:', validate_loss / validate_batches)
+        message('#Validate accuracy:', validate_acc)
+        message('Number of accepted cases: {} of {} total'.format(total_accepted_cases, x_train_small.shape[0]))
 
         model.test(x_test, y_test)
 
