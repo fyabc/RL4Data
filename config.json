@@ -15,6 +15,7 @@
     /// Basic configurations.
     "seed": 1234,
     "floatX": "float32",
+    "logging_file": "./data/log.txt",
 
     /// Train types.
     /// 'raw':           train ResNet directly.
@@ -73,6 +74,12 @@
 
     "cifar10": {
         "data_dir": "./data/cifar-10-batches-py",
+
+        /// Model name.
+        // Candidates:
+        //     CIFARModel
+        //     VaniliaCNNModel
+        "model_name": "CIFARModel",
 
         "total_size": 60000,
         "train_size": 50000,
@@ -133,6 +140,7 @@
         "save_to": false, //"./data/imdb/lstm_model.npz",
         "valid_freq": 370,
         "save_freq": 1110,
+        "train_loss_freq": 370,
 
         "train_batch_size": 16,
         "validate_batch_size": 64,

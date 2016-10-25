@@ -19,16 +19,121 @@ from config import IMDBConfig, PolicyConfig
 __author__ = 'fyabc'
 
 
-class IMDBModel(object):
+class IMDBModelBase(object):
+
+    output_size = 2
+
+    def __init__(self,
+                 train_batch_size=None,
+                 validate_batch_size=None
+                 ):
+        # Functions and parameters that must be provided.
+        self.train_batch_size = train_batch_size or IMDBConfig['train_batch_size']
+        self.validate_batch_size = validate_batch_size or IMDBConfig['validate_batch_size']
+
+        self.learning_rate = None
+
+        self.f_probs = None
+        self.f_cost_list_without_decay = None
+        self.f_train = None
+        self.f_cost_without_decay = None
+        self.f_cost = None
+
+    def reset_parameters(self):
+        pass
+
+    def save_model(self, filename=None):
+        pass
+
+    def load_model(self, filename=None):
+        pass
+
+    def get_training_loss(self, x_train, y_train):
+        pass
+
+    @staticmethod
+    def get_policy_input_size():
+        input_size = 2
+
+        if PolicyConfig['add_label_input']:
+            input_size += 1
+        if PolicyConfig['add_label']:
+            # input_size += 1
+            input_size += 2
+        if PolicyConfig['use_first_layer_output']:
+            input_size += 16 * 32 * 32
+        if PolicyConfig['add_epoch_number']:
+            input_size += 1
+        if PolicyConfig['add_learning_rate']:
+            input_size += 1
+        if PolicyConfig['add_margin']:
+            input_size += 1
+        if PolicyConfig['add_average_accuracy']:
+            input_size += 1
+        return input_size
+
+    def get_policy_input(self, x, mask, y, epoch, history_accuracy=None):
+        batch_size = y.shape[0]
+
+        probability = self.f_probs(x, mask)
+
+        if PolicyConfig['add_label_input']:
+            label_inputs = np.zeros(shape=(batch_size, 1), dtype=fX)
+            for i in range(batch_size):
+                # assert probability[i, targets[i]] > 0, 'Probability <= 0!!!'
+                label_inputs[i, 0] = np.log(max(probability[i, y[i]], 1e-9))
+            probability = np.hstack([probability, label_inputs])
+
+        if PolicyConfig['add_label']:
+            # labels = floatX(targets) * (1.0 / ParamConfig['cnn_output_size'])
+            # probability = np.hstack([probability, labels[:, None]])
+
+            labels = np.zeros(shape=(batch_size, self.output_size), dtype=fX)
+            for i, target in enumerate(y):
+                labels[i, target] = 1.
+
+            probability = np.hstack([probability, labels])
+
+        # TODO add first layer output here
+        if PolicyConfig['use_first_layer_output']:
+            pass
+
+        if PolicyConfig['add_epoch_number']:
+            epoch_number_inputs = np.full((batch_size, 1), floatX(epoch) / IMDBConfig['epoch_per_episode'], dtype=fX)
+            probability = np.hstack([probability, epoch_number_inputs])
+
+        if PolicyConfig['add_learning_rate']:
+            learning_rate_inputs = np.full((batch_size, 1), self.learning_rate, dtype=fX)
+            probability = np.hstack([probability, learning_rate_inputs])
+
+        if PolicyConfig['add_margin']:
+            margin_inputs = np.zeros(shape=(batch_size, 1), dtype=fX)
+            for i in range(batch_size):
+                prob_i = probability[i].copy()
+                margin_inputs[i, 0] = prob_i[y[i]]
+                prob_i[y[i]] = -np.inf
+
+                margin_inputs[i, 0] -= np.max(prob_i)
+            probability = np.hstack([probability, margin_inputs])
+
+        if PolicyConfig['add_average_accuracy']:
+            avg_acc_inputs = np.full((batch_size, 1), average(history_accuracy), dtype=fX)
+            probability = np.hstack([probability, avg_acc_inputs])
+
+        return probability
+
+
+class IMDBModel(IMDBModelBase):
 
     output_size = 2
 
     def __init__(self,
                  reload_model=False,
                  train_batch_size=None,
+                 validate_batch_size=None,
                  ):
-        self.train_batch_size = train_batch_size or IMDBConfig['train_batch_size']
-        self.validate_batch_size = IMDBConfig['validate_batch_size']
+        super(IMDBModel, self).__init__(train_batch_size, validate_batch_size)
+
         self.learning_rate = floatX(IMDBConfig['learning_rate'])
 
         # Parameters of the model (Theano shared variables)
@@ -174,7 +279,7 @@ class IMDBModel(object):
             
         predict = T.nnet.softmax(T.dot(proj, self.parameters['U']) + self.parameters['b'])
 
-        self.f_predict_prob = theano.function([self.inputs, self.mask], predict, name='f_pred_prob')
+        self.f_probs = theano.function([self.inputs, self.mask], predict, name='f_pred_prob')
         self.f_predict = theano.function([self.inputs, self.mask], predict.argmax(axis=1), name='f_pred')
     
         off = 1e-8
@@ -186,10 +291,10 @@ class IMDBModel(object):
             [self.inputs, self.mask, self.targets], cost_list, name='f_cost_list_without_decay'
         )
     
-        self.cost = cost_list.mean()
+        cost = cost_list.mean()
 
         self.f_cost_without_decay = theano.function(
-            [self.inputs, self.mask, self.targets], self.cost, name='f_cost_without_decay'
+            [self.inputs, self.mask, self.targets], cost, name='f_cost_without_decay'
         )
 
         decay_c = IMDBConfig['decay_c']
@@ -198,18 +303,18 @@ class IMDBModel(object):
             weight_decay = 0.
             weight_decay += (self.parameters['U'] ** 2).sum()
             weight_decay *= decay_c
-            self.cost += weight_decay
+            cost += weight_decay
 
-        self.f_cost = theano.function([self.inputs, self.mask, self.targets], self.cost, name='f_cost')
+        self.f_cost = theano.function([self.inputs, self.mask, self.targets], cost, name='f_cost')
 
-        grads = T.grad(self.cost, wrt=list(self.parameters.values()))
+        grads = T.grad(cost, wrt=list(self.parameters.values()))
         self.f_grad = theano.function([self.inputs, self.mask, self.targets], grads, name='f_grad')
 
         lr = T.scalar('lr', dtype=fX)
         self.f_grad_shared, self.f_update = eval(IMDBConfig['optimizer'])(
-            lr, self.parameters, grads, [self.inputs, self.mask, self.targets], self.cost)
+            lr, self.parameters, grads, [self.inputs, self.mask, self.targets], cost)
 
-    def update(self, x, mask, y):
+    def f_train(self, x, mask, y):
         if x.shape[1] == 0:
             return None
 
@@ -251,74 +356,21 @@ class IMDBModel(object):
             result[key] = self.parameters[key].get_value()
         return result
 
-    @staticmethod
-    def get_policy_input_size():
-        input_size = 2
+    def get_training_loss(self, x_train, y_train):
+        sum_loss = 0.0
+        kf = get_minibatches_idx(len(y_train), self.train_batch_size, shuffle=False)
 
-        if PolicyConfig['add_label_input']:
-            input_size += 1
-        if PolicyConfig['add_label']:
-            # input_size += 1
-            input_size += 2
-        if PolicyConfig['use_first_layer_output']:
-            input_size += 16 * 32 * 32
-        if PolicyConfig['add_epoch_number']:
-            input_size += 1
-        if PolicyConfig['add_learning_rate']:
-            input_size += 1
-        if PolicyConfig['add_margin']:
-            input_size += 1
-        if PolicyConfig['add_average_accuracy']:
-            input_size += 1
-        return input_size
+        for _, train_index in kf:
+            self.use_noise.set_value(floatX(1.))
 
-    def get_policy_input(self, x, mask, y, epoch, history_accuracy=None):
-        batch_size = y.shape[0]
+            x = [x_train[t] for t in train_index]
+            y = [y_train[t] for t in train_index]
 
-        probability = self.f_predict_prob(x, mask)
+            x, mask, y = prepare_data(x, np.asarray(y, dtype='int64'))
 
-        # TODO add more policy input features
+            sum_loss += self.f_cost(x, mask, y)
 
-        if PolicyConfig['add_label_input']:
-            label_inputs = np.zeros(shape=(batch_size, 1), dtype=fX)
-            for i in range(batch_size):
-                # assert probability[i, targets[i]] > 0, 'Probability <= 0!!!'
-                label_inputs[i, 0] = np.log(max(probability[i, y[i]], 1e-9))
-            probability = np.hstack([probability, label_inputs])
-
-        if PolicyConfig['add_label']:
-            # labels = floatX(targets) * (1.0 / ParamConfig['cnn_output_size'])
-            # probability = np.hstack([probability, labels[:, None]])
-
-            labels = np.zeros(shape=(batch_size, self.output_size), dtype=fX)
-            for i, target in enumerate(y):
-                labels[i, target] = 1.
-
-            probability = np.hstack([probability, labels])
-
-        if PolicyConfig['add_epoch_number']:
-            epoch_number_inputs = np.full((batch_size, 1), floatX(epoch) / IMDBConfig['epoch_per_episode'], dtype=fX)
-            probability = np.hstack([probability, epoch_number_inputs])
-
-        if PolicyConfig['add_learning_rate']:
-            learning_rate_inputs = np.full((batch_size, 1), self.learning_rate, dtype=fX)
-            probability = np.hstack([probability, learning_rate_inputs])
-
-        if PolicyConfig['add_margin']:
-            margin_inputs = np.zeros(shape=(batch_size, 1), dtype=fX)
-            for i in range(batch_size):
-                prob_i = probability[i].copy()
-                margin_inputs[i, 0] = prob_i[y[i]]
-                prob_i[y[i]] = -np.inf
-
-                margin_inputs[i, 0] -= np.max(prob_i)
-            probability = np.hstack([probability, margin_inputs])
-
-        if PolicyConfig['add_average_accuracy']:
-            avg_acc_inputs = np.full((batch_size, 1), average(history_accuracy), dtype=fX)
-            probability = np.hstack([probability, avg_acc_inputs])
-
-        return probability
+        return sum_loss / len(kf)
 
 
 def test():

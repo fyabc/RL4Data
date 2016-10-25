@@ -190,7 +190,7 @@ def train_raw_IMDB():
                 n_samples += x.shape[1]
                 total_n_samples += x.shape[1]
 
-                cost = model.update(x, mask, y)
+                cost = model.f_train(x, mask, y)
 
                 history_train_costs.append(cost)
 
@@ -203,6 +203,10 @@ def train_raw_IMDB():
 
                 if save_to and update_index % save_freq == 0:
                     save_parameters(model, best_parameters, save_to, history_errs)
+
+                if update_index % IMDBConfig['train_loss_freq'] == 0:
+                    train_loss = model.get_training_loss(train_x, train_y)
+                    print('Training Loss:', train_loss)
 
                 if update_index % valid_freq == 0:
                     model.use_noise.set_value(0.)
@@ -327,7 +331,7 @@ def train_policy_IMDB():
                     n_samples += x.shape[1]
                     total_n_samples += x.shape[1]
 
-                    cost = model.update(x, mask, y)
+                    cost = model.f_train(x, mask, y)
 
                     if cost is not None and (np.isnan(cost) or np.isinf(cost)):
                         print('bad cost detected: ', cost)
@@ -337,6 +341,10 @@ def train_policy_IMDB():
                         print('Epoch ', epoch, 'Update ', update_index, 'Cost ', cost)
 
                     # Do not save when training policy!
+
+                    if update_index % IMDBConfig['train_loss_freq'] == 0:
+                        train_loss = model.get_training_loss(train_x, train_y)
+                        print('Training Loss:', train_loss)
 
                     if update_index % valid_freq == 0:
                         model.use_noise.set_value(0.)
@@ -501,7 +509,7 @@ def train_actor_critic_IMDB():
                     total_n_samples += x_selected.shape[1]
 
                     # Update the IMDB network with selected data
-                    cost = model.update(x_selected, mask_selected, y_selected)
+                    cost = model.f_train(x_selected, mask_selected, y_selected)
 
                     # Get immediate reward
                     if PolicyConfig['cost_gap_AC_reward']:
@@ -541,6 +549,10 @@ def train_actor_critic_IMDB():
                         print('\tActor network loss', actor_loss)
 
                     # Do not save when training policy!
+
+                    if update_index % IMDBConfig['train_loss_freq'] == 0:
+                        train_loss = model.get_training_loss(train_x, train_y)
+                        print('Training Loss:', train_loss)
 
                     if update_index % valid_freq == 0:
                         model.use_noise.set_value(0.)
@@ -676,7 +688,7 @@ def test_policy_IMDB():
                     n_samples += x.shape[1]
                     total_n_samples += x.shape[1]
 
-                    cost = model.update(x, mask, y)
+                    cost = model.f_train(x, mask, y)
 
                 if cost is not None and np.isnan(cost) or np.isinf(cost):
                     print('bad cost detected: ', cost)
@@ -687,6 +699,10 @@ def test_policy_IMDB():
 
                 if save_to and update_index % save_freq == 0:
                     save_parameters(model, best_parameters, save_to, history_errs)
+
+                if update_index % IMDBConfig['train_loss_freq'] == 0:
+                    train_loss = model.get_training_loss(train_x, train_y)
+                    print('Training Loss:', train_loss)
 
                 if update_index % valid_freq == 0:
                     model.use_noise.set_value(0.)

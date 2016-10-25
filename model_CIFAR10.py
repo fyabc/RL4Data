@@ -21,6 +21,9 @@ from lasagne.nonlinearities import softmax, rectify
 from lasagne.layers import batch_norm
 from lasagne.layers.helper import get_all_param_values, set_all_param_values
 
+# For vanilia model
+from lasagne.layers import LocalResponseNormalization2DLayer, MaxPool2DLayer
+
 from config import Config, CifarConfig, PolicyConfig
 from utils import logging, iterate_minibatches, fX, floatX, shuffle_data, average
 
@@ -39,25 +42,72 @@ class CIFARModelBase(object):
         self.train_batch_size = train_batch_size or CifarConfig['train_batch_size']
         self.validate_batch_size = validate_batch_size or CifarConfig['validate_batch_size']
 
-        self.probs_function = None
-        self.train_function = None
-        self.alpha_train_function = None
+        self.network = None
+        self.saved_init_parameters_values = None
+
+        self.learning_rate = None
+
+        self.f_first_layer_output = None
+        self.f_probs = None
+        self.f_cost_list_without_decay = None
+        self.f_train = None
+        self.f_alpha_train = None
         self.f_cost_without_decay = None
+        self.f_cost = None
+
+        self.f_train = None
+        self.f_validate = None
+
+    def build_train_function(self):
+        pass
+
+    def build_validate_function(self):
+        pass
 
     def reset_parameters(self):
-        pass
+        set_all_param_values(self.network, self.saved_init_parameters_values, trainable=True)
 
+    @logging
     def save_model(self, filename=None):
-        pass
+        filename = filename or Config['model_file']
+        np.savez(filename, *get_all_param_values(self.network))
 
+    @logging
     def load_model(self, filename=None):
-        pass
+        filename = filename or Config['model_file']
+        with np.load(filename) as f:
+            param_values = [f['arr_%d' % i] for i in range(len(f.files))]
+        lasagne.layers.set_all_param_values(self.network, param_values)
 
+    def get_training_loss(self, x_train, y_train):
+        sum_loss = 0.0
+        training_batches = 0
+        for batch in iterate_minibatches(x_train, y_train, self.train_batch_size, shuffle=False, augment=False):
+            training_batches += 1
+            inputs, targets = batch
+            sum_loss += self.f_cost(inputs, targets)
+        return sum_loss / training_batches
+
+    @logging
     def test(self, x_test, y_test):
-        pass
+        test_err, test_acc, test_batches = self.validate_or_test(x_test, y_test)
+        print("$Final results:")
+        print("$  test loss:\t\t\t{:.6f}".format(test_err / test_batches))
+        print("$  test accuracy:\t\t{:.2f} %".format(
+            test_acc / test_batches * 100))
 
     def validate_or_test(self, x_test, y_test):
-        pass
+        # Calculate validation error of model:
+        test_err = 0
+        test_acc = 0
+        test_batches = 0
+        for batch in iterate_minibatches(x_test, y_test, self.validate_batch_size, shuffle=False):
+            inputs, targets = batch
+            err, acc = self.f_validate(inputs, targets)
+            test_err += err
+            test_acc += acc
+            test_batches += 1
+        return test_err, test_acc, test_batches
 
     @staticmethod
     def get_policy_input_size():
@@ -80,7 +130,56 @@ class CIFARModelBase(object):
         return input_size
 
     def get_policy_input(self, inputs, targets, epoch, history_accuracy=None):
-        pass
+        batch_size = targets.shape[0]
+
+        probability = self.f_probs(inputs)
+
+        if PolicyConfig['add_label_input']:
+            label_inputs = np.zeros(shape=(batch_size, 1), dtype=fX)
+            for i in range(batch_size):
+                # assert probability[i, targets[i]] > 0, 'Probability <= 0!!!'
+                label_inputs[i, 0] = np.log(max(probability[i, targets[i]], 1e-9))
+            probability = np.hstack([probability, label_inputs])
+
+        if PolicyConfig['add_label']:
+            # labels = floatX(targets) * (1.0 / ParamConfig['cnn_output_size'])
+            # probability = np.hstack([probability, labels[:, None]])
+
+            labels = np.zeros(shape=(batch_size, self.output_size), dtype=fX)
+            for i, target in enumerate(targets):
+                labels[i, target] = 1.
+
+            probability = np.hstack([probability, labels])
+
+        if PolicyConfig['use_first_layer_output']:
+            first_layer_output = self.f_first_layer_output(inputs)
+            shape_first = np.product(first_layer_output.shape[1:])
+            first_layer_output = first_layer_output.reshape((batch_size, shape_first))
+            probability = np.hstack([probability, first_layer_output])
+
+        if PolicyConfig['add_epoch_number']:
+            epoch_number_inputs = np.full((batch_size, 1), floatX(epoch) / CifarConfig['epoch_per_episode'], dtype=fX)
+            probability = np.hstack([probability, epoch_number_inputs])
+
+        if PolicyConfig['add_learning_rate']:
+            learning_rate_inputs = np.full((batch_size, 1), self.learning_rate.get_value(), dtype=fX)
+            probability = np.hstack([probability, learning_rate_inputs])
+
+        if PolicyConfig['add_margin']:
+            margin_inputs = np.zeros(shape=(batch_size, 1), dtype=fX)
+            for i in range(batch_size):
+                prob_i = probability[i].copy()
+                margin_inputs[i, 0] = prob_i[targets[i]]
+                prob_i[targets[i]] = -np.inf
+
+                margin_inputs[i, 0] -= np.max(prob_i)
+            probability = np.hstack([probability, margin_inputs])
+
+        if PolicyConfig['add_average_accuracy']:
+            avg_acc_inputs = np.full((batch_size, 1), average(history_accuracy), dtype=fX)
+            probability = np.hstack([probability, avg_acc_inputs])
+
+        return probability
 
 
 class CIFARModel(CIFARModelBase):
@@ -156,10 +255,10 @@ class CIFARModel(CIFARModelBase):
         # first layer, output is 16 x 32 x 32
         layer = batch_norm(ConvLayer(layer_in, num_filters=16, filter_size=(3, 3), stride=(1, 1), nonlinearity=rectify,
                                      pad='same', W=lasagne.init.HeNormal(gain='relu'), flip_filters=False))
-        self.first_layer_output = lasagne.layers.get_output(layer, inputs=input_var)
-        self.first_layer_output_function = theano.function(
+        first_layer_output = lasagne.layers.get_output(layer, inputs=input_var)
+        self.f_first_layer_output = theano.function(
             inputs=[input_var],
-            outputs=self.first_layer_output
+            outputs=first_layer_output
         )
 
         # first stack of residual blocks, output is 16 x 32 x 32
@@ -192,7 +291,7 @@ class CIFARModel(CIFARModelBase):
         # Create a loss expression for training, i.e., a scalar objective we want
         # to minimize (for our multi-class problem, it is the cross-entropy loss):
         probs = lasagne.layers.get_output(self.network)
-        self.probs_function = theano.function(
+        self.f_probs = theano.function(
             inputs=[self.input_var],
             outputs=probs
         )
@@ -211,6 +310,8 @@ class CIFARModel(CIFARModelBase):
             CifarConfig['l2_penalty_factor']
         loss += l2_penalty
 
+        self.f_cost = theano.function([self.input_var, self.target_var], loss)
+
         # Create update expressions for training
         # Stochastic Gradient Descent (SGD) with momentum
         params = lasagne.layers.get_all_params(self.network, trainable=True)
@@ -219,7 +320,7 @@ class CIFARModel(CIFARModelBase):
 
         # Compile a function performing a training step on a mini-batch (by giving
         # the updates dictionary) and returning the corresponding training loss:
-        self.train_function = theano.function([self.input_var, self.target_var], loss, updates=updates)
+        self.f_train = theano.function([self.input_var, self.target_var], loss, updates=updates)
 
         # ##########################################################
 
@@ -235,7 +336,7 @@ class CIFARModel(CIFARModelBase):
         updates = lasagne.updates.momentum(
             alpha_loss, params, learning_rate=self.learning_rate, momentum=CifarConfig['momentum'])
 
-        self.alpha_train_function = theano.function(
+        self.f_alpha_train = theano.function(
             [self.input_var, self.target_var, alpha], alpha_loss, updates=updates)
 
     @logging
@@ -243,19 +344,21 @@ class CIFARModel(CIFARModelBase):
         """build validate functions"""
 
         # Create a loss expression for validation/testing
-        test_prediction = lasagne.layers.get_output(self.network, deterministic=True)
-        test_loss = lasagne.objectives.categorical_crossentropy(test_prediction,
+        test_preds = lasagne.layers.get_output(self.network, deterministic=True)
+        test_loss = lasagne.objectives.categorical_crossentropy(test_preds,
                                                                 self.target_var)
         test_loss = test_loss.mean()
-        test_acc = T.mean(T.eq(T.argmax(test_prediction, axis=1), self.target_var),
+        test_acc = T.mean(T.eq(T.argmax(test_preds, axis=1), self.target_var),
                           dtype=theano.config.floatX)
 
         # Compile a second function computing the validation loss and accuracy:
-        self.validate_function = theano.function([self.input_var, self.target_var], [test_loss, test_acc])
+        self.f_validate = theano.function([self.input_var, self.target_var], [test_loss, test_acc])
 
     @logging
     def train(self, x_train, y_train, x_test, y_test, num_epochs):
-        if self.train_function is None:
+        """Stub function for old code. Will be removed in future."""
+
+        if self.f_train is None:
             self.build_train_function()
 
         # launch the training loop
@@ -302,10 +405,10 @@ class CIFARModel(CIFARModelBase):
         for batch in iterate_minibatches(x_train, y_train, self.train_batch_size, shuffle=True, augment=True):
             inputs, targets = batch
 
-            train_err += self.train_function(inputs, targets)
+            train_err += self.f_train(inputs, targets)
             train_batches += 1
 
-            current_prediction = self.probs_function(inputs)
+            current_prediction = self.f_probs(inputs)
             softmax_probabilities.append(current_prediction)
 
         return train_err, train_batches, np.vstack(softmax_probabilities)
@@ -315,10 +418,7 @@ class CIFARModel(CIFARModelBase):
             inputs = inputs[mask]
             targets = targets[mask]
 
-        return self.train_function(inputs, targets), self.probs_function(inputs)
-
-    def reset_parameters(self):
-        set_all_param_values(self.network, self.saved_init_parameters_values, trainable=True)
+        return self.f_train(inputs, targets), self.f_probs(inputs)
 
     @logging
     def update_learning_rate(self):
@@ -328,114 +428,129 @@ class CIFARModel(CIFARModelBase):
     def reset_learning_rate(self):
         self.learning_rate.set_value(lasagne.utils.floatX(CifarConfig['init_learning_rate']))
 
-    @logging
-    def save_model(self, filename=None):
-        filename = filename or Config['model_file']
-        np.savez(filename, *get_all_param_values(self.network))
 
-    @logging
-    def load_model(self, filename=None):
-        filename = filename or Config['model_file']
-        with np.load(filename) as f:
-            param_values = [f['arr_%d' % i] for i in range(len(f.files))]
-        lasagne.layers.set_all_param_values(self.network, param_values)
-
-    @logging
-    def test(self, x_test, y_test):
-        test_err, test_acc, test_batches = self.validate_or_test(x_test, y_test)
-        print("$Final results:")
-        print("$  test loss:\t\t\t{:.6f}".format(test_err / test_batches))
-        print("$  test accuracy:\t\t{:.2f} %".format(
-            test_acc / test_batches * 100))
-
-    # @logging
-    def validate_or_test(self, x_test, y_test):
-        # Calculate validation error of model:
-        test_err = 0
-        test_acc = 0
-        test_batches = 0
-        for batch in iterate_minibatches(x_test, y_test, self.validate_batch_size, shuffle=False):
-            inputs, targets = batch
-            err, acc = self.validate_function(inputs, targets)
-            test_err += err
-            test_acc += acc
-            test_batches += 1
-        return test_err, test_acc, test_batches
-
-    def get_policy_input(self, inputs, targets, epoch, history_accuracy=None):
-        batch_size = targets.shape[0]
-
-        probability = self.probs_function(inputs)
-
-        if PolicyConfig['add_label_input']:
-            label_inputs = np.zeros(shape=(batch_size, 1), dtype=fX)
-            for i in range(batch_size):
-                # assert probability[i, targets[i]] > 0, 'Probability <= 0!!!'
-                label_inputs[i, 0] = np.log(max(probability[i, targets[i]], 1e-9))
-            probability = np.hstack([probability, label_inputs])
-
-        if PolicyConfig['add_label']:
-            # labels = floatX(targets) * (1.0 / ParamConfig['cnn_output_size'])
-            # probability = np.hstack([probability, labels[:, None]])
-
-            labels = np.zeros(shape=(batch_size, self.output_size), dtype=fX)
-            for i, target in enumerate(targets):
-                labels[i, target] = 1.
-
-            probability = np.hstack([probability, labels])
-
-        if PolicyConfig['use_first_layer_output']:
-            first_layer_output = self.first_layer_output_function(inputs)
-            shape_first = np.product(first_layer_output.shape[1:])
-            first_layer_output = first_layer_output.reshape((batch_size, shape_first))
-            probability = np.hstack([probability, first_layer_output])
-
-        if PolicyConfig['add_epoch_number']:
-            epoch_number_inputs = np.full((batch_size, 1), floatX(epoch) / CifarConfig['epoch_per_episode'], dtype=fX)
-            probability = np.hstack([probability, epoch_number_inputs])
-
-        if PolicyConfig['add_learning_rate']:
-            learning_rate_inputs = np.full((batch_size, 1), self.learning_rate.get_value(), dtype=fX)
-            probability = np.hstack([probability, learning_rate_inputs])
-
-        if PolicyConfig['add_margin']:
-            margin_inputs = np.zeros(shape=(batch_size, 1), dtype=fX)
-            for i in range(batch_size):
-                prob_i = probability[i].copy()
-                margin_inputs[i, 0] = prob_i[targets[i]]
-                prob_i[targets[i]] = -np.inf
-
-                margin_inputs[i, 0] -= np.max(prob_i)
-            probability = np.hstack([probability, margin_inputs])
-
-        if PolicyConfig['add_average_accuracy']:
-            avg_acc_inputs = np.full((batch_size, 1), average(history_accuracy), dtype=fX)
-            probability = np.hstack([probability, avg_acc_inputs])
-
-        return probability
-
-
-class VanillaCNNModel(CIFARModelBase):
+class VaniliaCNNModel(CIFARModelBase):
     """
-    The CIFAR-10 neural network model (Vanilla CNN).
+    The CIFAR-10 neural network model (Vanilia CNN).
     """
 
-    def __init__(self):
-        super(VanillaCNNModel, self).__init__()
+    def __init__(self,
+                 train_batch_size=None,
+                 valid_batch_size=None
+                 ):
+        super(VaniliaCNNModel, self).__init__(train_batch_size, valid_batch_size)
 
         # Prepare Theano variables for inputs and targets
         self.input_var = T.tensor4('inputs')
         self.target_var = T.ivector('targets')
 
+        self.learning_rate = theano.shared(lasagne.utils.floatX(CifarConfig['init_learning_rate']))
+
         self.network = self.build_cnn(self.input_var)
+        print("number of parameters in model: %d" % lasagne.layers.count_params(self.network, trainable=True))
+
+        self.saved_init_parameters_values = get_all_param_values(self.network, trainable=True)
+
+        self.build_train_function()
+        self.build_validate_function()
 
     def build_cnn(self, input_var=None):
         # Building the network
         layer_in = InputLayer(shape=(None, 3, 32, 32), input_var=input_var)
 
+        # Conv1
+        # [NOTE]: normal vs. truncated normal?
+        # [NOTE]: conv in lasagne is not same as it in TensorFlow.
+        layer = ConvLayer(layer_in, num_filters=1, filter_size=(5, 5), stride=(1, 1), nonlinearity=rectify,
+                          pad='same', W=lasagne.init.HeNormal(), flip_filters=False)
+        # Pool1
+        layer = MaxPool2DLayer(layer, pool_size=(3, 3), stride=(2, 2))
+        # Norm1
+        layer = LocalResponseNormalization2DLayer(layer, alpha=0.001 / 9.0, k=1.0, beta=0.75)
+
+        # Conv2
+        layer = ConvLayer(layer, num_filters=1, filter_size=(5, 5), stride=(1, 1), nonlinearity=rectify,
+                          pad='same', W=lasagne.init.HeNormal(), flip_filters=False)
+        # Norm2
+        # [NOTE]: n must be odd, but n in Chang's code is 4?
+        layer = LocalResponseNormalization2DLayer(layer, alpha=0.001 / 9.0, k=1.0, beta=0.75)
+        # Pool2
+        layer = MaxPool2DLayer(layer, pool_size=(3, 3), stride=(2, 2))
+
+        # Reshape
+        layer = lasagne.layers.ReshapeLayer(layer, shape=([0], -1))
+
+        # Dense3
+        layer = DenseLayer(layer, num_units=384, W=lasagne.init.HeNormal(), b=lasagne.init.Constant(0.1))
+
+        # Dense4
+        layer = DenseLayer(layer, num_units=192, W=lasagne.init.Normal(std=0.04), b=lasagne.init.Constant(0.1))
+
+        # Softmax
+        layer = DenseLayer(layer, num_units=self.output_size,
+                           W=lasagne.init.Normal(std=1. / 192.0), nonlinearity=softmax)
+
+        return layer
+
+    def build_train_function(self):
+        probs = lasagne.layers.get_output(self.network)
+        self.f_probs = theano.function(
+            inputs=[self.input_var],
+            outputs=probs
+        )
+
+        loss = lasagne.objectives.categorical_crossentropy(probs, self.target_var)
+
+        self.f_cost_list_without_decay = theano.function([self.input_var, self.target_var], loss)
+
+        loss = loss.mean()
+
+        self.f_cost_without_decay = theano.function([self.input_var, self.target_var], loss)
+
+        # add weight decay
+        all_layers = lasagne.layers.get_all_layers(self.network)
+        l2_penalty = lasagne.regularization.regularize_layer_params(all_layers, lasagne.regularization.l2) * \
+            CifarConfig['l2_penalty_factor']
+        loss += l2_penalty
+
+        self.f_cost = theano.function([self.input_var, self.target_var], loss)
+
+        params = lasagne.layers.get_all_params(self.network, trainable=True)
+
+        # Different updates.
+        updates_sgd = lasagne.updates.sgd(loss, params, self.learning_rate)
+        updates_momentum = lasagne.updates.momentum(
+            loss, params, learning_rate=self.learning_rate, momentum=CifarConfig['momentum'])
+        # [NOTE]: Some default values of lasagne and TensorFlow are same.
+        updates_adam = lasagne.updates.adam(loss, params)
+        updates_adagrad = lasagne.updates.adagrad(loss, params, learning_rate=0.1)
+        updates_adadelta = lasagne.updates.adadelta(loss, params, learning_rate=0.001, epsilon=1e-8)
+        updates_rmsprop = lasagne.updates.rmsprop(loss, params, learning_rate=0.1, epsilon=1e-10)
+
+        f_train_sgd = theano.function([self.input_var, self.target_var], loss, updates=updates_sgd)
+        f_train_momentum = theano.function([self.input_var, self.target_var], loss, updates=updates_momentum)
+        f_train_adam = theano.function([self.input_var, self.target_var], loss, updates=updates_adam)
+        f_train_adagrad = theano.function([self.input_var, self.target_var], loss, updates=updates_adagrad)
+        f_train_adadelta = theano.function([self.input_var, self.target_var], loss, updates=updates_adadelta)
+        f_train_rmsprop = theano.function([self.input_var, self.target_var], loss, updates=updates_rmsprop)
+
+        # TODO: can be selected
+        self.f_train = f_train_adam
+
+    def build_validate_function(self):
+        test_preds = lasagne.layers.get_output(self.network, deterministic=True)
+        test_loss = lasagne.objectives.categorical_crossentropy(test_preds,
+                                                                self.target_var)
+        test_loss = test_loss.mean()
+        test_acc = T.mean(T.eq(T.argmax(test_preds, axis=1), self.target_var),
+                          dtype=theano.config.floatX)
+
+        # Compile a second function computing the validation loss and accuracy:
+        self.f_validate = theano.function([self.input_var, self.target_var], [test_loss, test_acc])
+
 
 def test():
-    pass
+    model = VaniliaCNNModel()
 
 
 if __name__ == '__main__':

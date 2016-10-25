@@ -23,12 +23,43 @@ logging_file = sys.stderr
 _depth = 0
 
 
+def init_logging_file():
+    global logging_file
+
+    if Config['logging_file'] is None:
+        return
+
+    raw_filename = Config['logging_file']
+    i = 1
+
+    filename = raw_filename
+
+    while os.path.exists(filename):
+        filename = raw_filename.replace('.txt', '{}.txt'.format(i))
+        i += 1
+
+    Config['logging_file'] = filename
+    logging_file = open(filename, 'w')
+
+
+def finalize_logging_file():
+    if logging_file != sys.stderr:
+        logging_file.flush()
+        logging_file.close()
+
+
+def message(*args, **kwargs):
+    if logging_file != sys.stderr:
+        print(*args, file=logging_file, **kwargs)
+    print(*args, file=sys.stderr, **kwargs)
+
+
 def logging(func, file_=sys.stderr):
     @wraps(func)
     def wrapper(*args, **kwargs):
         global _depth
 
-        print(' ' * 2 * _depth + '[Start function %s...]' % func.__name__, file=file_)
+        message(' ' * 2 * _depth + '[Start function %s...]' % func.__name__)
         _depth += 1
         start_time = time.time()
 
@@ -36,13 +67,9 @@ def logging(func, file_=sys.stderr):
 
         end_time = time.time()
         _depth -= 1
-        print(' ' * 2 * _depth + '[Function %s done, time: %.3fs]' % (func.__name__, end_time - start_time), file=file_)
+        message(' ' * 2 * _depth + '[Function %s done, time: %.3fs]' % (func.__name__, end_time - start_time))
         return result
     return wrapper
-
-
-def message(*args, **kwargs):
-    print(*args, file=logging_file, **kwargs)
 
 
 def floatX(value):
@@ -260,12 +287,20 @@ def process_before_train(param_config=CifarConfig, policy_config=PolicyConfig):
 
     check_config(param_config, policy_config)
 
+    init_logging_file()
+
     message('The configures and hyperparameters are:')
     pprint.pprint(Config, stream=sys.stderr)
+    if logging_file != sys.stderr:
+        pprint.pprint(Config, stream=logging_file)
 
 
 def test():
-    pass
+    global logging_file
+
+    logging_file = open('./data/temp.txt', 'w')
+
+    message('Test logging')
 
 
 if __name__ == '__main__':
