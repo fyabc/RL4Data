@@ -109,6 +109,9 @@ class CIFARModelBase(object):
             test_batches += 1
         return test_err, test_acc, test_batches
 
+    def reset_learning_rate(self):
+        pass
+
     @staticmethod
     def get_policy_input_size():
         input_size = CifarConfig['cnn_output_size']
