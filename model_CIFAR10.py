@@ -25,7 +25,7 @@ from lasagne.layers.helper import get_all_param_values, set_all_param_values
 from lasagne.layers import LocalResponseNormalization2DLayer, MaxPool2DLayer
 
 from config import Config, CifarConfig, PolicyConfig
-from utils import logging, iterate_minibatches, fX, floatX, shuffle_data, average
+from utils import logging, iterate_minibatches, fX, floatX, shuffle_data, average, message
 
 
 class CIFARModelBase(object):
@@ -91,9 +91,9 @@ class CIFARModelBase(object):
     @logging
     def test(self, x_test, y_test):
         test_err, test_acc, test_batches = self.validate_or_test(x_test, y_test)
-        print("$Final results:")
-        print("$  test loss:\t\t\t{:.6f}".format(test_err / test_batches))
-        print("$  test accuracy:\t\t{:.2f} %".format(
+        message("$Final results:")
+        message("$  test loss:\t\t\t{:.6f}".format(test_err / test_batches))
+        message("$  test accuracy:\t\t{:.2f} %".format(
             test_acc / test_batches * 100))
 
     def validate_or_test(self, x_test, y_test):
@@ -525,10 +525,10 @@ class VaniliaCNNModel(CIFARModelBase):
         updates_momentum = lasagne.updates.momentum(
             loss, params, learning_rate=self.learning_rate, momentum=CifarConfig['momentum'])
         # [NOTE]: Some default values of lasagne and TensorFlow are same.
-        updates_adam = lasagne.updates.adam(loss, params)
-        updates_adagrad = lasagne.updates.adagrad(loss, params, learning_rate=0.1)
+        updates_adam = lasagne.updates.adam(loss, params, learning_rate=0.001)
+        updates_adagrad = lasagne.updates.adagrad(loss, params, learning_rate=self.learning_rate)
         updates_adadelta = lasagne.updates.adadelta(loss, params, learning_rate=0.001, epsilon=1e-8)
-        updates_rmsprop = lasagne.updates.rmsprop(loss, params, learning_rate=0.1, epsilon=1e-10)
+        updates_rmsprop = lasagne.updates.rmsprop(loss, params, learning_rate=self.learning_rate, epsilon=1e-10)
 
         f_train_sgd = theano.function([self.input_var, self.target_var], loss, updates=updates_sgd)
         f_train_momentum = theano.function([self.input_var, self.target_var], loss, updates=updates_momentum)
@@ -538,7 +538,7 @@ class VaniliaCNNModel(CIFARModelBase):
         f_train_rmsprop = theano.function([self.input_var, self.target_var], loss, updates=updates_rmsprop)
 
         # TODO: can be selected
-        self.f_train = f_train_adam
+        self.f_train = f_train_adagrad
 
     def build_validate_function(self):
         test_preds = lasagne.layers.get_output(self.network, deterministic=True)
@@ -550,6 +550,10 @@ class VaniliaCNNModel(CIFARModelBase):
 
         # Compile a second function computing the validation loss and accuracy:
         self.f_validate = theano.function([self.input_var, self.target_var], [test_loss, test_acc])
+
+    @logging
+    def update_learning_rate(self):
+        self.learning_rate.set_value(floatX(self.learning_rate.get_value() * 0.1))
 
 
 def test():

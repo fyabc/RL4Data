@@ -9,7 +9,7 @@ import heapq
 
 from config import IMDBConfig, Config, PolicyConfig
 from model_IMDB import IMDBModel
-from utils import process_before_train, floatX, message, get_part_data
+from utils import process_before_train, floatX, message, get_part_data, finalize_logging_file
 from utils_IMDB import load_imdb_data, preprocess_imdb_data, get_minibatches_idx
 from utils_IMDB import prepare_imdb_data as prepare_data
 
@@ -582,7 +582,7 @@ def train_actor_critic_IMDB():
                 if early_stop:
                     break
         except KeyboardInterrupt:
-            print('Training interrupted')
+            message('Training interrupted')
 
         end_time = time.time()
 
@@ -702,7 +702,7 @@ def test_policy_IMDB():
 
                 if update_index % IMDBConfig['train_loss_freq'] == 0:
                     train_loss = model.get_training_loss(train_x, train_y)
-                    print('Training Loss:', train_loss)
+                    message('Training Loss:', train_loss)
 
                 if update_index % valid_freq == 0:
                     model.use_noise.set_value(0.)
@@ -717,7 +717,7 @@ def test_policy_IMDB():
                         best_parameters = model.get_parameter_values()
                         bad_counter = 0
 
-                    print('Train', 0.0, 'Valid', valid_err, 'Test', test_err,
+                    message('Train', 0.0, 'Valid', valid_err, 'Test', test_err,
                           'Total_samples', total_n_samples)
 
                     if Config['train_type'] == 'random_drop':
@@ -726,16 +726,16 @@ def test_policy_IMDB():
                     if len(history_errs) > patience and valid_err >= np.array(history_errs)[:-patience, 0].min():
                         bad_counter += 1
                         if bad_counter > patience:
-                            print('Early Stop!')
+                            message('Early Stop!')
                             early_stop = True
                             break
 
-            print('Seen %d samples' % n_samples)
+            message('Seen %d samples' % n_samples)
 
             if early_stop:
                 break
     except KeyboardInterrupt:
-        print('Training interrupted')
+        message('Training interrupted')
 
     end_time = time.time()
 
@@ -750,19 +750,23 @@ def test_policy_IMDB():
 if __name__ == '__main__':
     process_before_train(IMDBConfig)
 
-    if Config['train_type'] == 'raw':
-        train_raw_IMDB()
-    elif Config['train_type'] == 'self_paced':
-        train_raw_IMDB()
-    elif Config['train_type'] == 'policy':
-        train_policy_IMDB()
-    elif Config['train_type'] == 'actor_critic':
-        train_actor_critic_IMDB()
-    elif Config['train_type'] == 'deterministic':
-        test_policy_IMDB()
-    elif Config['train_type'] == 'stochastic':
-        test_policy_IMDB()
-    elif Config['train_type'] == 'random_drop':
-        test_policy_IMDB()
-    else:
-        raise Exception('Unknown train type {}'.format(Config['train_type']))
+    try:
+        if Config['train_type'] == 'raw':
+            train_raw_IMDB()
+        elif Config['train_type'] == 'self_paced':
+            train_raw_IMDB()
+        elif Config['train_type'] == 'policy':
+            train_policy_IMDB()
+        elif Config['train_type'] == 'actor_critic':
+            train_actor_critic_IMDB()
+        elif Config['train_type'] == 'deterministic':
+            test_policy_IMDB()
+        elif Config['train_type'] == 'stochastic':
+            test_policy_IMDB()
+        elif Config['train_type'] == 'random_drop':
+            test_policy_IMDB()
+        else:
+            raise Exception('Unknown train type {}'.format(Config['train_type']))
+    except Exception as e:
+        message(e)
+        finalize_logging_file()

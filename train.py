@@ -16,6 +16,33 @@ from criticNetwork import CriticNetwork
 __author__ = 'fyabc'
 
 
+def epoch_message(model, x_train, y_train, x_validate, y_validate, x_test, y_test,
+                  history_accuracy, history_train_loss,
+                  epoch, start_time, train_batches, total_accepted_cases):
+    # Get training loss
+    train_loss = model.get_training_loss(x_train, y_train)
+
+    # Get validation loss and accuracy
+    validate_loss, validate_acc, validate_batches = model.validate_or_test(x_validate, y_validate)
+    validate_loss /= validate_batches
+    validate_acc /= validate_batches
+    history_accuracy.append(validate_acc)
+
+    # Get test loss and accuracy
+    test_loss, test_acc, test_batches = model.validate_or_test(x_test, y_test)
+    test_loss /= test_batches
+    test_acc /= test_batches
+
+    message("Epoch {} of {} took {:.3f}s".format(epoch, CifarConfig['epoch_per_episode'], time.time() - start_time))
+    message('Training Loss:', train_loss)
+    message('History Training Loss:', history_train_loss / train_batches)
+    message('Validate Loss:', validate_loss)
+    message('#Validate accuracy:', validate_acc)
+    message('Test Loss:', test_loss),
+    message('#Test accuracy:', test_acc)
+    message('Number of accepted cases: {} of {} total'.format(total_accepted_cases, x_train.shape[0]))
+
+
 def train_raw_CIFAR10():
     model_name = eval(CifarConfig['model_name'])
     # Create neural network model
@@ -89,25 +116,19 @@ def train_raw_CIFAR10():
             history_train_loss += part_train_err
             train_batches += 1
 
-        validate_loss, validate_acc, validate_batches = model.validate_or_test(x_validate, y_validate)
-        validate_acc /= validate_batches
-
-        # Get training loss
-        train_loss = model.get_training_loss(x_train, y_train)
-
-        message("Epoch {} of {} took {:.3f}s".format(epoch, CifarConfig['epoch_per_episode'], time.time() - start_time))
-        message('Training Loss:', train_loss)
-        message('History Training Loss:', history_train_loss / train_batches)
-        message('Validate Loss:', validate_loss / validate_batches)
-        message('#Validate accuracy:', validate_acc)
-
-        message('Number of accepted cases {} of {} cases'.format(total_accepted_cases, len(x_train)))
+        epoch_message(model, x_train, y_train, x_validate, y_validate, x_test, y_test,
+                      [], history_train_loss,
+                      epoch, start_time, train_batches, total_accepted_cases)
 
         if model_name == CIFARModel:
             if (epoch + 1) in (41, 61):
                 model.update_learning_rate()
 
-    if Config['save_model'] and validate_acc >= 0.35:
+        # if model_name == VaniliaCNNModel:
+        #     if (epoch + 1) in (41, 61):
+        #         model.update_learning_rate()
+
+    if Config['save_model']:
         message('Saving CNN model warm start... ', end='')
         model.save_model()
         message('done')
@@ -192,17 +213,9 @@ def train_policy_CIFAR10():
                 validate_acc /= validate_batches
                 policy.reward_buffer.append(validate_acc)
 
-            # Get training loss
-            train_loss = model.get_training_loss(x_train, y_train)
-
-            message("Epoch {} of {} took {:.3f}s"
-                    .format(epoch, CifarConfig['epoch_per_episode'], time.time() - start_time))
-            message('Training Loss:', train_loss)
-            message('History Training Loss:', history_train_loss / train_batches)
-            message('Validate Loss:', validate_loss / validate_batches)
-            message('#Validate accuracy:', validate_acc)
-
-            message('Number of accepted cases {} of {} cases'.format(total_accepted_cases, train_small_size))
+            epoch_message(model, x_train, y_train, x_validate, y_validate, x_test, y_test,
+                          history_accuracy, history_train_loss,
+                          epoch, start_time, train_batches, total_accepted_cases)
 
         model.test(x_test, y_test)
 
@@ -316,19 +329,11 @@ def train_actor_critic_CIFAR10():
 
                 if iteration % CifarConfig['display_freq'] == 0:
                     message('Epoch {}\tIteration {}\tCost {}\tCritic loss {}\tActor loss {}'
-                          .format(epoch, iteration, part_train_err, Q_loss, actor_loss))
-
-            validate_loss, validate_acc, validate_batches = model.validate_or_test(x_validate, y_validate)
-            validate_acc /= validate_batches
-
-            history_accuracy.append(validate_acc)
+                            .format(epoch, iteration, part_train_err, Q_loss, actor_loss))
 
             if model_name == CIFARModel:
                 if (epoch + 1) in (41, 61):
                     model.update_learning_rate()
-
-            # Get training loss
-            train_loss = model.get_training_loss(x_train, y_train)
 
             # add immediate reward
             if PolicyConfig['immediate_reward']:
@@ -338,14 +343,9 @@ def train_actor_critic_CIFAR10():
                 validate_acc /= validate_batches
                 actor.reward_buffer.append(validate_acc)
 
-            message("Epoch {} of {} took {:.3f}s"
-                    .format(epoch, CifarConfig['epoch_per_episode'], time.time() - start_time))
-            message('Training Loss:', train_loss)
-            message('History Training Loss:', history_train_loss / train_batches)
-            message('Validate Loss:', validate_loss / validate_batches)
-            message('#Validate accuracy:', validate_acc)
-
-            message('Number of accepted cases {} of {} cases'.format(total_accepted_cases, train_small_size))
+            epoch_message(model, x_train, y_train, x_validate, y_validate, x_test, y_test,
+                          history_accuracy, history_train_loss,
+                          epoch, start_time, train_batches, total_accepted_cases)
 
         model.test(x_test, y_test)
 
@@ -372,9 +372,8 @@ def test_policy_CIFAR10():
 
     # Load the dataset and get small training data
     x_train, y_train, x_validate, y_validate, x_test, y_test = split_cifar10_data(load_cifar10_data())
-    x_train_small, y_train_small = get_part_data(x_train, y_train)
 
-    message('Training data size:', y_train_small.shape[0])
+    message('Training data size:', y_train.shape[0])
     message('Validation data size:', y_validate.shape[0])
     message('Test data size:', y_test.shape[0])
 
@@ -404,7 +403,7 @@ def test_policy_CIFAR10():
         total_accepted_cases = 0
         start_time = time.time()
 
-        for batch in iterate_minibatches(x_train_small, y_train_small, model.train_batch_size,
+        for batch in iterate_minibatches(x_train, y_train, model.train_batch_size,
                                          shuffle=True, augment=True):
             inputs, targets = batch
 
@@ -439,19 +438,9 @@ def test_policy_CIFAR10():
             if (epoch + 1) in (41, 61):
                 model.update_learning_rate()
 
-        # Get training loss
-        train_loss = model.get_training_loss(x_train, y_train)
-
-        validate_loss, validate_acc, validate_batches = model.validate_or_test(x_validate, y_validate)
-        validate_acc /= validate_batches
-        history_accuracy.append(validate_acc)
-
-        message("Epoch {} of {} took {:.3f}s".format(epoch, CifarConfig['epoch_per_episode'], time.time() - start_time))
-        message('Training Loss:', train_loss)
-        message('History Training Loss:', history_train_loss / train_batches)
-        message('Validate Loss:', validate_loss / validate_batches)
-        message('#Validate accuracy:', validate_acc)
-        message('Number of accepted cases: {} of {} total'.format(total_accepted_cases, x_train_small.shape[0]))
+        epoch_message(model, x_train, y_train, x_validate, y_validate, x_test, y_test,
+                      history_accuracy, history_train_loss,
+                      epoch, start_time, train_batches, total_accepted_cases)
 
         model.test(x_test, y_test)
 
@@ -477,6 +466,5 @@ if __name__ == '__main__':
         else:
             raise Exception('Unknown train type {}'.format(Config['train_type']))
     except Exception as e:
-        message()
+        message(e)
         finalize_logging_file()
-        raise
