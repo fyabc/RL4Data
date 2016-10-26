@@ -35,7 +35,6 @@ class IMDBModelBase(object):
 
         self.f_probs = None
         self.f_cost_list_without_decay = None
-        self.f_train = None
         self.f_cost_without_decay = None
         self.f_cost = None
 
@@ -46,6 +45,9 @@ class IMDBModelBase(object):
         pass
 
     def load_model(self, filename=None):
+        pass
+
+    def f_train(self, x, mask, y):
         pass
 
     def get_training_loss(self, x_train, y_train):

@@ -4,6 +4,7 @@ from __future__ import print_function, unicode_literals
 
 import sys
 import heapq
+import traceback
 
 import numpy as np
 
@@ -465,6 +466,7 @@ if __name__ == '__main__':
             test_policy_CIFAR10()
         else:
             raise Exception('Unknown train type {}'.format(Config['train_type']))
-    except Exception as e:
-        message(e)
+    except:
+        message(traceback.format_exc())
+    finally:
         finalize_logging_file()

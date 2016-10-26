@@ -3,6 +3,7 @@
 from __future__ import print_function, unicode_literals
 
 import sys
+import traceback
 import time
 import numpy as np
 import heapq
@@ -38,9 +39,9 @@ def pre_process_data():
     valid_size = len(valid_x)
     test_size = len(test_x)
 
-    print("%d train examples" % train_size)
-    print("%d valid examples" % valid_size)
-    print("%d test examples" % test_size)
+    message("%d train examples" % train_size)
+    message("%d valid examples" % valid_size)
+    message("%d test examples" % test_size)
 
     return train_x, train_y, valid_x, valid_y, test_x, test_y, \
         train_size, valid_size, test_size
@@ -66,7 +67,7 @@ def pre_process_config(model, train_size, valid_size, test_size):
 
 
 def save_parameters(model, best_parameters, save_to, history_errs):
-    print('Saving...')
+    message('Saving...')
 
     if best_parameters:
         params = best_parameters
@@ -74,7 +75,7 @@ def save_parameters(model, best_parameters, save_to, history_errs):
         params = model.get_parameter_values()
     np.savez(save_to, history_errs=history_errs, **params)
     # pkl.dump(IMDBConfig, open('%s.pkl' % save_to, 'wb'))
-    print('Done')
+    message('Done')
 
 
 def test_and_post_process(model,
@@ -89,14 +90,14 @@ def test_and_post_process(model,
     valid_err = model.predict_error(valid_x, valid_y, kf_valid)
     test_err = model.predict_error(test_x, test_y, kf_test)
 
-    print('Final: Train ', train_err, 'Valid ', valid_err, 'Test ', test_err)
+    message('Final: Train ', train_err, 'Valid ', valid_err, 'Test ', test_err)
 
     if save_to:
         np.savez(save_to, train_err=train_err,
                  valid_err=valid_err, test_err=test_err,
                  history_errs=history_errs, **best_parameters)
 
-    print('The code run for %d epochs, with %f sec/epochs' % (
+    message('The code run for %d epochs, with %f sec/epochs' % (
         (epoch + 1), (end_time - start_time) / (1. * (epoch + 1))))
     message(('Training took %.1fs' % (end_time - start_time)))
     return train_err, valid_err, test_err
@@ -195,18 +196,18 @@ def train_raw_IMDB():
                 history_train_costs.append(cost)
 
                 if cost is not None and (np.isnan(cost) or np.isinf(cost)):
-                    print('bad cost detected: ', cost)
+                    message('bad cost detected: ', cost)
                     return 1., 1., 1.
 
                 if update_index % display_freq == 0:
-                    print('Epoch ', epoch, 'Update ', update_index, 'Cost ', cost)
+                    message('Epoch ', epoch, 'Update ', update_index, 'Cost ', cost)
 
                 if save_to and update_index % save_freq == 0:
                     save_parameters(model, best_parameters, save_to, history_errs)
 
                 if update_index % IMDBConfig['train_loss_freq'] == 0:
                     train_loss = model.get_training_loss(train_x, train_y)
-                    print('Training Loss:', train_loss)
+                    message('Training Loss:', train_loss)
 
                 if update_index % valid_freq == 0:
                     model.use_noise.set_value(0.)
@@ -219,22 +220,22 @@ def train_raw_IMDB():
                         best_parameters = model.get_parameter_values()
                         bad_counter = 0
 
-                    print('Train', 0.00, 'Valid', valid_err, 'Test', test_err,
-                          'Total_samples', total_n_samples)
+                    message('Train', 0.00, 'Valid', valid_err, 'Test', test_err,
+                            'Total_samples', total_n_samples)
 
                     if len(history_errs) > patience and valid_err >= np.array(history_errs)[:-patience, 0].min():
                         bad_counter += 1
                         if bad_counter > patience:
-                            print('Early Stop!')
+                            message('Early Stop!')
                             early_stop = True
                             break
 
-            print('Seen %d samples' % n_samples)
+            message('Seen %d samples' % n_samples)
 
             if early_stop:
                 break
     except KeyboardInterrupt:
-        print('Training interrupted')
+        message('Training interrupted')
 
     end_time = time.time()
 
@@ -265,6 +266,11 @@ def train_policy_IMDB():
     input_size = model.get_policy_input_size()
     print('Input size of policy network:', input_size)
     policy = PolicyNetwork(input_size=input_size, start_b=PolicyConfig['b_init'])
+
+    # Temp code.
+    if Config['temp_job']:
+        policy.load_policy(filename='./data/imdb/Pi_terminal_policy_speed_trained.npz')
+        policy.b.set_value(floatX(-1.0))
 
     for episode in range(PolicyConfig['num_episodes']):
         print('[Episode {}]'.format(episode))
@@ -334,17 +340,17 @@ def train_policy_IMDB():
                     cost = model.f_train(x, mask, y)
 
                     if cost is not None and (np.isnan(cost) or np.isinf(cost)):
-                        print('bad cost detected: ', cost)
+                        message('bad cost detected: ', cost)
                         return 1., 1., 1.
 
                     if update_index % display_freq == 0:
-                        print('Epoch ', epoch, 'Update ', update_index, 'Cost ', cost)
+                        message('Epoch ', epoch, 'Update ', update_index, 'Cost ', cost)
 
                     # Do not save when training policy!
 
                     if update_index % IMDBConfig['train_loss_freq'] == 0:
                         train_loss = model.get_training_loss(train_x, train_y)
-                        print('Training Loss:', train_loss)
+                        message('Training Loss:', train_loss)
 
                     if update_index % valid_freq == 0:
                         model.use_noise.set_value(0.)
@@ -363,17 +369,17 @@ def train_policy_IMDB():
                             best_parameters = model.get_parameter_values()
                             bad_counter = 0
 
-                        print('Train', 0.00, 'Valid', valid_err, 'Test', test_err,
-                              'Total_samples', total_n_samples)
+                        message('Train', 0.00, 'Valid', valid_err, 'Test', test_err,
+                                'Total_samples', total_n_samples)
 
                         if len(history_errs) > patience and valid_err >= np.array(history_errs)[:-patience, 0].min():
                             bad_counter += 1
                             if bad_counter > patience:
-                                print('Early Stop!')
+                                message('Early Stop!')
                                 early_stop = True
                                 break
 
-                print('Seen %d samples' % n_samples)
+                message('Seen %d samples' % n_samples)
 
                 # Immediate reward
                 if PolicyConfig['immediate_reward']:
@@ -384,7 +390,7 @@ def train_policy_IMDB():
                 if early_stop:
                     break
         except KeyboardInterrupt:
-            print('Training interrupted')
+            message('Training interrupted')
 
         end_time = time.time()
 
@@ -540,19 +546,19 @@ def train_actor_critic_IMDB():
                                                   np.full(actions.shape, label, dtype=probability.dtype))
 
                     if cost is not None and (np.isnan(cost) or np.isinf(cost)):
-                        print('bad cost detected: ', cost)
+                        message('bad cost detected: ', cost)
                         return 1., 1., 1.
 
                     if update_index % display_freq == 0:
-                        print('Epoch', epoch, '\tUpdate', update_index, '\tCost', cost, end='')
-                        print('\tCritic Q network loss', Q_loss, end='')
-                        print('\tActor network loss', actor_loss)
+                        message('Epoch', epoch, '\tUpdate', update_index, '\tCost', cost, end='')
+                        message('\tCritic Q network loss', Q_loss, end='')
+                        message('\tActor network loss', actor_loss)
 
                     # Do not save when training policy!
 
                     if update_index % IMDBConfig['train_loss_freq'] == 0:
                         train_loss = model.get_training_loss(train_x, train_y)
-                        print('Training Loss:', train_loss)
+                        message('Training Loss:', train_loss)
 
                     if update_index % valid_freq == 0:
                         model.use_noise.set_value(0.)
@@ -567,7 +573,7 @@ def train_actor_critic_IMDB():
                             best_parameters = model.get_parameter_values()
                             bad_counter = 0
 
-                        print('Train', 0.00, 'Valid', valid_err, 'Test', test_err,
+                        message('Train', 0.00, 'Valid', valid_err, 'Test', test_err,
                               'Total_samples', total_n_samples)
 
                         if len(history_errs) > patience and valid_err >= np.array(history_errs)[:-patience, 0].min():
@@ -577,7 +583,7 @@ def train_actor_critic_IMDB():
                                 early_stop = True
                                 break
 
-                print('Seen %d samples' % n_samples)
+                message('Seen %d samples' % n_samples)
 
                 if early_stop:
                     break
@@ -691,11 +697,11 @@ def test_policy_IMDB():
                     cost = model.f_train(x, mask, y)
 
                 if cost is not None and np.isnan(cost) or np.isinf(cost):
-                    print('bad cost detected: ', cost)
+                    message('bad cost detected: ', cost)
                     return 1., 1., 1.
 
                 if update_index % display_freq == 0:
-                    print('Epoch ', epoch, 'Update ', update_index, 'Cost ', cost)
+                    message('Epoch ', epoch, 'Update ', update_index, 'Cost ', cost)
 
                 if save_to and update_index % save_freq == 0:
                     save_parameters(model, best_parameters, save_to, history_errs)
@@ -718,7 +724,7 @@ def test_policy_IMDB():
                         bad_counter = 0
 
                     message('Train', 0.0, 'Valid', valid_err, 'Test', test_err,
-                          'Total_samples', total_n_samples)
+                            'Total_samples', total_n_samples)
 
                     if Config['train_type'] == 'random_drop':
                         random_drop_index += 1
@@ -767,6 +773,7 @@ if __name__ == '__main__':
             test_policy_IMDB()
         else:
             raise Exception('Unknown train type {}'.format(Config['train_type']))
-    except Exception as e:
-        message(e)
+    except:
+        message(traceback.format_exc())
+    finally:
         finalize_logging_file()

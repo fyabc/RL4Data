@@ -31,6 +31,12 @@
     "save_model": false,
     "model": null,
 
+    /// Set this flag to true to run some temp jobs.
+    // Temp job code must be in this flag, such as:
+    //     if Config['temp_job']:
+    //         ......
+    "temp_job": false,
+
     "policy": {
         "num_episodes": 100,
 
