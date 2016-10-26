@@ -7,6 +7,7 @@ import traceback
 import time
 import numpy as np
 import heapq
+from collections import deque
 
 from config import IMDBConfig, Config, PolicyConfig
 from model_IMDB import IMDBModel
@@ -118,14 +119,6 @@ def train_raw_IMDB():
         valid_freq, save_freq, display_freq, \
         save_to, patience = pre_process_config(model, train_size, valid_size, test_size)
 
-    if Config['train_type'] == 'self_paced':
-        # Self-paced learning iterate on data cases
-        total_iteration_number = IMDBConfig['epoch_per_episode'] * train_size // model.train_batch_size
-
-        # Get the cost threshold \lambda.
-        def cost_threshold(iteration):
-            return 1 + (model.train_batch_size - 1) * iteration / total_iteration_number
-
     # Training
     history_errs = []
     best_parameters = None
@@ -162,32 +155,6 @@ def train_raw_IMDB():
                 # Return something of shape (minibatch maxlen, n samples)
                 x, mask, y = prepare_data(x, np.asarray(y, dtype='int64'))
 
-                # Self-paced learning check
-                if Config['train_type'] == 'self_paced':
-                    selected_number = cost_threshold(update_index)
-
-                    cost_list = model.f_cost_list_without_decay(x, mask, y)
-                    positive_cost_list = cost_list[y == 1]
-                    negative_cost_list = cost_list[y == 0]
-
-                    actions = np.full(y.shape, False, dtype=bool)
-
-                    if positive_cost_list.size != 0:
-                        positive_threshold = heapq.nsmallest(selected_number, positive_cost_list)[-1]
-                        for i in range(len(y)):
-                            if y[i] == 1 and cost_list[i] <= positive_threshold:
-                                actions[i] = True
-                    if negative_cost_list.size != 0:
-                        negative_threshold = heapq.nsmallest(selected_number, negative_cost_list)[-1]
-                        for i in range(len(y)):
-                            if y[i] == 0 and cost_list[i] <= negative_threshold:
-                                actions[i] = True
-
-                    # get masked inputs and targets
-                    x = x[:, actions]
-                    mask = mask[:, actions]
-                    y = y[actions]
-
                 n_samples += x.shape[1]
                 total_n_samples += x.shape[1]
 
@@ -210,6 +177,162 @@ def train_raw_IMDB():
                     message('Training Loss:', train_loss)
 
                 if update_index % valid_freq == 0:
+                    model.use_noise.set_value(0.)
+                    valid_err = model.predict_error(valid_x, valid_y, kf_valid)
+                    test_err = model.predict_error(test_x, test_y, kf_test)
+
+                    history_errs.append([valid_err, test_err])
+
+                    if best_parameters is None or valid_err <= np.array(history_errs)[:, 0].min():
+                        best_parameters = model.get_parameter_values()
+                        bad_counter = 0
+
+                    message('Train', 0.00, 'Valid', valid_err, 'Test', test_err,
+                            'Total_samples', total_n_samples)
+
+                    if len(history_errs) > patience and valid_err >= np.array(history_errs)[:-patience, 0].min():
+                        bad_counter += 1
+                        if bad_counter > patience:
+                            message('Early Stop!')
+                            early_stop = True
+                            break
+
+            message('Seen %d samples' % n_samples)
+
+            if early_stop:
+                break
+    except KeyboardInterrupt:
+        message('Training interrupted')
+
+    end_time = time.time()
+
+    test_and_post_process(model,
+                          train_size, train_x, train_y, valid_x, valid_y, test_x, test_y,
+                          kf_valid, kf_test,
+                          history_errs, best_parameters,
+                          epoch, start_time, end_time,
+                          save_to)
+
+
+def train_SPL_IMDB():
+    np.random.seed(IMDBConfig['seed'])
+
+    # Loading data
+    train_x, train_y, valid_x, valid_y, test_x, test_y, \
+        train_size, valid_size, test_size = pre_process_data()
+
+    # Building model
+    model = IMDBModel(IMDBConfig['reload_model'])
+
+    # Loading configure settings
+    kf_valid, kf_test, \
+        valid_freq, save_freq, display_freq, \
+        save_to, patience = pre_process_config(model, train_size, valid_size, test_size)
+
+    # # Self-paced learning iterate on data cases
+    total_iteration_number = IMDBConfig['epoch_per_episode'] * train_size // model.train_batch_size
+
+    # Get the cost threshold \lambda.
+    def cost_threshold(iteration):
+        return 1 + (model.train_batch_size - 1) * iteration / total_iteration_number
+
+    # Data buffer
+    spl_buffer = deque()
+
+    # When collect such number of cases, update them.
+    update_maxlen = model.train_batch_size
+
+    # # Self-paced learning setting end
+
+    # Training
+    history_errs = []
+    best_parameters = None
+    bad_counter = 0
+    iteration = 0  # the number of update done
+    early_stop = False  # early stop
+    epoch = 0
+    history_train_costs = []
+
+    start_time = time.time()
+
+    try:
+        total_n_samples = 0
+
+        for epoch in range(IMDBConfig['epoch_per_episode']):
+            print('[Epoch {}]'.format(epoch))
+            message('[Epoch {}]'.format(epoch))
+            n_samples = 0
+
+            # Get new shuffled index for the training set.
+            kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
+
+            for _, train_index in kf:
+                iteration += 1
+                model.use_noise.set_value(floatX(1.))
+
+                # Select the random examples for this minibatch
+                x = [train_x[t] for t in train_index]
+                y = [train_y[t] for t in train_index]
+
+                # Get the data in numpy.ndarray format
+                # This swap the axis!
+                # Return something of shape (minibatch maxlen, n samples)
+                x, mask, y = prepare_data(x, np.asarray(y, dtype='int64'))
+
+                # Self-paced learning check
+                selected_number = cost_threshold(iteration)
+
+                cost_list = model.f_cost_list_without_decay(x, mask, y)
+                positive_cost_list = cost_list[y == 1]
+                negative_cost_list = cost_list[y == 0]
+
+                if positive_cost_list.size != 0:
+                    positive_threshold = heapq.nsmallest(selected_number, positive_cost_list)[-1]
+                    for i in range(len(y)):
+                        if y[i] == 1 and cost_list[i] <= positive_threshold:
+                            spl_buffer.append(train_index[i])
+                if negative_cost_list.size != 0:
+                    negative_threshold = heapq.nsmallest(selected_number, negative_cost_list)[-1]
+                    for i in range(len(y)):
+                        if y[i] == 0 and cost_list[i] <= negative_threshold:
+                            spl_buffer.append(train_index[i])
+
+                if len(spl_buffer) >= update_maxlen:
+                    # message('SPL buffer full, update...', end='')
+
+                    update_batch_index = [spl_buffer.popleft() for _ in range(update_maxlen)]
+                    x_selected = [train_x[t] for t in update_batch_index]
+                    y_selected = [train_y[t] for t in update_batch_index]
+                    x_selected, mask_selected, y_selected = prepare_data(
+                        x_selected, np.asarray(y_selected, dtype='int64'))
+
+                    n_samples += x_selected.shape[1]
+                    total_n_samples += x_selected.shape[1]
+
+                    cost = model.f_train(x_selected, mask_selected, y_selected)
+
+                    # message('done')
+                else:
+                    cost = None
+
+                history_train_costs.append(cost)
+
+                if cost is not None and (np.isnan(cost) or np.isinf(cost)):
+                    message('bad cost detected: ', cost)
+                    return 1., 1., 1.
+
+                # # In SPL, display after each update
+                # if iteration % display_freq == 0:
+                if cost is not None:
+                    message('Epoch ', epoch, 'Update ', iteration, 'Cost ', cost)
+
+                # Do not save when running SPL!
+
+                if iteration % IMDBConfig['train_loss_freq'] == 0:
+                    train_loss = model.get_training_loss(train_x, train_y)
+                    message('Training Loss:', train_loss)
+
+                if iteration % valid_freq == 0:
                     model.use_noise.set_value(0.)
                     valid_err = model.predict_error(valid_x, valid_y, kf_valid)
                     test_err = model.predict_error(test_x, test_y, kf_test)
@@ -760,7 +883,7 @@ if __name__ == '__main__':
         if Config['train_type'] == 'raw':
             train_raw_IMDB()
         elif Config['train_type'] == 'self_paced':
-            train_raw_IMDB()
+            train_SPL_IMDB()
         elif Config['train_type'] == 'policy':
             train_policy_IMDB()
         elif Config['train_type'] == 'actor_critic':
