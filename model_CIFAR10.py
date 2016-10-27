@@ -464,7 +464,7 @@ class VaniliaCNNModel(CIFARModelBase):
         # Conv1
         # [NOTE]: normal vs. truncated normal?
         # [NOTE]: conv in lasagne is not same as it in TensorFlow.
-        layer = ConvLayer(layer_in, num_filters=1, filter_size=(5, 5), stride=(1, 1), nonlinearity=rectify,
+        layer = ConvLayer(layer_in, num_filters=64, filter_size=(3, 3), stride=(1, 1), nonlinearity=rectify,
                           pad='same', W=lasagne.init.HeNormal(), flip_filters=False)
         # Pool1
         layer = MaxPool2DLayer(layer, pool_size=(3, 3), stride=(2, 2))
@@ -472,7 +472,7 @@ class VaniliaCNNModel(CIFARModelBase):
         layer = LocalResponseNormalization2DLayer(layer, alpha=0.001 / 9.0, k=1.0, beta=0.75)
 
         # Conv2
-        layer = ConvLayer(layer, num_filters=1, filter_size=(5, 5), stride=(1, 1), nonlinearity=rectify,
+        layer = ConvLayer(layer, num_filters=64, filter_size=(5, 5), stride=(1, 1), nonlinearity=rectify,
                           pad='same', W=lasagne.init.HeNormal(), flip_filters=False)
         # Norm2
         # [NOTE]: n must be odd, but n in Chang's code is 4?
@@ -512,8 +512,7 @@ class VaniliaCNNModel(CIFARModelBase):
 
         # add weight decay
         all_layers = lasagne.layers.get_all_layers(self.network)
-        l2_penalty = lasagne.regularization.regularize_layer_params(all_layers, lasagne.regularization.l2) * \
-            CifarConfig['l2_penalty_factor']
+        l2_penalty = lasagne.regularization.regularize_layer_params(all_layers, lasagne.regularization.l2) * 0.004
         loss += l2_penalty
 
         self.f_cost = theano.function([self.input_var, self.target_var], loss)
@@ -538,7 +537,7 @@ class VaniliaCNNModel(CIFARModelBase):
         f_train_rmsprop = theano.function([self.input_var, self.target_var], loss, updates=updates_rmsprop)
 
         # TODO: can be selected
-        self.f_train = f_train_adagrad
+        self.f_train = f_train_adam
 
     def build_validate_function(self):
         test_preds = lasagne.layers.get_output(self.network, deterministic=True)
