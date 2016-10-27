@@ -543,9 +543,6 @@ def train_policy_IMDB():
         if Config['policy_save_freq'] > 0 and episode % Config['policy_save_freq'] == 0:
             policy.save_policy()
 
-        if episode % PolicyConfig['policy_learning_rate_discount_freq'] == 0:
-            policy.discount_learning_rate()
-
 
 def train_actor_critic_IMDB():
     np.random.seed(IMDBConfig['seed'])
