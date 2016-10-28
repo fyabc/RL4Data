@@ -5,6 +5,7 @@ from __future__ import print_function, unicode_literals
 import sys
 import heapq
 import traceback
+from collections import deque
 
 import numpy as np
 
@@ -57,14 +58,6 @@ def train_raw_CIFAR10():
     message('Validation data size:', y_validate.shape[0])
     message('Test data size:', y_test.shape[0])
 
-    if Config['train_type'] == 'self_paced':
-        # Self-paced learning iterate on data cases
-        total_iteration_number = CifarConfig['epoch_per_episode'] * len(x_train) // model.train_batch_size
-
-        # Get the cost threshold \lambda.
-        def cost_threshold(iteration):
-            return 1 + (model.train_batch_size - 1) * iteration / total_iteration_number
-
     # Train the network
     if CifarConfig['warm_start']:
         model.load_model(Config['model_file'])
@@ -88,25 +81,6 @@ def train_raw_CIFAR10():
 
             inputs, targets = batch
 
-            if Config['train_type'] == 'self_paced':
-                selected_number = cost_threshold(iteration)
-
-                cost_list = model.f_cost_list_without_decay(inputs, targets)
-                label_cost_lists = [cost_list[targets == i] for i in range(10)]
-
-                actions = np.full(targets.shape, False, dtype=bool)
-
-                for i, label_cost_list in enumerate(label_cost_lists):
-                    if label_cost_list.size != 0:
-                        threshold = heapq.nsmallest(selected_number, label_cost_list)[-1]
-                        for j in range(len(targets)):
-                            if targets[j] == i and cost_list[j] <= threshold:
-                                actions[j] = True
-
-                # Get masked inputs and targets
-                inputs = inputs[actions]
-                targets = targets[actions]
-
             total_accepted_cases += len(inputs)
 
             part_train_err = model.f_train(inputs, targets)
@@ -125,14 +99,108 @@ def train_raw_CIFAR10():
             if (epoch + 1) in (41, 61):
                 model.update_learning_rate()
 
-        # if model_name == VaniliaCNNModel:
-        #     if (epoch + 1) in (41, 61):
-        #         model.update_learning_rate()
-
     if Config['save_model']:
         message('Saving CNN model warm start... ', end='')
         model.save_model()
         message('done')
+
+    model.test(x_test, y_test)
+
+
+def train_SPL_CIFAR10():
+    model_name = eval(CifarConfig['model_name'])
+    # Create neural network model
+    model = model_name()
+    # model = VaniliaCNNModel()
+
+    # Load the dataset
+    x_train, y_train, x_validate, y_validate, x_test, y_test = split_cifar10_data(load_cifar10_data())
+
+    message('Training data size:', y_train.shape[0])
+    message('Validation data size:', y_validate.shape[0])
+    message('Test data size:', y_test.shape[0])
+
+    # Self-paced learning iterate on data cases
+    total_iteration_number = CifarConfig['epoch_per_episode'] * len(x_train) // model.train_batch_size
+
+    # Get the cost threshold \lambda.
+    def cost_threshold(iteration):
+        return 1 + (model.train_batch_size - 1) * iteration / total_iteration_number
+
+    # Data buffer
+    spl_buffer = deque()
+
+    # When collect such number of cases, update them.
+    update_maxlen = model.train_batch_size
+
+    # # Self-paced learning setting end
+
+    # Train the network
+    if CifarConfig['warm_start']:
+        model.load_model(Config['model_file'])
+    else:
+        model.reset_parameters()
+
+    # Iteration (number of batches)
+    iteration = 0
+
+    for epoch in range(CifarConfig['epoch_per_episode']):
+        print('[Epoch {}]'.format(epoch))
+        message('[Epoch {}]'.format(epoch))
+
+        total_accepted_cases = 0
+        history_train_loss = 0
+        train_batches = 0
+        start_time = time.time()
+
+        for batch in iterate_minibatches(x_train, y_train, CifarConfig['train_batch_size'],
+                                         shuffle=True, augment=True, return_indices=True):
+            iteration += 1
+
+            inputs, targets, indices = batch
+
+            selected_number = cost_threshold(iteration)
+
+            cost_list = model.f_cost_list_without_decay(inputs, targets)
+            label_cost_lists = [cost_list[targets == label] for label in range(10)]
+
+            for i, label_cost_list in enumerate(label_cost_lists):
+                if label_cost_list.size != 0:
+                    threshold = heapq.nsmallest(selected_number, label_cost_list)[-1]
+                    for j in range(len(targets)):
+                        if targets[j] == i and cost_list[j] <= threshold:
+                            spl_buffer.append(indices[j])
+
+            if len(spl_buffer) >= update_maxlen:
+                # message('SPL buffer full, update...', end='')
+
+                update_batch_index = [spl_buffer.popleft() for _ in range(update_maxlen)]
+                # Get masked inputs and targets
+                inputs_selected = x_train[update_batch_index]
+                targets_selected = y_train[update_batch_index]
+
+                total_accepted_cases += len(inputs_selected)
+
+                part_train_err = model.f_train(inputs_selected, targets_selected)
+
+                # message('done')
+            else:
+                part_train_err = None
+
+            # # In SPL, display after each update
+            # if iteration % CifarConfig['display_freq'] == 0:
+            if part_train_err is not None:
+                message('Train error of iteration {} is {}'.format(iteration, part_train_err))
+                history_train_loss += part_train_err
+            train_batches += 1
+
+        epoch_message(model, x_train, y_train, x_validate, y_validate, x_test, y_test,
+                      [], history_train_loss,
+                      epoch, start_time, train_batches, total_accepted_cases)
+
+        if model_name == CIFARModel:
+            if (epoch + 1) in (41, 61):
+                model.update_learning_rate()
 
     model.test(x_test, y_test)
 
@@ -453,7 +521,7 @@ if __name__ == '__main__':
         if Config['train_type'] == 'raw':
             train_raw_CIFAR10()
         elif Config['train_type'] == 'self_paced':
-            train_raw_CIFAR10()
+            train_SPL_CIFAR10()
         elif Config['train_type'] == 'policy':
             train_policy_CIFAR10()
         elif Config['train_type'] == 'actor_critic':

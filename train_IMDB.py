@@ -694,7 +694,7 @@ def train_actor_critic_IMDB():
                             bad_counter = 0
 
                         message('Train', 0.00, 'Valid', valid_err, 'Test', test_err,
-                              'Total_samples', total_n_samples)
+                                'Total_samples', total_n_samples)
 
                         if len(history_errs) > patience and valid_err >= np.array(history_errs)[:-patience, 0].min():
                             bad_counter += 1

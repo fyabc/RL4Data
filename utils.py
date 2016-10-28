@@ -203,7 +203,7 @@ def shuffle_data(x_train, y_train):
 # Other utilities of CIFAR10 #
 ##############################
 
-def iterate_minibatches(inputs, targets, batch_size, shuffle=False, augment=False):
+def iterate_minibatches(inputs, targets, batch_size, shuffle=False, augment=False, return_indices=False):
     assert len(inputs) == len(targets)
     if shuffle:
         indices = np.arange(len(inputs))
@@ -229,7 +229,10 @@ def iterate_minibatches(inputs, targets, batch_size, shuffle=False, augment=Fals
         else:
             inp_exc = inputs[excerpt]
 
-        yield inp_exc, targets[excerpt]
+        if return_indices:
+            yield inp_exc, targets[excerpt], excerpt
+        else:
+            yield inp_exc, targets[excerpt]
 
 
 ########################################
