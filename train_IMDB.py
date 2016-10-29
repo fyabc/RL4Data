@@ -530,12 +530,11 @@ def train_policy_IMDB():
         if PolicyConfig['speed_reward']:
             if first_over_index is None:
                 first_over_index = update_index + 1
-            terminal_reward = float(first_over_index) / (len(kf) * model.train_batch_size)
+            terminal_reward = float(first_over_index) / update_index
             policy.update(-np.log(terminal_reward))
 
             message('First over index:', first_over_index)
-            message('Length of kf:', len(kf))
-            message('Training batch size:', model.train_batch_size)
+            message('Total index:', update_index)
             message('Terminal reward:', terminal_reward)
         else:
             policy.update(1. - valid_err)

@@ -238,6 +238,9 @@ def train_policy_CIFAR10():
 
         history_accuracy = []
 
+        # Speed reward
+        first_over_index = None
+
         for epoch in range(CifarConfig['epoch_per_episode']):
             print('[Epoch {}]'.format(epoch))
             message('[Epoch {}]'.format(epoch))
@@ -270,6 +273,10 @@ def train_policy_CIFAR10():
 
             history_accuracy.append(validate_acc)
 
+            # Check speed rewards
+            if first_over_index is None and validate_acc >= PolicyConfig['speed_reward_threshold']:
+                first_over_index = epoch
+
             if model_name == CIFARModel:
                 if (epoch + 1) in (41, 61):
                     model.update_learning_rate()
@@ -291,13 +298,17 @@ def train_policy_CIFAR10():
         validate_loss, validate_acc, validate_batches = model.validate_or_test(x_validate, y_validate)
         validate_acc /= validate_batches
 
-        policy.update(validate_acc)
+        # Updating policy
+        if PolicyConfig['speed_reward']:
+            if first_over_index is None:
+                first_over_index = CifarConfig['epoch_per_episode']
+            terminal_reward = floatX(first_over_index) / CifarConfig['epoch_per_episode']
+            policy.update(-np.log(terminal_reward))
+        else:
+            policy.update(validate_acc)
 
         if Config['policy_save_freq'] > 0 and episode % Config['policy_save_freq'] == 0:
             policy.save_policy()
-
-        if episode % PolicyConfig['policy_learning_rate_discount_freq'] == 0:
-            policy.discount_learning_rate()
 
 
 def train_actor_critic_CIFAR10():
