@@ -17,6 +17,7 @@ for i, line in enumerate(_lines):
 Config = json.loads(''.join(_lines))
 CifarConfig = Config['cifar10']
 IMDBConfig = Config['imdb']
+MNISTConfig = Config['mnist']
 PolicyConfig = Config['policy']
 
 if __name__ == '__main__':

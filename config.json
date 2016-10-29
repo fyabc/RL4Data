@@ -94,7 +94,7 @@
 
         "curriculum": false,
         "random_drop": false,
-        "random_drop_number_file": "./data/drop_num.txt",
+        "random_drop_number_file": "./data/cifar10/drop_num.txt",
 
         "use_policy": true,
         "train_small_size": 40000,
@@ -156,5 +156,16 @@
         "noise_std": 0.0,
         "reload_model": false,
         "use_dropout": true
+    },
+
+    "mnist": {
+        "seed": 1234,
+
+        "dataset": "mnist",
+        "data_dir": "./data/mnist/mnist.pkl.gz",
+
+        "train_small_size": null,
+
+        "epoch_per_episode": null
     }
 }
