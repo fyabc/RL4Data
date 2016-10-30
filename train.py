@@ -501,7 +501,7 @@ def test_policy_CIFAR10():
                 elif Config['train_type'] == 'random_drop':
                     actions = np.random.binomial(
                         1,
-                        1 - float(random_drop_numbers[epoch]) / CifarConfig['train_small_size'],
+                        1 - float(random_drop_numbers[epoch]) / len(y_train),
                         targets.shape
                     ).astype(bool)
 

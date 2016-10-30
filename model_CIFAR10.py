@@ -24,7 +24,7 @@ from lasagne.layers.helper import get_all_param_values, set_all_param_values
 # For vanilia model
 from lasagne.layers import LocalResponseNormalization2DLayer, MaxPool2DLayer
 
-from config import Config, CifarConfig, PolicyConfig
+from config import Config, CifarConfig as ParamConfig, PolicyConfig
 from utils import logging, iterate_minibatches, fX, floatX, shuffle_data, average, message
 
 
@@ -33,14 +33,14 @@ class CIFARModelBase(object):
     The base class of CIFAR-10 network model.
     """
 
-    output_size = CifarConfig['cnn_output_size']
+    output_size = ParamConfig['cnn_output_size']
 
     def __init__(self,
                  train_batch_size=None,
                  validate_batch_size=None):
         # Functions and parameters that must be provided.
-        self.train_batch_size = train_batch_size or CifarConfig['train_batch_size']
-        self.validate_batch_size = validate_batch_size or CifarConfig['validate_batch_size']
+        self.train_batch_size = train_batch_size or ParamConfig['train_batch_size']
+        self.validate_batch_size = validate_batch_size or ParamConfig['validate_batch_size']
 
         self.network = None
         self.saved_init_parameters_values = None
@@ -114,12 +114,12 @@ class CIFARModelBase(object):
 
     @staticmethod
     def get_policy_input_size():
-        input_size = CifarConfig['cnn_output_size']
+        input_size = ParamConfig['cnn_output_size']
         if PolicyConfig['add_label_input']:
             input_size += 1
         if PolicyConfig['add_label']:
             # input_size += 1
-            input_size += CifarConfig['cnn_output_size']
+            input_size += ParamConfig['cnn_output_size']
         if PolicyConfig['use_first_layer_output']:
             input_size += 16 * 32 * 32
         if PolicyConfig['add_epoch_number']:
@@ -161,7 +161,7 @@ class CIFARModelBase(object):
             probability = np.hstack([probability, first_layer_output])
 
         if PolicyConfig['add_epoch_number']:
-            epoch_number_inputs = np.full((batch_size, 1), floatX(epoch) / CifarConfig['epoch_per_episode'], dtype=fX)
+            epoch_number_inputs = np.full((batch_size, 1), floatX(epoch) / ParamConfig['epoch_per_episode'], dtype=fX)
             probability = np.hstack([probability, epoch_number_inputs])
 
         if PolicyConfig['add_learning_rate']:
@@ -196,9 +196,9 @@ class CIFARModel(CIFARModelBase):
                  validate_batch_size=None):
         super(CIFARModel, self).__init__(train_batch_size, validate_batch_size)
 
-        n = n or CifarConfig['n']
+        n = n or ParamConfig['n']
 
-        self.learning_rate = theano.shared(lasagne.utils.floatX(CifarConfig['init_learning_rate']))
+        self.learning_rate = theano.shared(lasagne.utils.floatX(ParamConfig['init_learning_rate']))
 
         # Prepare Theano variables for inputs and targets
         self.input_var = T.tensor4('inputs')
@@ -213,7 +213,7 @@ class CIFARModel(CIFARModelBase):
         self.build_validate_function()
 
     @logging
-    def build_cnn(self, input_var=None, n=CifarConfig['n']):
+    def build_cnn(self, input_var=None, n=ParamConfig['n']):
         # create a residual learning building block with two stacked 3x3 conv-layers as in paper
         def residual_block(layer_, increase_dim=False, projection=False):
             input_num_filters = layer_.output_shape[1]
@@ -310,7 +310,7 @@ class CIFARModel(CIFARModelBase):
         # add weight decay
         all_layers = lasagne.layers.get_all_layers(self.network)
         l2_penalty = lasagne.regularization.regularize_layer_params(all_layers, lasagne.regularization.l2) * \
-            CifarConfig['l2_penalty_factor']
+                     ParamConfig['l2_penalty_factor']
         loss += l2_penalty
 
         self.f_cost = theano.function([self.input_var, self.target_var], loss)
@@ -319,7 +319,7 @@ class CIFARModel(CIFARModelBase):
         # Stochastic Gradient Descent (SGD) with momentum
         params = lasagne.layers.get_all_params(self.network, trainable=True)
         updates = lasagne.updates.momentum(
-            loss, params, learning_rate=self.learning_rate, momentum=CifarConfig['momentum'])
+            loss, params, learning_rate=self.learning_rate, momentum=ParamConfig['momentum'])
 
         # Compile a function performing a training step on a mini-batch (by giving
         # the updates dictionary) and returning the corresponding training loss:
@@ -337,7 +337,7 @@ class CIFARModel(CIFARModelBase):
 
         alpha_loss += l2_penalty
         updates = lasagne.updates.momentum(
-            alpha_loss, params, learning_rate=self.learning_rate, momentum=CifarConfig['momentum'])
+            alpha_loss, params, learning_rate=self.learning_rate, momentum=ParamConfig['momentum'])
 
         self.f_alpha_train = theano.function(
             [self.input_var, self.target_var, alpha], alpha_loss, updates=updates)
@@ -391,7 +391,7 @@ class CIFARModel(CIFARModelBase):
             # Adjust learning rate as in paper
             # 32k and 48k iterations should be roughly equivalent to 41 and 61 epochs
             if (epoch + 1) == 41 or (epoch + 1) == 61:
-                new_lr = self.learning_rate.get_value() * CifarConfig['learning_rate_discount']
+                new_lr = self.learning_rate.get_value() * ParamConfig['learning_rate_discount']
                 print("New LR:" + str(new_lr))
                 self.learning_rate.set_value(lasagne.utils.floatX(new_lr))
 
@@ -429,7 +429,7 @@ class CIFARModel(CIFARModelBase):
 
     @logging
     def reset_learning_rate(self):
-        self.learning_rate.set_value(lasagne.utils.floatX(CifarConfig['init_learning_rate']))
+        self.learning_rate.set_value(lasagne.utils.floatX(ParamConfig['init_learning_rate']))
 
 
 class VaniliaCNNModel(CIFARModelBase):
@@ -447,7 +447,7 @@ class VaniliaCNNModel(CIFARModelBase):
         self.input_var = T.tensor4('inputs')
         self.target_var = T.ivector('targets')
 
-        self.learning_rate = theano.shared(lasagne.utils.floatX(CifarConfig['init_learning_rate']))
+        self.learning_rate = theano.shared(lasagne.utils.floatX(ParamConfig['init_learning_rate']))
 
         self.network = self.build_cnn(self.input_var)
         print("number of parameters in model: %d" % lasagne.layers.count_params(self.network, trainable=True))
@@ -522,7 +522,7 @@ class VaniliaCNNModel(CIFARModelBase):
         # Different updates.
         updates_sgd = lasagne.updates.sgd(loss, params, self.learning_rate)
         updates_momentum = lasagne.updates.momentum(
-            loss, params, learning_rate=self.learning_rate, momentum=CifarConfig['momentum'])
+            loss, params, learning_rate=self.learning_rate, momentum=ParamConfig['momentum'])
         # [NOTE]: Some default values of lasagne and TensorFlow are same.
         updates_adam = lasagne.updates.adam(loss, params, learning_rate=0.001)
         updates_adagrad = lasagne.updates.adagrad(loss, params, learning_rate=self.learning_rate)

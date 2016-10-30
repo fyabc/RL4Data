@@ -63,8 +63,8 @@ def load_mnist_data(data_dir=None):
     valid_set_x, valid_set_y = valid_set
     train_set_x, train_set_y = train_set
 
-    rval = [(train_set_x, train_set_y), (valid_set_x, valid_set_y),
-            (test_set_x, test_set_y)]
+    rval = (train_set_x, train_set_y, valid_set_x, valid_set_y,
+            test_set_x, test_set_y)
     return rval
 
 
@@ -72,9 +72,11 @@ def test():
     rval = load_mnist_data()
 
     for val in rval:
-        val_x, val_y = val
-        print(type(val_x), val_x.shape, val_x.dtype)
-        print(type(val_y), val_y.shape, val_y.dtype)
+        print(type(val), val.shape, val.dtype)
+
+    train_x, train_y = rval[0], rval[1]
+    print(train_x[0], train_x.max(), train_x.min())
+    print(train_y[:25], train_y.max(), train_y.min())
 
 
 if __name__ == '__main__':

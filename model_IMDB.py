@@ -14,7 +14,7 @@ from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 from utils import fX, floatX, logging, message, average
 from utils_IMDB import prepare_imdb_data as prepare_data, pr, ortho_weight, get_minibatches_idx
 from optimizers import adadelta, adam, sgd, rmsprop
-from config import IMDBConfig, PolicyConfig
+from config import IMDBConfig as ParamConfig, PolicyConfig
 
 __author__ = 'fyabc'
 
@@ -28,8 +28,8 @@ class IMDBModelBase(object):
                  validate_batch_size=None
                  ):
         # Functions and parameters that must be provided.
-        self.train_batch_size = train_batch_size or IMDBConfig['train_batch_size']
-        self.validate_batch_size = validate_batch_size or IMDBConfig['validate_batch_size']
+        self.train_batch_size = train_batch_size or ParamConfig['train_batch_size']
+        self.validate_batch_size = validate_batch_size or ParamConfig['validate_batch_size']
 
         self.learning_rate = None
 
@@ -101,7 +101,7 @@ class IMDBModelBase(object):
             pass
 
         if PolicyConfig['add_epoch_number']:
-            epoch_number_inputs = np.full((batch_size, 1), floatX(epoch) / IMDBConfig['epoch_per_episode'], dtype=fX)
+            epoch_number_inputs = np.full((batch_size, 1), floatX(epoch) / ParamConfig['epoch_per_episode'], dtype=fX)
             probability = np.hstack([probability, epoch_number_inputs])
 
         if PolicyConfig['add_learning_rate']:
@@ -136,7 +136,7 @@ class IMDBModel(IMDBModelBase):
                  ):
         super(IMDBModel, self).__init__(train_batch_size, validate_batch_size)
 
-        self.learning_rate = floatX(IMDBConfig['learning_rate'])
+        self.learning_rate = floatX(ParamConfig['learning_rate'])
 
         # Parameters of the model (Theano shared variables)
         self.parameters = OrderedDict()
@@ -148,7 +148,7 @@ class IMDBModel(IMDBModelBase):
             self.load_model()
 
     def init_parameters(self):
-        rands = np.random.rand(IMDBConfig['n_words'], IMDBConfig['dim_proj'])
+        rands = np.random.rand(ParamConfig['n_words'], ParamConfig['dim_proj'])
 
         # embedding
         self.np_parameters['Wemb'] = (0.01 * rands).astype(fX)
@@ -157,8 +157,8 @@ class IMDBModel(IMDBModelBase):
         self.init_lstm_parameters()
 
         # classifier
-        self.np_parameters['U'] = 0.01 * np.random.randn(IMDBConfig['dim_proj'], IMDBConfig['ydim']).astype(fX)
-        self.np_parameters['b'] = np.zeros((IMDBConfig['ydim'],)).astype(fX)
+        self.np_parameters['U'] = 0.01 * np.random.randn(ParamConfig['dim_proj'], ParamConfig['ydim']).astype(fX)
+        self.np_parameters['b'] = np.zeros((ParamConfig['ydim'],)).astype(fX)
 
         # numpy parameters to shared variables
         for key, value in self.np_parameters.iteritems():
@@ -166,17 +166,17 @@ class IMDBModel(IMDBModelBase):
 
     def init_lstm_parameters(self):
         prefix = 'lstm'
-        W = np.concatenate([ortho_weight(IMDBConfig['dim_proj']),
-                            ortho_weight(IMDBConfig['dim_proj']),
-                            ortho_weight(IMDBConfig['dim_proj']),
-                            ortho_weight(IMDBConfig['dim_proj'])], axis=1)
+        W = np.concatenate([ortho_weight(ParamConfig['dim_proj']),
+                            ortho_weight(ParamConfig['dim_proj']),
+                            ortho_weight(ParamConfig['dim_proj']),
+                            ortho_weight(ParamConfig['dim_proj'])], axis=1)
         self.np_parameters[pr(prefix, 'W')] = W
-        U = np.concatenate([ortho_weight(IMDBConfig['dim_proj']),
-                            ortho_weight(IMDBConfig['dim_proj']),
-                            ortho_weight(IMDBConfig['dim_proj']),
-                            ortho_weight(IMDBConfig['dim_proj'])], axis=1)
+        U = np.concatenate([ortho_weight(ParamConfig['dim_proj']),
+                            ortho_weight(ParamConfig['dim_proj']),
+                            ortho_weight(ParamConfig['dim_proj']),
+                            ortho_weight(ParamConfig['dim_proj'])], axis=1)
         self.np_parameters[pr(prefix, 'U')] = U
-        b = np.zeros((4 * IMDBConfig['dim_proj'],))
+        b = np.zeros((4 * ParamConfig['dim_proj'],))
         self.np_parameters[pr(prefix, 'b')] = b.astype(fX)
 
     def reset_parameters(self):
@@ -203,10 +203,10 @@ class IMDBModel(IMDBModelBase):
             preact = T.dot(h_, self.parameters[pr(prefix, 'U')])
             preact += x_
 
-            i = T.nnet.sigmoid(_slice(preact, 0, IMDBConfig['dim_proj']))
-            f = T.nnet.sigmoid(_slice(preact, 1, IMDBConfig['dim_proj']))
-            o = T.nnet.sigmoid(_slice(preact, 2, IMDBConfig['dim_proj']))
-            c = T.tanh(_slice(preact, 3, IMDBConfig['dim_proj']))
+            i = T.nnet.sigmoid(_slice(preact, 0, ParamConfig['dim_proj']))
+            f = T.nnet.sigmoid(_slice(preact, 1, ParamConfig['dim_proj']))
+            o = T.nnet.sigmoid(_slice(preact, 2, ParamConfig['dim_proj']))
+            c = T.tanh(_slice(preact, 3, ParamConfig['dim_proj']))
 
             c = f * c_ + i * c
             c = m_[:, None] * c + (1. - m_)[:, None] * c_
@@ -219,7 +219,7 @@ class IMDBModel(IMDBModelBase):
         state_below = (T.dot(state_below, self.parameters[pr(prefix, 'W')]) +
                        self.parameters[pr(prefix, 'b')])
 
-        dim_proj = IMDBConfig['dim_proj']
+        dim_proj = ParamConfig['dim_proj']
         rval, updates = theano.scan(
                 _step,
                 sequences=[mask, state_below],
@@ -255,7 +255,7 @@ class IMDBModel(IMDBModelBase):
         # Initialize self.parameters
         self.init_parameters()
 
-        trng = RandomStreams(IMDBConfig['seed'])
+        trng = RandomStreams(ParamConfig['seed'])
 
         # Build Theano tensor variables.
 
@@ -269,14 +269,14 @@ class IMDBModel(IMDBModelBase):
         n_timesteps = self.inputs.shape[0]
         n_samples = self.inputs.shape[1]
 
-        emb = self.parameters['Wemb'][self.inputs.flatten()].reshape([n_timesteps, n_samples, IMDBConfig['dim_proj']])
+        emb = self.parameters['Wemb'][self.inputs.flatten()].reshape([n_timesteps, n_samples, ParamConfig['dim_proj']])
 
         proj = self.lstm_layer(emb, self.mask)
 
         proj = (proj * self.mask[:, :, None]).sum(axis=0)
         proj = proj / self.mask.sum(axis=0)[:, None]
 
-        if IMDBConfig['use_dropout']:
+        if ParamConfig['use_dropout']:
             proj = self.dropout_layer(proj, self.use_noise, trng)
             
         predict = T.nnet.softmax(T.dot(proj, self.parameters['U']) + self.parameters['b'])
@@ -299,7 +299,7 @@ class IMDBModel(IMDBModelBase):
             [self.inputs, self.mask, self.targets], cost, name='f_cost_without_decay'
         )
 
-        decay_c = IMDBConfig['decay_c']
+        decay_c = ParamConfig['decay_c']
         if decay_c > 0.:
             decay_c = theano.shared(floatX(decay_c), name='decay_c')
             weight_decay = 0.
@@ -313,7 +313,7 @@ class IMDBModel(IMDBModelBase):
         self.f_grad = theano.function([self.inputs, self.mask, self.targets], grads, name='f_grad')
 
         lr = T.scalar('lr', dtype=fX)
-        self.f_grad_shared, self.f_update = eval(IMDBConfig['optimizer'])(
+        self.f_grad_shared, self.f_update = eval(ParamConfig['optimizer'])(
             lr, self.parameters, grads, [self.inputs, self.mask, self.targets], cost)
 
     def f_train(self, x, mask, y):
@@ -327,11 +327,11 @@ class IMDBModel(IMDBModelBase):
 
     @logging
     def load_model(self, filename=None):
-        filename = filename or IMDBConfig['save_to']
+        filename = filename or ParamConfig['save_to']
 
     @logging
     def save_model(self, filename=None):
-        filename = filename or IMDBConfig['save_to']
+        filename = filename or ParamConfig['save_to']
 
     def predict_error(self, data_x, data_y, batch_indices):
         """
@@ -376,7 +376,7 @@ class IMDBModel(IMDBModelBase):
 
 
 def test():
-    IMDBConfig['ydim'] = 2
+    ParamConfig['ydim'] = 2
     model = IMDBModel()
 
 
