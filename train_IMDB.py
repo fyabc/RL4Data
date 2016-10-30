@@ -9,10 +9,10 @@ import numpy as np
 import heapq
 from collections import deque
 
-from config import IMDBConfig, Config, PolicyConfig
+from config import IMDBConfig as ParamConfig, Config, PolicyConfig
 from model_IMDB import IMDBModel
-from utils import process_before_train, floatX, message, get_part_data, finalize_logging_file
-from utils_IMDB import load_imdb_data, preprocess_imdb_data, get_minibatches_idx
+from utils import process_before_train, floatX, message, get_part_data, finalize_logging_file, get_minibatches_idx
+from utils_IMDB import load_imdb_data, preprocess_imdb_data
 from utils_IMDB import prepare_imdb_data as prepare_data
 
 # Actor-Critic from ChangXu
@@ -24,12 +24,12 @@ __author__ = 'fyabc'
 
 
 def pre_process_data():
-    np.random.seed(IMDBConfig['seed'])
+    np.random.seed(ParamConfig['seed'])
 
     # Loading data
-    train_data, valid_data, test_data = load_imdb_data(n_words=IMDBConfig['n_words'],
-                                                       valid_portion=IMDBConfig['valid_portion'],
-                                                       maxlen=IMDBConfig['maxlen'])
+    train_data, valid_data, test_data = load_imdb_data(n_words=ParamConfig['n_words'],
+                                                       valid_portion=ParamConfig['valid_portion'],
+                                                       maxlen=ParamConfig['maxlen'])
     train_data, valid_data, test_data = preprocess_imdb_data(train_data, valid_data, test_data)
 
     train_x, train_y = train_data
@@ -52,17 +52,17 @@ def pre_process_config(model, train_size, valid_size, test_size):
     kf_valid = get_minibatches_idx(valid_size, model.validate_batch_size)
     kf_test = get_minibatches_idx(test_size, model.validate_batch_size)
 
-    valid_freq = IMDBConfig['valid_freq']
+    valid_freq = ParamConfig['valid_freq']
     if valid_freq == -1:
         valid_freq = train_size // model.train_batch_size
 
-    save_freq = IMDBConfig['save_freq']
+    save_freq = ParamConfig['save_freq']
     if save_freq == -1:
         save_freq = train_size // model.train_batch_size
 
-    display_freq = IMDBConfig['display_freq']
-    save_to = IMDBConfig['save_to']
-    patience = IMDBConfig['patience']
+    display_freq = ParamConfig['display_freq']
+    save_to = ParamConfig['save_to']
+    patience = ParamConfig['patience']
 
     return kf_valid, kf_test, valid_freq, save_freq, display_freq, save_to, patience
 
@@ -105,14 +105,14 @@ def test_and_post_process(model,
 
 
 def train_raw_IMDB():
-    np.random.seed(IMDBConfig['seed'])
+    np.random.seed(ParamConfig['seed'])
 
     # Loading data
     train_x, train_y, valid_x, valid_y, test_x, test_y, \
         train_size, valid_size, test_size = pre_process_data()
 
     # Building model
-    model = IMDBModel(IMDBConfig['reload_model'])
+    model = IMDBModel(ParamConfig['reload_model'])
 
     # Loading configure settings
     kf_valid, kf_test, \
@@ -133,7 +133,7 @@ def train_raw_IMDB():
     try:
         total_n_samples = 0
 
-        for epoch in range(IMDBConfig['epoch_per_episode']):
+        for epoch in range(ParamConfig['epoch_per_episode']):
             print('[Epoch {}]'.format(epoch))
             message('[Epoch {}]'.format(epoch))
 
@@ -172,7 +172,7 @@ def train_raw_IMDB():
                 if save_to and update_index % save_freq == 0:
                     save_parameters(model, best_parameters, save_to, history_errs)
 
-                if update_index % IMDBConfig['train_loss_freq'] == 0:
+                if update_index % ParamConfig['train_loss_freq'] == 0:
                     train_loss = model.get_training_loss(train_x, train_y)
                     message('Training Loss:', train_loss)
 
@@ -215,14 +215,14 @@ def train_raw_IMDB():
 
 
 def train_SPL_IMDB():
-    np.random.seed(IMDBConfig['seed'])
+    np.random.seed(ParamConfig['seed'])
 
     # Loading data
     train_x, train_y, valid_x, valid_y, test_x, test_y, \
         train_size, valid_size, test_size = pre_process_data()
 
     # Building model
-    model = IMDBModel(IMDBConfig['reload_model'])
+    model = IMDBModel(ParamConfig['reload_model'])
 
     # Loading configure settings
     kf_valid, kf_test, \
@@ -230,7 +230,7 @@ def train_SPL_IMDB():
         save_to, patience = pre_process_config(model, train_size, valid_size, test_size)
 
     # # Self-paced learning iterate on data cases
-    total_iteration_number = IMDBConfig['epoch_per_episode'] * train_size // model.train_batch_size
+    total_iteration_number = ParamConfig['epoch_per_episode'] * train_size // model.train_batch_size
 
     # Get the cost threshold \lambda.
     def cost_threshold(iteration):
@@ -258,7 +258,7 @@ def train_SPL_IMDB():
     try:
         total_n_samples = 0
 
-        for epoch in range(IMDBConfig['epoch_per_episode']):
+        for epoch in range(ParamConfig['epoch_per_episode']):
             print('[Epoch {}]'.format(epoch))
             message('[Epoch {}]'.format(epoch))
             n_samples = 0
@@ -328,7 +328,7 @@ def train_SPL_IMDB():
 
                 # Do not save when running SPL!
 
-                if iteration % IMDBConfig['train_loss_freq'] == 0:
+                if iteration % ParamConfig['train_loss_freq'] == 0:
                     train_loss = model.get_training_loss(train_x, train_y)
                     message('Training Loss:', train_loss)
 
@@ -371,14 +371,14 @@ def train_SPL_IMDB():
 
 
 def train_policy_IMDB():
-    np.random.seed(IMDBConfig['seed'])
+    np.random.seed(ParamConfig['seed'])
 
     # Loading data
     train_x, train_y, valid_x, valid_y, test_x, test_y, \
         train_size, valid_size, test_size = pre_process_data()
 
     # Building model
-    model = IMDBModel(IMDBConfig['reload_model'])
+    model = IMDBModel(ParamConfig['reload_model'])
 
     # Loading configure settings
     kf_valid, kf_test, \
@@ -403,7 +403,7 @@ def train_policy_IMDB():
 
         # get small training data
         train_small_x, train_small_y = get_part_data(np.asarray(train_x), np.asarray(train_y),
-                                                     IMDBConfig['train_small_size'])
+                                                     ParamConfig['train_small_size'])
         train_small_size = len(train_small_x)
 
         # Training
@@ -423,7 +423,7 @@ def train_policy_IMDB():
         try:
             total_n_samples = 0
 
-            for epoch in range(IMDBConfig['epoch_per_episode']):
+            for epoch in range(ParamConfig['epoch_per_episode']):
                 print('[Epoch {}]'.format(epoch))
                 message('[Epoch {}]'.format(epoch))
 
@@ -471,7 +471,7 @@ def train_policy_IMDB():
 
                     # Do not save when training policy!
 
-                    if update_index % IMDBConfig['train_loss_freq'] == 0:
+                    if update_index % ParamConfig['train_loss_freq'] == 0:
                         train_loss = model.get_training_loss(train_x, train_y)
                         message('Training Loss:', train_loss)
 
@@ -544,14 +544,14 @@ def train_policy_IMDB():
 
 
 def train_actor_critic_IMDB():
-    np.random.seed(IMDBConfig['seed'])
+    np.random.seed(ParamConfig['seed'])
 
     # Loading data
     train_x, train_y, valid_x, valid_y, test_x, test_y, \
         train_size, valid_size, test_size = pre_process_data()
 
     # Building model
-    model = IMDBModel(IMDBConfig['reload_model'])
+    model = IMDBModel(ParamConfig['reload_model'])
 
     # Loading configure settings
     kf_valid, kf_test, \
@@ -576,7 +576,7 @@ def train_actor_critic_IMDB():
 
         # get small training data
         train_small_x, train_small_y = get_part_data(np.asarray(train_x), np.asarray(train_y),
-                                                     IMDBConfig['train_small_size'])
+                                                     ParamConfig['train_small_size'])
         train_small_size = len(train_small_x)
 
         # Training
@@ -593,7 +593,7 @@ def train_actor_critic_IMDB():
         try:
             total_n_samples = 0
 
-            for epoch in range(IMDBConfig['epoch_per_episode']):
+            for epoch in range(ParamConfig['epoch_per_episode']):
                 print('[Epoch {}]'.format(epoch))
                 message('[Epoch {}]'.format(epoch))
 
@@ -652,7 +652,7 @@ def train_actor_critic_IMDB():
                     actions_new = actor.take_action(probability_new, log_replay=False)
 
                     Q_value_new = critic.Q_function(state=probability_new, action=actions_new)
-                    if epoch < IMDBConfig['epoch_per_episode'] - 1:
+                    if epoch < ParamConfig['epoch_per_episode'] - 1:
                         label = PolicyConfig['actor_gamma'] * Q_value_new + imm_reward
                     else:
                         label = imm_reward
@@ -675,7 +675,7 @@ def train_actor_critic_IMDB():
 
                     # Do not save when training policy!
 
-                    if update_index % IMDBConfig['train_loss_freq'] == 0:
+                    if update_index % ParamConfig['train_loss_freq'] == 0:
                         train_loss = model.get_training_loss(train_x, train_y)
                         message('Training Loss:', train_loss)
 
@@ -725,14 +725,14 @@ def train_actor_critic_IMDB():
 
 
 def test_policy_IMDB():
-    np.random.seed(IMDBConfig['seed'])
+    np.random.seed(ParamConfig['seed'])
 
     # Loading data
     train_x, train_y, valid_x, valid_y, test_x, test_y, \
         train_size, valid_size, test_size = pre_process_data()
 
     # Building model
-    model = IMDBModel(IMDBConfig['reload_model'])
+    model = IMDBModel(ParamConfig['reload_model'])
 
     # Loading configure settings
     kf_valid, kf_test, \
@@ -741,7 +741,7 @@ def test_policy_IMDB():
 
     if Config['train_type'] == 'random_drop':
         # Random drop configure
-        random_drop_numbers = map(lambda l: int(l.strip()), list(open(IMDBConfig['random_drop_number_file'], 'r')))
+        random_drop_numbers = map(lambda l: int(l.strip()), list(open(ParamConfig['random_drop_number_file'], 'r')))
         random_drop_index = 0
     else:
         # Build policy
@@ -766,7 +766,7 @@ def test_policy_IMDB():
     try:
         total_n_samples = 0
 
-        for epoch in range(IMDBConfig['epoch_per_episode']):
+        for epoch in range(ParamConfig['epoch_per_episode']):
             print('[Epoch {}]'.format(epoch))
             message('[Epoch {}]'.format(epoch))
 
@@ -825,7 +825,7 @@ def test_policy_IMDB():
                 if save_to and update_index % save_freq == 0:
                     save_parameters(model, best_parameters, save_to, history_errs)
 
-                if update_index % IMDBConfig['train_loss_freq'] == 0:
+                if update_index % ParamConfig['train_loss_freq'] == 0:
                     train_loss = model.get_training_loss(train_x, train_y)
                     message('Training Loss:', train_loss)
 
@@ -873,7 +873,7 @@ def test_policy_IMDB():
 
 
 if __name__ == '__main__':
-    process_before_train(IMDBConfig)
+    process_before_train(ParamConfig)
 
     try:
         if Config['train_type'] == 'raw':

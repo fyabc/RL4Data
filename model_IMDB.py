@@ -11,8 +11,8 @@ import theano.tensor as T
 import theano
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
-from utils import fX, floatX, logging, message, average
-from utils_IMDB import prepare_imdb_data as prepare_data, pr, ortho_weight, get_minibatches_idx
+from utils import fX, floatX, logging, message, average, get_minibatches_idx
+from utils_IMDB import prepare_imdb_data as prepare_data, pr, ortho_weight
 from optimizers import adadelta, adam, sgd, rmsprop
 from config import IMDBConfig as ParamConfig, PolicyConfig
 

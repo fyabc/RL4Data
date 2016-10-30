@@ -18,6 +18,14 @@ def load_mnist_data(data_dir=None):
 
     :type data_dir: string
     :param data_dir: the path to the dataset (here MNIST)
+
+    return data:
+        x_train: (50000, 784), float32, 0.0 ~ 1.0
+        y_train: (50000,), int64, 0 ~ 9
+        x_validate: (10000, 784), ...
+        y_validate: (10000,), ...
+        x_test: (10000, 784), ...
+        y_test: (10000,), ...
     """
 
     data_dir = data_dir or MNISTConfig['data_dir']

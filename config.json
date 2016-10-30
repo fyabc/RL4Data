@@ -166,6 +166,18 @@
 
         "train_small_size": null,
 
-        "epoch_per_episode": null
+        "epoch_per_episode": 1000,
+
+        "hidden_size": 500,
+        "learning_rate": 0.01,
+        "train_batch_size": 20,
+        "validate_batch_size": 20,
+
+        "l1_penalty_factor": 0.00,
+        "l2_penalty_factor": 0.0001,
+
+        "patience": 10000,
+        "patience_increase": 2,
+        "improvement_threshold": 0.995
     }
 }

@@ -9,7 +9,7 @@ from collections import deque
 
 import numpy as np
 
-from config import Config, CifarConfig, PolicyConfig
+from config import Config, CifarConfig as ParamConfig, PolicyConfig
 from utils import *
 from model_CIFAR10 import CIFARModel, VaniliaCNNModel
 from policyNetwork import PolicyNetwork
@@ -35,7 +35,7 @@ def epoch_message(model, x_train, y_train, x_validate, y_validate, x_test, y_tes
     test_loss /= test_batches
     test_acc /= test_batches
 
-    message("Epoch {} of {} took {:.3f}s".format(epoch, CifarConfig['epoch_per_episode'], time.time() - start_time))
+    message("Epoch {} of {} took {:.3f}s".format(epoch, ParamConfig['epoch_per_episode'], time.time() - start_time))
     message('Training Loss:', train_loss)
     message('History Training Loss:', history_train_loss / train_batches)
     message('Validate Loss:', validate_loss)
@@ -46,7 +46,7 @@ def epoch_message(model, x_train, y_train, x_validate, y_validate, x_test, y_tes
 
 
 def train_raw_CIFAR10():
-    model_name = eval(CifarConfig['model_name'])
+    model_name = eval(ParamConfig['model_name'])
     # Create neural network model
     model = model_name()
     # model = VaniliaCNNModel()
@@ -59,7 +59,7 @@ def train_raw_CIFAR10():
     message('Test data size:', y_test.shape[0])
 
     # Train the network
-    if CifarConfig['warm_start']:
+    if ParamConfig['warm_start']:
         model.load_model(Config['model_file'])
     else:
         model.reset_parameters()
@@ -67,7 +67,7 @@ def train_raw_CIFAR10():
     # Iteration (number of batches)
     iteration = 0
 
-    for epoch in range(CifarConfig['epoch_per_episode']):
+    for epoch in range(ParamConfig['epoch_per_episode']):
         print('[Epoch {}]'.format(epoch))
         message('[Epoch {}]'.format(epoch))
 
@@ -76,19 +76,19 @@ def train_raw_CIFAR10():
         train_batches = 0
         start_time = time.time()
 
-        for batch in iterate_minibatches(x_train, y_train, CifarConfig['train_batch_size'], shuffle=True, augment=True):
+        for batch in iterate_minibatches(x_train, y_train, ParamConfig['train_batch_size'], shuffle=True, augment=True):
             iteration += 1
 
             inputs, targets = batch
 
             total_accepted_cases += len(inputs)
 
-            part_train_err = model.f_train(inputs, targets)
+            part_train_cost = model.f_train(inputs, targets)
 
-            if iteration % CifarConfig['display_freq'] == 0:
-                message('Train error of iteration {} is {}'.format(iteration, part_train_err))
+            if iteration % ParamConfig['display_freq'] == 0:
+                message('Train error of iteration {} is {}'.format(iteration, part_train_cost))
 
-            history_train_loss += part_train_err
+            history_train_loss += part_train_cost
             train_batches += 1
 
         epoch_message(model, x_train, y_train, x_validate, y_validate, x_test, y_test,
@@ -108,7 +108,7 @@ def train_raw_CIFAR10():
 
 
 def train_SPL_CIFAR10():
-    model_name = eval(CifarConfig['model_name'])
+    model_name = eval(ParamConfig['model_name'])
     # Create neural network model
     model = model_name()
     # model = VaniliaCNNModel()
@@ -121,7 +121,7 @@ def train_SPL_CIFAR10():
     message('Test data size:', y_test.shape[0])
 
     # Self-paced learning iterate on data cases
-    total_iteration_number = CifarConfig['epoch_per_episode'] * len(x_train) // model.train_batch_size
+    total_iteration_number = ParamConfig['epoch_per_episode'] * len(x_train) // model.train_batch_size
 
     # Get the cost threshold \lambda.
     def cost_threshold(iteration):
@@ -136,7 +136,7 @@ def train_SPL_CIFAR10():
     # # Self-paced learning setting end
 
     # Train the network
-    if CifarConfig['warm_start']:
+    if ParamConfig['warm_start']:
         model.load_model(Config['model_file'])
     else:
         model.reset_parameters()
@@ -144,7 +144,7 @@ def train_SPL_CIFAR10():
     # Iteration (number of batches)
     iteration = 0
 
-    for epoch in range(CifarConfig['epoch_per_episode']):
+    for epoch in range(ParamConfig['epoch_per_episode']):
         print('[Epoch {}]'.format(epoch))
         message('[Epoch {}]'.format(epoch))
 
@@ -153,7 +153,7 @@ def train_SPL_CIFAR10():
         train_batches = 0
         start_time = time.time()
 
-        for batch in iterate_minibatches(x_train, y_train, CifarConfig['train_batch_size'],
+        for batch in iterate_minibatches(x_train, y_train, ParamConfig['train_batch_size'],
                                          shuffle=True, augment=True, return_indices=True):
             iteration += 1
 
@@ -206,7 +206,7 @@ def train_SPL_CIFAR10():
 
 
 def train_policy_CIFAR10():
-    model_name = eval(CifarConfig['model_name'])
+    model_name = eval(ParamConfig['model_name'])
     # Create neural network model
     model = model_name()
     # model = VaniliaCNNModel()
@@ -218,7 +218,7 @@ def train_policy_CIFAR10():
 
     # Load the dataset
     x_train, y_train, x_validate, y_validate, x_test, y_test = split_cifar10_data(load_cifar10_data())
-    train_small_size = CifarConfig['train_small_size']
+    train_small_size = ParamConfig['train_small_size']
     x_train_small, y_train_small = get_part_data(x_train, y_train, train_small_size)
 
     message('Training data size:', y_train_small.shape[0])
@@ -230,7 +230,7 @@ def train_policy_CIFAR10():
         print('[Episode {}]'.format(episode))
         message('[Episode {}]'.format(episode))
 
-        if CifarConfig['warm_start']:
+        if ParamConfig['warm_start']:
             model.load_model(Config['model_file'])
         else:
             model.reset_parameters()
@@ -241,7 +241,7 @@ def train_policy_CIFAR10():
         # Speed reward
         first_over_index = None
 
-        for epoch in range(CifarConfig['epoch_per_episode']):
+        for epoch in range(ParamConfig['epoch_per_episode']):
             print('[Epoch {}]'.format(epoch))
             message('[Epoch {}]'.format(epoch))
 
@@ -301,8 +301,8 @@ def train_policy_CIFAR10():
         # Updating policy
         if PolicyConfig['speed_reward']:
             if first_over_index is None:
-                first_over_index = CifarConfig['epoch_per_episode']
-            terminal_reward = floatX(first_over_index) / CifarConfig['epoch_per_episode']
+                first_over_index = ParamConfig['epoch_per_episode']
+            terminal_reward = floatX(first_over_index) / ParamConfig['epoch_per_episode']
             policy.update(-np.log(terminal_reward))
         else:
             policy.update(validate_acc)
@@ -312,7 +312,7 @@ def train_policy_CIFAR10():
 
 
 def train_actor_critic_CIFAR10():
-    model_name = eval(CifarConfig['model_name'])
+    model_name = eval(ParamConfig['model_name'])
     # Create neural network model
     model = model_name()
     # model = VaniliaCNNModel()
@@ -325,7 +325,7 @@ def train_actor_critic_CIFAR10():
 
     # Load the dataset
     x_train, y_train, x_validate, y_validate, x_test, y_test = split_cifar10_data(load_cifar10_data())
-    train_small_size = CifarConfig['train_small_size']
+    train_small_size = ParamConfig['train_small_size']
     x_train_small, y_train_small = get_part_data(x_train, y_train, train_small_size)
 
     message('Training data size:', y_train_small.shape[0])
@@ -337,7 +337,7 @@ def train_actor_critic_CIFAR10():
         print('[Episode {}]'.format(episode))
         message('[Episode {}]'.format(episode))
 
-        if CifarConfig['warm_start']:
+        if ParamConfig['warm_start']:
             model.load_model(Config['model_file'])
         else:
             model.reset_parameters()
@@ -348,7 +348,7 @@ def train_actor_critic_CIFAR10():
         # Iteration (number of batches)
         iteration = 0
 
-        for epoch in range(CifarConfig['epoch_per_episode']):
+        for epoch in range(ParamConfig['epoch_per_episode']):
             print('[Epoch {}]'.format(epoch))
             message('[Epoch {}]'.format(epoch))
 
@@ -395,7 +395,7 @@ def train_actor_critic_CIFAR10():
                 actions_new = actor.take_action(probability_new, log_replay=False)
 
                 Q_value_new = critic.Q_function(state=probability_new, action=actions_new)
-                if epoch < CifarConfig['epoch_per_episode'] - 1:
+                if epoch < ParamConfig['epoch_per_episode'] - 1:
                     label = PolicyConfig['actor_gamma'] * Q_value_new + imm_reward
                 else:
                     label = imm_reward
@@ -407,7 +407,7 @@ def train_actor_critic_CIFAR10():
                 actor_loss = actor.update_raw(probability, actions,
                                               np.full(actions.shape, label, dtype=probability.dtype))
 
-                if iteration % CifarConfig['display_freq'] == 0:
+                if iteration % ParamConfig['display_freq'] == 0:
                     message('Epoch {}\tIteration {}\tCost {}\tCritic loss {}\tActor loss {}'
                             .format(epoch, iteration, part_train_err, Q_loss, actor_loss))
 
@@ -442,7 +442,7 @@ def train_actor_critic_CIFAR10():
 
 
 def test_policy_CIFAR10():
-    model_name = eval(CifarConfig['model_name'])
+    model_name = eval(ParamConfig['model_name'])
     # Create neural network model
     model = model_name()
     # model = VaniliaCNNModel()
@@ -457,12 +457,12 @@ def test_policy_CIFAR10():
     message('Validation data size:', y_validate.shape[0])
     message('Test data size:', y_test.shape[0])
 
-    if CifarConfig['warm_start']:
+    if ParamConfig['warm_start']:
         model.load_model()
 
     if Config['train_type'] == 'random_drop':
         # Random drop configure
-        random_drop_numbers = map(lambda l: int(l.strip()), list(open(CifarConfig['random_drop_number_file'], 'r')))
+        random_drop_numbers = map(lambda l: int(l.strip()), list(open(ParamConfig['random_drop_number_file'], 'r')))
     else:
         # Build policy
         policy = PolicyNetwork(input_size=input_size)
@@ -474,7 +474,7 @@ def test_policy_CIFAR10():
     history_accuracy = []
 
     # Train the network
-    for epoch in range(CifarConfig['epoch_per_episode']):
+    for epoch in range(ParamConfig['epoch_per_episode']):
         print('[Epoch {}]'.format(epoch))
         message('[Epoch {}]'.format(epoch))
 
@@ -526,7 +526,7 @@ def test_policy_CIFAR10():
 
 
 if __name__ == '__main__':
-    process_before_train(CifarConfig)
+    process_before_train(ParamConfig)
 
     try:
         if Config['train_type'] == 'raw':
