@@ -56,9 +56,12 @@ def load_mnist_data(data_dir=None):
         # lets ous get around this issue
         return shared_x, T.cast(shared_y, 'int32')
 
-    test_set_x, test_set_y = shared_dataset(test_set)
-    valid_set_x, valid_set_y = shared_dataset(valid_set)
-    train_set_x, train_set_y = shared_dataset(train_set)
+    # test_set_x, test_set_y = shared_dataset(test_set)
+    # valid_set_x, valid_set_y = shared_dataset(valid_set)
+    # train_set_x, train_set_y = shared_dataset(train_set)
+    test_set_x, test_set_y = test_set
+    valid_set_x, valid_set_y = valid_set
+    train_set_x, train_set_y = train_set
 
     rval = [(train_set_x, train_set_y), (valid_set_x, valid_set_y),
             (test_set_x, test_set_y)]
@@ -66,7 +69,12 @@ def load_mnist_data(data_dir=None):
 
 
 def test():
-    load_mnist_data()
+    rval = load_mnist_data()
+
+    for val in rval:
+        val_x, val_y = val
+        print(type(val_x), val_x.shape, val_x.dtype)
+        print(type(val_y), val_y.shape, val_y.dtype)
 
 
 if __name__ == '__main__':
