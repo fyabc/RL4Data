@@ -333,7 +333,7 @@ def train_actor_critic_CIFAR10():
     message('Test data size:', y_test.shape[0])
 
     # Train the network
-    for episode in range(1, PolicyConfig['num_episodes'] + 1):
+    for episode in range(PolicyConfig['num_episodes']):
         print('[Episode {}]'.format(episode))
         message('[Episode {}]'.format(episode))
 
@@ -438,9 +438,6 @@ def train_actor_critic_CIFAR10():
 
         if Config['policy_save_freq'] > 0 and episode % Config['policy_save_freq'] == 0:
             actor.save_policy()
-
-        if episode % PolicyConfig['policy_learning_rate_discount_freq'] == 0:
-            actor.discount_learning_rate()
 
 
 def test_policy_CIFAR10():
