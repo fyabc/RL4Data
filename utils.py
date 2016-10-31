@@ -11,7 +11,7 @@ import cPickle as pkl
 import numpy as np
 # from theano import config
 
-from config import Config, CifarConfig, PolicyConfig
+from config import Config, CifarConfig, PolicyConfig, MNISTConfig
 
 __author__ = 'fyabc'
 

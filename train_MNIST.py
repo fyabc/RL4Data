@@ -20,6 +20,19 @@ from criticNetwork import CriticNetwork
 __author__ = 'fyabc'
 
 
+def pre_process_data():
+    # Load the dataset
+    x_train, y_train, x_validate, y_validate, x_test, y_test = load_mnist_data()
+
+    train_size, validate_size, test_size = y_train.shape[0], y_validate.shape[0], y_test.shape[0]
+
+    message('Training data size:', train_size)
+    message('Validation data size:', validate_size)
+    message('Test data size:', test_size)
+
+    return x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size
+
+
 def pre_process_config(model, train_size):
     # Some hyperparameters
     # early-stopping parameters
@@ -39,7 +52,8 @@ def pre_process_config(model, train_size):
 
 
 def validate_point_message(model, x_train, y_train, x_validate, y_validate, x_test, y_test,
-                           history_train_loss, train_batches, total_accepted_cases, epoch, iteration):
+                           history_train_loss, train_batches, total_accepted_cases, epoch, iteration,
+                           validate_point_number):
     # Get training loss
     train_loss = model.get_training_loss(x_train, y_train)
 
@@ -48,18 +62,23 @@ def validate_point_message(model, x_train, y_train, x_validate, y_validate, x_te
     validate_loss /= validate_batches
     validate_acc /= validate_batches
 
-    # Get test loss and accuracy
-    test_loss, test_acc, test_batches = model.validate_or_test(x_test, y_test)
-    test_loss /= test_batches
-    test_acc /= test_batches
-
     message('Validate Point: Epoch {} Iteration {}'.format(epoch, iteration))
     message('Training Loss:', train_loss)
     message('History Training Loss:', history_train_loss / train_batches)
     message('Validate Loss:', validate_loss)
     message('#Validate accuracy:', validate_acc)
-    message('Test Loss:', test_loss),
-    message('#Test accuracy:', test_acc)
+
+    if ParamConfig['test_per_point'] > 0 and validate_point_number % ParamConfig['test_per_point'] == 0:
+        # Get test loss and accuracy
+        test_loss, test_acc, test_batches = model.validate_or_test(x_test, y_test)
+        test_loss /= test_batches
+        test_acc /= test_batches
+
+        message('Test Loss:', test_loss),
+        message('#Test accuracy:', test_acc)
+    else:
+        test_acc = None
+
     message('Number of accepted cases: {} of {} total'.format(
         total_accepted_cases, train_batches * model.train_batch_size))
 
@@ -77,15 +96,8 @@ def episode_final_message(best_validation_acc, best_iteration, test_score, start
 def train_raw_MNIST():
     model = MNISTModel()
 
-    # Load the dataset
-    x_train, y_train, x_validate, y_validate, x_test, y_test = load_mnist_data()
-
-    train_size, validate_size, test_size = y_train.shape[0], y_validate.shape[0], y_test.shape[0]
-
-    message('Training data size:', train_size)
-    message('Validation data size:', validate_size)
-    message('Test data size:', test_size)
-
+    # Load the dataset and config
+    x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size = pre_process_data()
     patience, patience_increase, improvement_threshold, validation_frequency = pre_process_config(model, train_size)
 
     # Train the network
@@ -135,7 +147,19 @@ def train_raw_MNIST():
                     best_validation_acc = validate_acc
                     best_iteration = iteration
 
-                    test_score = test_acc
+                    if test_acc is not None:
+                        test_score = test_acc
+                    else:
+                        # Must have a test at best validate accuracy point
+                        # Get test loss and accuracy
+                        test_loss, test_acc, test_batches = model.validate_or_test(x_test, y_test)
+                        test_loss /= test_batches
+                        test_acc /= test_batches
+
+                        message('Test Point: Epoch {} Iteration {}'.format(epoch, iteration))
+                        message('Test Loss:', test_loss),
+                        message('#Test accuracy:', test_acc)
+                        test_score = test_acc
 
             if iteration >= patience:
                 break
@@ -151,21 +175,31 @@ def train_raw_MNIST():
 def train_SPL_MNIST():
     model = MNISTModel()
 
-    # Load the dataset
-    x_train, y_train, x_validate, y_validate, x_test, y_test = load_mnist_data()
-
-    train_size, validate_size, test_size = y_train.shape[0], y_validate.shape[0], y_test.shape[0]
-
-    message('Training data size:', train_size)
-    message('Validation data size:', validate_size)
-    message('Test data size:', test_size)
-
+    # Load the dataset and config
+    x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size = pre_process_data()
     patience, patience_increase, improvement_threshold, validation_frequency = pre_process_config(model, train_size)
+
+    # Self-paced learning iterate on data cases
+    total_iteration_number = ParamConfig['epoch_per_episode'] * train_size // model.train_batch_size
+
+    # Get the cost threshold \lambda.
+    def cost_threshold(iteration):
+        return 1 + (model.train_batch_size - 1) * iteration / total_iteration_number
+
+    # Data buffer
+    spl_buffer = deque()
+
+    # When collect such number of cases, update them.
+    update_maxlen = model.train_batch_size
+
+    # # Self-paced learning setting end
 
     # Train the network
     # Some variables
     # Iteration (number of batches)
     iteration = 0
+    # Validation point iteration
+    validate_point_number = 0
 
     total_accepted_cases = 0
 
@@ -188,19 +222,48 @@ def train_SPL_MNIST():
         for _, train_index in kf:
             iteration += 1
 
+            # Self-paced learning check
+            selected_number = cost_threshold(iteration)
+
             inputs, targets = x_train[train_index], y_train[train_index]
 
-            total_accepted_cases += len(inputs)
+            cost_list = model.f_cost_list_without_decay(inputs, targets)
+            label_cost_lists = [cost_list[targets == label] for label in range(model.output_size)]
 
-            part_train_cost = model.f_train(inputs, targets)
-            history_train_loss += part_train_cost
+            for i, label_cost_list in enumerate(label_cost_lists):
+                if label_cost_list.size != 0:
+                    threshold = heapq.nsmallest(selected_number, label_cost_list)[-1]
+                    for j in range(len(targets)):
+                        if targets[j] == i and cost_list[j] <= threshold:
+                            spl_buffer.append(train_index[j])
+
+            if len(spl_buffer) >= update_maxlen:
+                # message('SPL buffer full, update...', end='')
+
+                update_batch_index = [spl_buffer.popleft() for _ in range(update_maxlen)]
+                # Get masked inputs and targets
+                inputs_selected = x_train[update_batch_index]
+                targets_selected = y_train[update_batch_index]
+
+                total_accepted_cases += len(inputs_selected)
+
+                part_train_cost = model.f_train(inputs_selected, targets_selected)
+
+                # message('done')
+            else:
+                part_train_cost = None
 
             train_batches += 1
 
-            if iteration % validation_frequency == 0:
+            # # In SPL, display after each update
+            # if iteration % validation_frequency == 0:
+            if part_train_cost is not None:
+                validate_point_number += 1
+
+                history_train_loss += part_train_cost
                 validate_acc, test_acc = validate_point_message(
                     model, x_train, y_train, x_validate, y_validate, x_test, y_test,
-                    history_train_loss, train_batches, total_accepted_cases, epoch, iteration)
+                    history_train_loss, train_batches, total_accepted_cases, epoch, iteration, validate_point_number)
                 # if we got the best validation score until now
                 if validate_acc > best_validation_acc:
                     # improve patience if loss improvement is good enough
@@ -209,7 +272,19 @@ def train_SPL_MNIST():
                     best_validation_acc = validate_acc
                     best_iteration = iteration
 
-                    test_score = test_acc
+                    if test_acc is not None:
+                        test_score = test_acc
+                    else:
+                        # Must have a test at best validate accuracy point
+                        # Get test loss and accuracy
+                        test_loss, test_acc, test_batches = model.validate_or_test(x_test, y_test)
+                        test_loss /= test_batches
+                        test_acc /= test_batches
+
+                        message('Test Point: Epoch {} Iteration {}'.format(epoch, iteration))
+                        message('Test Loss:', test_loss),
+                        message('#Test accuracy:', test_acc)
+                        test_score = test_acc
 
             if iteration >= patience:
                 break

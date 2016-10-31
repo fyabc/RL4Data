@@ -107,6 +107,10 @@ class MNISTModelBase(object):
             test_batches += 1
         return test_err, test_acc, test_batches
 
+    def get_test_acc(self, x_test, y_test):
+        test_loss, test_acc, test_batches = self.validate_or_test(x_test, y_test)
+        return test_acc / test_batches
+
     def reset_learning_rate(self):
         pass
 

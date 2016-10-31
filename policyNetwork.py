@@ -49,7 +49,7 @@ class PolicyNetwork(object):
 
         # Parameters to be learned
         self.W = theano.shared(name='W', value=init_norm(input_size))
-        self.b = theano.shared(name='b', value=floatX(start_b or 2.0))
+        self.b = theano.shared(name='b', value=floatX(start_b or PolicyConfig['b_init']))
         self.parameters = [self.W, self.b]
 
         # A single case of input softmax probabilities
