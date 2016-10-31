@@ -298,7 +298,82 @@ def train_SPL_MNIST():
 
 
 def train_policy_MNIST():
-    pass
+    model = MNISTModel()
+
+    # Load the dataset and config
+    x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size = pre_process_data()
+    patience, patience_increase, improvement_threshold, validation_frequency = pre_process_config(model, train_size)
+
+    # Train the network
+    # Some variables
+    # Iteration (number of batches)
+    iteration = 0
+
+    total_accepted_cases = 0
+
+    best_validation_acc = -np.inf
+    best_iteration = 0
+    test_score = 0.
+    start_time = time.time()
+
+    for epoch in range(ParamConfig['epoch_per_episode']):
+        print('[Epoch {}]'.format(epoch))
+        message('[Epoch {}]'.format(epoch))
+
+        total_accepted_cases = 0
+        history_train_loss = 0
+        train_batches = 0
+        epoch_start_time = time.time()
+
+        kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
+
+        for _, train_index in kf:
+            iteration += 1
+
+            inputs, targets = x_train[train_index], y_train[train_index]
+
+            total_accepted_cases += len(inputs)
+
+            part_train_cost = model.f_train(inputs, targets)
+            history_train_loss += part_train_cost
+
+            train_batches += 1
+
+            if iteration % validation_frequency == 0:
+                validate_acc, test_acc = validate_point_message(
+                    model, x_train, y_train, x_validate, y_validate, x_test, y_test,
+                    history_train_loss, train_batches, total_accepted_cases, epoch, iteration)
+                # if we got the best validation score until now
+                if validate_acc > best_validation_acc:
+                    # improve patience if loss improvement is good enough
+                    if (1. - validate_acc) < (1. - best_validation_acc) * improvement_threshold:
+                        patience = max(patience, iteration * patience_increase)
+                    best_validation_acc = validate_acc
+                    best_iteration = iteration
+
+                    if test_acc is not None:
+                        test_score = test_acc
+                    else:
+                        # Must have a test at best validate accuracy point
+                        # Get test loss and accuracy
+                        test_loss, test_acc, test_batches = model.validate_or_test(x_test, y_test)
+                        test_loss /= test_batches
+                        test_acc /= test_batches
+
+                        message('Test Point: Epoch {} Iteration {}'.format(epoch, iteration))
+                        message('Test Loss:', test_loss),
+                        message('#Test accuracy:', test_acc)
+                        test_score = test_acc
+
+            if iteration >= patience:
+                break
+
+        message("Epoch {} of {} took {:.3f}s".format(
+            epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
+        if iteration >= patience:
+            break
+
+    episode_final_message(best_validation_acc, best_iteration, test_score, start_time)
 
 
 def train_actor_critic_MNIST():

@@ -50,7 +50,7 @@
         "add_learning_rate": false,
 
         "immediate_reward": false,
-        "immediate_reward_sample_size": 1000,
+        "immediate_reward_sample_size": 10000,
 
         "speed_reward": false,
         "speed_reward_threshold": 0.8,
@@ -70,6 +70,9 @@
         // Use cost gap before and after update as immediate reward
         // Another immediate reward is the accuracy of sampled validation set
         "cost_gap_AC_reward": true,
+
+        // Update actor and critic frequency
+        "AC_update_freq": 100,
 
         /// Self-paced learning configurations
         "epoch_update": false,

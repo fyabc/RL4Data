@@ -379,37 +379,39 @@ def train_actor_critic_CIFAR10():
                 history_train_loss += part_train_err
                 train_batches += 1
 
-                # Get immediate reward
-                if PolicyConfig['cost_gap_AC_reward']:
-                    cost_old = part_train_err
-                    cost_new = model.f_cost_without_decay(inputs, targets)
-                    imm_reward = cost_old - cost_new
-                else:
-                    valid_part_x, valid_part_y = get_part_data(
-                        np.asarray(x_validate), np.asarray(y_validate), PolicyConfig['immediate_reward_sample_size'])
-                    _, valid_err, validate_batches = model.validate_or_test(valid_part_x, valid_part_y)
-                    imm_reward = valid_err / validate_batches
+                if iteration % PolicyConfig['AC_update_freq'] == 0:
+                    # Get immediate reward
+                    if PolicyConfig['cost_gap_AC_reward']:
+                        cost_old = part_train_err
+                        cost_new = model.f_cost_without_decay(inputs, targets)
+                        imm_reward = cost_old - cost_new
+                    else:
+                        valid_part_x, valid_part_y = get_part_data(
+                            np.asarray(x_validate), np.asarray(y_validate), PolicyConfig['immediate_reward_sample_size'])
+                        _, valid_err, validate_batches = model.validate_or_test(valid_part_x, valid_part_y)
+                        imm_reward = valid_err / validate_batches
 
-                # Get new state, new actions, and compute new Q value
-                probability_new = model.get_policy_input(inputs, targets, epoch, history_accuracy)
-                actions_new = actor.take_action(probability_new, log_replay=False)
+                    # Get new state, new actions, and compute new Q value
+                    probability_new = model.get_policy_input(inputs, targets, epoch, history_accuracy)
+                    actions_new = actor.take_action(probability_new, log_replay=False)
 
-                Q_value_new = critic.Q_function(state=probability_new, action=actions_new)
-                if epoch < ParamConfig['epoch_per_episode'] - 1:
-                    label = PolicyConfig['actor_gamma'] * Q_value_new + imm_reward
-                else:
-                    label = imm_reward
+                    Q_value_new = critic.Q_function(state=probability_new, action=actions_new)
+                    if epoch < ParamConfig['epoch_per_episode'] - 1:
+                        label = PolicyConfig['actor_gamma'] * Q_value_new + imm_reward
+                    else:
+                        label = imm_reward
 
-                # Update the critic Q network
-                Q_loss = critic.update(probability, actions, floatX(label))
+                    # Update the critic Q network
+                    Q_loss = critic.update(probability, actions, floatX(label))
 
-                # Update actor network
-                actor_loss = actor.update_raw(probability, actions,
-                                              np.full(actions.shape, label, dtype=probability.dtype))
+                    # Update actor network
+                    actor_loss = actor.update_raw(probability, actions,
+                                                  np.full(actions.shape, label, dtype=probability.dtype))
 
-                if iteration % ParamConfig['display_freq'] == 0:
-                    message('Epoch {}\tIteration {}\tCost {}\tCritic loss {}\tActor loss {}'
-                            .format(epoch, iteration, part_train_err, Q_loss, actor_loss))
+                    if PolicyConfig['AC_update_freq'] >= ParamConfig['display_freq'] or \
+                       iteration % ParamConfig['display_freq'] == 0:
+                        message('Epoch {}\tIteration {}\tCost {}\tCritic loss {}\tActor loss {}'
+                                .format(epoch, iteration, part_train_err, Q_loss, actor_loss))
 
             if model_name == CIFARModel:
                 if (epoch + 1) in (41, 61):

@@ -583,7 +583,7 @@ def train_actor_critic_IMDB():
         history_errs = []
         best_parameters = None
         bad_counter = 0
-        update_index = 0  # the number of update done
+        iteration = 0  # the number of update done
         early_stop = False  # early stop
         epoch = 0
         history_accuracy = []
@@ -606,7 +606,7 @@ def train_actor_critic_IMDB():
                     if len(train_index) < model.train_batch_size:
                         continue
 
-                    update_index += 1
+                    iteration += 1
 
                     # IMDB set noise before each batch
                     model.use_noise.set_value(floatX(1.))
@@ -636,50 +636,53 @@ def train_actor_critic_IMDB():
                     # Update the IMDB network with selected data
                     cost = model.f_train(x_selected, mask_selected, y_selected)
 
-                    # Get immediate reward
-                    if PolicyConfig['cost_gap_AC_reward']:
-                        cost_old = cost
-                        cost_new = model.f_cost(x, mask, y)
-                        imm_reward = cost_old - cost_new
-                    else:
-                        valid_part_x, valid_part_y = get_part_data(
-                            np.asarray(valid_x), np.asarray(valid_y), PolicyConfig['immediate_reward_sample_size'])
-                        valid_err = model.predict_error(valid_part_x, valid_part_y, kf_valid_part)
-                        imm_reward = 1. - valid_err
+                    if iteration % PolicyConfig['AC_update_freq'] == 0:
+                        # Get immediate reward
+                        if PolicyConfig['cost_gap_AC_reward']:
+                            cost_old = cost
+                            cost_new = model.f_cost(x, mask, y)
+                            imm_reward = cost_old - cost_new
+                        else:
+                            valid_part_x, valid_part_y = get_part_data(
+                                np.asarray(valid_x), np.asarray(valid_y), PolicyConfig['immediate_reward_sample_size'])
+                            valid_err = model.predict_error(valid_part_x, valid_part_y, kf_valid_part)
+                            imm_reward = 1. - valid_err
 
-                    # Get new state, new actions, and compute new Q value
-                    probability_new = model.get_policy_input(x, mask, y, epoch, history_accuracy)
-                    actions_new = actor.take_action(probability_new, log_replay=False)
+                        # Get new state, new actions, and compute new Q value
+                        probability_new = model.get_policy_input(x, mask, y, epoch, history_accuracy)
+                        actions_new = actor.take_action(probability_new, log_replay=False)
 
-                    Q_value_new = critic.Q_function(state=probability_new, action=actions_new)
-                    if epoch < ParamConfig['epoch_per_episode'] - 1:
-                        label = PolicyConfig['actor_gamma'] * Q_value_new + imm_reward
-                    else:
-                        label = imm_reward
+                        Q_value_new = critic.Q_function(state=probability_new, action=actions_new)
+                        if epoch < ParamConfig['epoch_per_episode'] - 1:
+                            label = PolicyConfig['actor_gamma'] * Q_value_new + imm_reward
+                        else:
+                            label = imm_reward
 
-                    # Update the critic Q network
-                    Q_loss = critic.update(probability, actions, floatX(label))
+                        # Update the critic Q network
+                        Q_loss = critic.update(probability, actions, floatX(label))
 
-                    # Update actor network
-                    actor_loss = actor.update_raw(probability, actions,
-                                                  np.full(actions.shape, label, dtype=probability.dtype))
+                        # Update actor network
+                        actor_loss = actor.update_raw(probability, actions,
+                                                      np.full(actions.shape, label, dtype=probability.dtype))
+
+                        if PolicyConfig['AC_update_freq'] >= display_freq or iteration % display_freq == 0:
+                            message('\tCritic Q network loss', Q_loss, end='')
+                            message('\tActor network loss', actor_loss)
 
                     if cost is not None and (np.isnan(cost) or np.isinf(cost)):
                         message('bad cost detected: ', cost)
                         return 1., 1., 1.
 
-                    if update_index % display_freq == 0:
-                        message('Epoch', epoch, '\tUpdate', update_index, '\tCost', cost, end='')
-                        message('\tCritic Q network loss', Q_loss, end='')
-                        message('\tActor network loss', actor_loss)
+                    if iteration % display_freq == 0:
+                        message('Epoch', epoch, '\tUpdate', iteration, '\tCost', cost, end='')
 
                     # Do not save when training policy!
 
-                    if update_index % ParamConfig['train_loss_freq'] == 0:
+                    if iteration % ParamConfig['train_loss_freq'] == 0:
                         train_loss = model.get_training_loss(train_x, train_y)
                         message('Training Loss:', train_loss)
 
-                    if update_index % valid_freq == 0:
+                    if iteration % valid_freq == 0:
                         model.use_noise.set_value(0.)
                         # train_err = model.predict_error(train_x, train_y, kf)
                         valid_err = model.predict_error(valid_x, valid_y, kf_valid)
