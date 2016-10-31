@@ -45,8 +45,8 @@ def pre_process_config(model, train_size):
 
     # go through this many minibatches before checking the network
     # on the validation set; in this case we check every epoch
-    validation_frequency = min(train_size // model.train_batch_size, patience // 2)
-    # validation_frequency = 1
+    # validation_frequency = min(train_size // model.train_batch_size, patience // 2)
+    validation_frequency = ParamConfig['valid_freq']
 
     return patience, patience_increase, improvement_threshold, validation_frequency
 
@@ -104,6 +104,8 @@ def train_raw_MNIST():
     # Some variables
     # Iteration (number of batches)
     iteration = 0
+    # Validation point iteration
+    validate_point_number = 0
 
     total_accepted_cases = 0
 
@@ -136,9 +138,10 @@ def train_raw_MNIST():
             train_batches += 1
 
             if iteration % validation_frequency == 0:
+                validate_point_number += 1
                 validate_acc, test_acc = validate_point_message(
                     model, x_train, y_train, x_validate, y_validate, x_test, y_test,
-                    history_train_loss, train_batches, total_accepted_cases, epoch, iteration)
+                    history_train_loss, train_batches, total_accepted_cases, epoch, iteration, validate_point_number)
                 # if we got the best validation score until now
                 if validate_acc > best_validation_acc:
                     # improve patience if loss improvement is good enough
@@ -300,80 +303,125 @@ def train_SPL_MNIST():
 def train_policy_MNIST():
     model = MNISTModel()
 
+    # Create the policy network
+    input_size = MNISTModel.get_policy_input_size()
+    print('Input size of policy network:', input_size)
+    policy = PolicyNetwork(input_size=input_size)
+
     # Load the dataset and config
     x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size = pre_process_data()
     patience, patience_increase, improvement_threshold, validation_frequency = pre_process_config(model, train_size)
 
     # Train the network
-    # Some variables
-    # Iteration (number of batches)
-    iteration = 0
-
-    total_accepted_cases = 0
-
-    best_validation_acc = -np.inf
-    best_iteration = 0
-    test_score = 0.
-    start_time = time.time()
-
-    for epoch in range(ParamConfig['epoch_per_episode']):
-        print('[Epoch {}]'.format(epoch))
-        message('[Epoch {}]'.format(epoch))
+    for episode in range(PolicyConfig['num_episodes']):
+        # Some variables
+        # Iteration (number of batches)
+        iteration = 0
+        # Validation point iteration
+        validate_point_number = 0
 
         total_accepted_cases = 0
-        history_train_loss = 0
-        train_batches = 0
-        epoch_start_time = time.time()
 
-        kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
+        # Speed reward
+        first_over_iteration = None
 
-        for _, train_index in kf:
-            iteration += 1
+        best_validation_acc = -np.inf
+        best_iteration = 0
+        test_score = 0.
+        start_time = time.time()
 
-            inputs, targets = x_train[train_index], y_train[train_index]
+        for epoch in range(ParamConfig['epoch_per_episode']):
+            print('[Epoch {}]'.format(epoch))
+            message('[Epoch {}]'.format(epoch))
 
-            total_accepted_cases += len(inputs)
+            total_accepted_cases = 0
+            history_train_loss = 0
+            train_batches = 0
+            epoch_start_time = time.time()
 
-            part_train_cost = model.f_train(inputs, targets)
-            history_train_loss += part_train_cost
+            kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
 
-            train_batches += 1
+            policy.start_new_epoch()
 
-            if iteration % validation_frequency == 0:
-                validate_acc, test_acc = validate_point_message(
-                    model, x_train, y_train, x_validate, y_validate, x_test, y_test,
-                    history_train_loss, train_batches, total_accepted_cases, epoch, iteration)
-                # if we got the best validation score until now
-                if validate_acc > best_validation_acc:
-                    # improve patience if loss improvement is good enough
-                    if (1. - validate_acc) < (1. - best_validation_acc) * improvement_threshold:
-                        patience = max(patience, iteration * patience_increase)
-                    best_validation_acc = validate_acc
-                    best_iteration = iteration
+            for _, train_index in kf:
+                iteration += 1
 
-                    if test_acc is not None:
-                        test_score = test_acc
-                    else:
-                        # Must have a test at best validate accuracy point
-                        # Get test loss and accuracy
-                        test_loss, test_acc, test_batches = model.validate_or_test(x_test, y_test)
-                        test_loss /= test_batches
-                        test_acc /= test_batches
+                inputs, targets = x_train[train_index], y_train[train_index]
 
-                        message('Test Point: Epoch {} Iteration {}'.format(epoch, iteration))
-                        message('Test Loss:', test_loss),
-                        message('#Test accuracy:', test_acc)
-                        test_score = test_acc
+                total_accepted_cases += len(inputs)
+
+                part_train_cost = model.f_train(inputs, targets)
+                history_train_loss += part_train_cost
+
+                train_batches += 1
+
+                if ParamConfig['train_loss_freq'] > 0 and iteration % ParamConfig['train_loss_freq'] == 0:
+                    train_loss = model.get_training_loss(x_train, y_train)
+                    message('Training Loss:', train_loss)
+
+                if iteration % validation_frequency == 0:
+                    validate_point_number += 1
+                    validate_acc, test_acc = validate_point_message(
+                        model, x_train, y_train, x_validate, y_validate, x_test, y_test,
+                        history_train_loss, train_batches, total_accepted_cases, epoch, iteration, validate_point_number)
+                    # if we got the best validation score until now
+                    if validate_acc > best_validation_acc:
+                        # improve patience if loss improvement is good enough
+                        if (1. - validate_acc) < (1. - best_validation_acc) * improvement_threshold:
+                            patience = max(patience, iteration * patience_increase)
+                        best_validation_acc = validate_acc
+                        best_iteration = iteration
+
+                        if test_acc is not None:
+                            test_score = test_acc
+                        else:
+                            # Must have a test at best validate accuracy point
+                            # Get test loss and accuracy
+                            test_loss, test_acc, test_batches = model.validate_or_test(x_test, y_test)
+                            test_loss /= test_batches
+                            test_acc /= test_batches
+
+                            message('Test Point: Epoch {} Iteration {}'.format(epoch, iteration))
+                            message('Test Loss:', test_loss),
+                            message('#Test accuracy:', test_acc)
+                            test_score = test_acc
+
+                    # Check speed rewards
+                    if first_over_iteration is None and validate_acc >= PolicyConfig['speed_reward_threshold']:
+                        first_over_iteration = iteration
+
+                if iteration >= patience:
+                    break
+
+            message("Epoch {} of {} took {:.3f}s".format(
+                epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
+
+            # Immediate reward
+            if PolicyConfig['immediate_reward']:
+                validate_acc = model.get_test_acc(x_validate, y_validate)
+                policy.reward_buffer.append(validate_acc)
 
             if iteration >= patience:
                 break
 
-        message("Epoch {} of {} took {:.3f}s".format(
-            epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
-        if iteration >= patience:
-            break
+        episode_final_message(best_validation_acc, best_iteration, test_score, start_time)
 
-    episode_final_message(best_validation_acc, best_iteration, test_score, start_time)
+        # Updating policy
+        if PolicyConfig['speed_reward']:
+            if first_over_iteration is None:
+                first_over_iteration = iteration + 1
+            terminal_reward = float(first_over_iteration) / iteration
+            policy.update(-np.log(terminal_reward))
+
+            message('First over index:', first_over_iteration)
+            message('Total index:', iteration)
+            message('Terminal reward:', terminal_reward)
+        else:
+            validate_acc = model.get_test_acc(x_validate, y_validate)
+            policy.update(validate_acc)
+
+        if Config['policy_save_freq'] > 0 and episode % Config['policy_save_freq'] == 0:
+            policy.save_policy()
 
 
 def train_actor_critic_MNIST():

@@ -410,13 +410,13 @@ def train_policy_IMDB():
         history_errs = []
         best_parameters = None
         bad_counter = 0
-        update_index = 0  # the number of update done
+        iteration = 0  # the number of update done
         early_stop = False  # early stop
         epoch = 0
         history_accuracy = []
 
         # Speed reward
-        first_over_index = None
+        first_over_iteration = None
 
         start_time = time.time()
 
@@ -435,7 +435,7 @@ def train_policy_IMDB():
                 policy.start_new_epoch()
 
                 for _, train_index in kf:
-                    update_index += 1
+                    iteration += 1
                     model.use_noise.set_value(floatX(1.))
 
                     # Select the random examples for this minibatch
@@ -466,16 +466,16 @@ def train_policy_IMDB():
                         message('bad cost detected: ', cost)
                         return 1., 1., 1.
 
-                    if update_index % display_freq == 0:
-                        message('Epoch ', epoch, 'Update ', update_index, 'Cost ', cost)
+                    if iteration % display_freq == 0:
+                        message('Epoch ', epoch, 'Update ', iteration, 'Cost ', cost)
 
                     # Do not save when training policy!
 
-                    if update_index % ParamConfig['train_loss_freq'] == 0:
+                    if iteration % ParamConfig['train_loss_freq'] == 0:
                         train_loss = model.get_training_loss(train_x, train_y)
                         message('Training Loss:', train_loss)
 
-                    if update_index % valid_freq == 0:
+                    if iteration % valid_freq == 0:
                         model.use_noise.set_value(0.)
                         # train_err = model.predict_error(train_x, train_y, kf)
                         valid_err = model.predict_error(valid_x, valid_y, kf_valid)
@@ -485,8 +485,8 @@ def train_policy_IMDB():
                         history_accuracy.append(1. - valid_err)
 
                         # Check speed rewards
-                        if first_over_index is None and 1. - valid_err >= PolicyConfig['speed_reward_threshold']:
-                            first_over_index = update_index
+                        if first_over_iteration is None and 1. - valid_err >= PolicyConfig['speed_reward_threshold']:
+                            first_over_iteration = iteration
 
                         if best_parameters is None or valid_err <= np.array(history_errs)[:, 0].min():
                             best_parameters = model.get_parameter_values()
@@ -528,13 +528,13 @@ def train_policy_IMDB():
 
         # Updating policy
         if PolicyConfig['speed_reward']:
-            if first_over_index is None:
-                first_over_index = update_index + 1
-            terminal_reward = float(first_over_index) / update_index
+            if first_over_iteration is None:
+                first_over_iteration = iteration + 1
+            terminal_reward = float(first_over_iteration) / iteration
             policy.update(-np.log(terminal_reward))
 
-            message('First over index:', first_over_index)
-            message('Total index:', update_index)
+            message('First over index:', first_over_iteration)
+            message('Total index:', iteration)
             message('Terminal reward:', terminal_reward)
         else:
             policy.update(1. - valid_err)

@@ -226,7 +226,7 @@ def train_policy_CIFAR10():
     message('Test data size:', y_test.shape[0])
 
     # Train the network
-    for episode in range(1, PolicyConfig['num_episodes'] + 1):
+    for episode in range(PolicyConfig['num_episodes']):
         print('[Episode {}]'.format(episode))
         message('[Episode {}]'.format(episode))
 

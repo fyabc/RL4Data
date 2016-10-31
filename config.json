@@ -167,6 +167,9 @@
         "dataset": "mnist",
         "data_dir": "./data/mnist/mnist.pkl.gz",
 
+        "valid_freq": 2500,
+        "train_loss_freq": 0,
+
         "train_small_size": null,
 
         "epoch_per_episode": 1000,
