@@ -87,7 +87,7 @@ def validate_point_message(model, x_train, y_train, x_validate, y_validate, x_te
 
 def episode_final_message(best_validation_acc, best_iteration, test_score, start_time):
     message('$Final results:')
-    message('$  best test accuracy:\t\t{:.2f} %'.format(test_score * 100.0))
+    message('$  best test accuracy:\t\t{} %'.format((test_score * 100.0) if test_score is not None else None))
     message('$  best validation accuracy: {}'.format(best_validation_acc))
     message('$  obtained at iteration {}'.format(best_iteration))
     message('$  Time passed: {:.2f}s'.format(time.time() - start_time))
@@ -317,6 +317,13 @@ def train_policy_MNIST():
         print('[Episode {}]'.format(episode))
         message('[Episode {}]'.format(episode))
 
+        model.reset_parameters()
+
+        # get small training data
+        x_train_small, y_train_small = get_part_data(x_train, y_train, ParamConfig['train_small_size'])
+        train_small_size = len(x_train_small)
+        message('Training small size:', train_small_size)
+
         # Some variables
         # Iteration (number of batches)
         iteration = 0
@@ -344,14 +351,14 @@ def train_policy_MNIST():
             train_batches = 0
             epoch_start_time = time.time()
 
-            kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
+            kf = get_minibatches_idx(train_small_size, model.train_batch_size, shuffle=True)
 
             policy.start_new_epoch()
 
             for _, train_index in kf:
                 iteration += 1
 
-                inputs, targets = x_train[train_index], y_train[train_index]
+                inputs, targets = x_train_small[train_index], y_train_small[train_index]
 
                 probability = model.get_policy_input(inputs, targets, epoch, history_accuracy)
                 actions = policy.take_action(probability)
@@ -369,12 +376,12 @@ def train_policy_MNIST():
 
                 if ParamConfig['train_loss_freq'] > 0 and iteration % ParamConfig['train_loss_freq'] == 0:
                     train_loss = model.get_training_loss(x_train, y_train)
-                    message('Training Loss:', train_loss)
+                    message('Training Loss (Full training set):', train_loss)
 
                 if iteration % validation_frequency == 0:
                     validate_point_number += 1
                     validate_acc, test_acc = validate_point_message(
-                        model, x_train, y_train, x_validate, y_validate, x_test, y_test,
+                        model, x_train_small, y_train_small, x_validate, y_validate, x_test, y_test,
                         history_train_loss, train_batches, total_accepted_cases, epoch, iteration, validate_point_number)
                     history_accuracy.append(validate_acc)
 
@@ -456,6 +463,13 @@ def train_actor_critic_MNIST():
         print('[Episode {}]'.format(episode))
         message('[Episode {}]'.format(episode))
 
+        model.reset_parameters()
+
+        # get small training data
+        x_train_small, y_train_small = get_part_data(x_train, y_train, ParamConfig['train_small_size'])
+        train_small_size = len(x_train_small)
+        message('Training small size:', train_small_size)
+
         # Some variables
         # Iteration (number of batches)
         iteration = 0
@@ -480,25 +494,25 @@ def train_actor_critic_MNIST():
             train_batches = 0
             epoch_start_time = time.time()
 
-            kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
+            kf = get_minibatches_idx(train_small_size, model.train_batch_size, shuffle=True)
 
             actor.start_new_epoch()
 
             for _, train_index in kf:
                 iteration += 1
 
-                inputs, targets = x_train[train_index], y_train[train_index]
+                inputs, targets = x_train_small[train_index], y_train_small[train_index]
 
                 probability = model.get_policy_input(inputs, targets, epoch, history_accuracy)
                 actions = actor.take_action(probability)
 
                 # get masked inputs and targets
-                inputs = inputs[actions]
-                targets = targets[actions]
+                inputs_selected = inputs[actions]
+                targets_selected = targets[actions]
 
-                total_accepted_cases += len(inputs)
+                total_accepted_cases += len(inputs_selected)
 
-                part_train_cost = model.f_train(inputs, targets)
+                part_train_cost = model.f_train(inputs_selected, targets_selected)
                 history_train_loss += part_train_cost
 
                 train_batches += 1
@@ -537,10 +551,14 @@ def train_actor_critic_MNIST():
                         message('Epoch {}\tIteration {}\tCost {}\tCritic loss {}\tActor loss {}'
                                 .format(epoch, iteration, part_train_cost, Q_loss, actor_loss))
 
+                if ParamConfig['train_loss_freq'] > 0 and iteration % ParamConfig['train_loss_freq'] == 0:
+                    train_loss = model.get_training_loss(x_train, y_train)
+                    message('Training Loss (Full training set):', train_loss)
+
                 if iteration % validation_frequency == 0:
                     validate_point_number += 1
                     validate_acc, test_acc = validate_point_message(
-                        model, x_train, y_train, x_validate, y_validate, x_test, y_test,
+                        model, x_train_small, y_train_small, x_validate, y_validate, x_test, y_test,
                         history_train_loss, train_batches, total_accepted_cases, epoch, iteration, validate_point_number)
                     history_accuracy.append(validate_acc)
 
