@@ -442,7 +442,7 @@ def train_policy_MNIST():
             policy.update(validate_acc)
 
         if Config['policy_save_freq'] > 0 and episode % Config['policy_save_freq'] == 0:
-            policy.save_policy()
+            policy.save_policy('episode{}_{}'.format(episode, Config['policy_model_file']))
 
 
 def train_actor_critic_MNIST():
@@ -598,7 +598,7 @@ def train_actor_critic_MNIST():
         actor.update(validate_acc)
 
         if Config['policy_save_freq'] > 0 and episode % Config['policy_save_freq'] == 0:
-            actor.save_policy()
+            actor.save_policy('episode{}_{}'.format(episode, Config['policy_model_file']))
 
 
 def test_policy_MNIST():
