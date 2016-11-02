@@ -167,6 +167,8 @@
         "dataset": "mnist",
         "data_dir": "./data/mnist/mnist.pkl.gz",
 
+        "random_drop_number_file": "./data/mnist/drop_num.txt",
+
         "valid_freq": 2500,
         "train_loss_freq": 0,
         "display_freq": 100,
