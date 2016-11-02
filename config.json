@@ -188,6 +188,6 @@
         "improvement_threshold": 0.995,
 
         // 0 means do not test at validate point
-        "test_per_point": 0
+        "test_per_point": 1
     }
 }

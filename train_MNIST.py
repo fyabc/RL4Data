@@ -252,18 +252,18 @@ def train_SPL_MNIST():
 
                 part_train_cost = model.f_train(inputs_selected, targets_selected)
 
+                train_batches += 1
+                history_train_loss += part_train_cost
+
                 # message('done')
             else:
                 part_train_cost = None
 
-            train_batches += 1
-
             # # In SPL, display after each update
-            # if iteration % validation_frequency == 0:
-            if part_train_cost is not None:
+            if iteration % validation_frequency == 0:
+            # if part_train_cost is not None:
                 validate_point_number += 1
 
-                history_train_loss += part_train_cost
                 validate_acc, test_acc = validate_point_message(
                     model, x_train, y_train, x_validate, y_validate, x_test, y_test,
                     history_train_loss, train_batches, total_accepted_cases, epoch, iteration, validate_point_number)
