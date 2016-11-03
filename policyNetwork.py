@@ -178,7 +178,7 @@ class PolicyNetwork(object):
         self.clear_buffer()
 
         # This may useless?
-        if False:
+        if PolicyConfig['reward_baseline']:
             self.update_rb(final_reward)
 
         message('Cost: {}\n'

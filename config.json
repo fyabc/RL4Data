@@ -59,10 +59,12 @@
         "policy_learning_rate": 0.02,
         "policy_learning_rate_discount": 0.7,
         "policy_learning_rate_discount_freq": 50,
-        "reward_baseline_update_rate": 0.1,
 
         "gamma": 0.9,
         "b_init": 2.0,
+
+        "reward_baseline": true,
+        "reward_baseline_update_rate": 0.8,
 
         /// Actor-Critic configurations
         "actor_gamma": 1.0,
