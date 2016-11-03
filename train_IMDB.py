@@ -804,7 +804,7 @@ def test_policy_IMDB():
                             rate = 1.
                         else:
                             rate = 1. - float(random_drop_numbers[random_drop_index]) / (
-                                valid_freq * model.train_batch_size),
+                                valid_freq * model.train_batch_size)
 
                         actions = np.random.binomial(1, rate, y.shape).astype(bool)
 
