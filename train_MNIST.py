@@ -675,8 +675,6 @@ def test_policy_MNIST():
                 inputs = inputs[actions]
                 targets = targets[actions]
 
-                history_train_loss += model.f_train(inputs, targets)
-
             total_accepted_cases += len(inputs)
 
             part_train_cost = model.f_train(inputs, targets)
