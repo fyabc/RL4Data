@@ -308,8 +308,8 @@ def train_policy_CIFAR10():
             policy.update(validate_acc)
 
         if Config['policy_save_freq'] > 0 and episode % Config['policy_save_freq'] == 0:
+            policy.save_policy(Config['policy_model_file'].replace('.npz', '_ep{}.npz'.format(episode)))
             policy.save_policy()
-
 
 def train_actor_critic_CIFAR10():
     model_name = eval(ParamConfig['model_name'])
@@ -437,8 +437,8 @@ def train_actor_critic_CIFAR10():
         actor.update(validate_acc)
 
         if Config['policy_save_freq'] > 0 and episode % Config['policy_save_freq'] == 0:
+            actor.save_policy(Config['policy_model_file'].replace('.npz', '_ep{}.npz'.format(episode)))
             actor.save_policy()
-
 
 def test_policy_CIFAR10():
     model_name = eval(ParamConfig['model_name'])

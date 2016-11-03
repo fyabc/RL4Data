@@ -540,6 +540,7 @@ def train_policy_IMDB():
             policy.update(1. - valid_err)
 
         if Config['policy_save_freq'] > 0 and episode % Config['policy_save_freq'] == 0:
+            policy.save_policy(Config['policy_model_file'].replace('.npz', '_ep{}.npz'.format(episode)))
             policy.save_policy()
 
 
@@ -715,6 +716,7 @@ def train_actor_critic_IMDB():
         end_time = time.time()
 
         if Config['policy_save_freq'] > 0 and episode % Config['policy_save_freq'] == 0:
+            actor.save_policy(Config['policy_model_file'].replace('.npz', '_ep{}.npz'.format(episode)))
             actor.save_policy()
 
         train_err, valid_err, test_err = test_and_post_process(

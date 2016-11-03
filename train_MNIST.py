@@ -443,6 +443,7 @@ def train_policy_MNIST():
 
         if Config['policy_save_freq'] > 0 and episode % Config['policy_save_freq'] == 0:
             policy.save_policy(Config['policy_model_file'].replace('.npz', '_ep{}.npz'.format(episode)))
+            policy.save_policy()
 
 
 def train_actor_critic_MNIST():
@@ -599,6 +600,7 @@ def train_actor_critic_MNIST():
 
         if Config['policy_save_freq'] > 0 and episode % Config['policy_save_freq'] == 0:
             actor.save_policy(Config['policy_model_file'].replace('.npz', '_ep{}.npz'.format(episode)))
+            actor.save_policy()
 
 
 def test_policy_MNIST():
