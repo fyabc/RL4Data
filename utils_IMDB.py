@@ -183,17 +183,23 @@ def ortho_weight(ndim):
 
 
 def test():
-    train_data, valid_data, test_data = load_imdb_data()
+    train_data, valid_data, test_data = load_imdb_data(maxlen=1000)
     train_x, train_y = train_data
     valid_x, valid_y = valid_data
     test_x, test_y = test_data
 
-    print('Train:', np.asarray(train_x).shape, np.asarray(train_y).shape)
-    print('Valid:', np.asarray(valid_x).shape, np.asarray(valid_y).shape)
-    print('Test:', np.asarray(test_x).shape, np.asarray(test_y).shape)
+    train_x = np.asarray(train_x)
+    train_y = np.asarray(train_y)
+    valid_x = np.asarray(valid_x)
+    valid_y = np.asarray(valid_y)
+    test_x = np.asarray(test_x)
+    test_y = np.asarray(test_y)
 
-    for i in range(20):
-        print(train_x[i], train_y[i])
+    print('Train:', train_x.shape, train_y.shape)
+    print('Valid:', valid_x.shape, valid_y.shape)
+    print('Test:', test_x.shape, test_y.shape)
+
+    print(sum(train_y), sum(valid_y), sum(test_y))
 
 
 if __name__ == '__main__':
