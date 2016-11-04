@@ -175,6 +175,10 @@ def train_raw_IMDB():
                 if update_index % ParamConfig['train_loss_freq'] == 0:
                     train_loss = model.get_training_loss(train_x, train_y)
                     message('Training Loss:', train_loss)
+                    valid_loss = model.get_training_loss(valid_x, valid_y)
+                    message('Validate Loss:', valid_loss)
+                    test_loss = model.get_training_loss(test_x, test_y)
+                    message('Test Loss:', test_loss)
 
                 if update_index % valid_freq == 0:
                     model.use_noise.set_value(0.)
@@ -331,6 +335,10 @@ def train_SPL_IMDB():
                 if iteration % ParamConfig['train_loss_freq'] == 0:
                     train_loss = model.get_training_loss(train_x, train_y)
                     message('Training Loss:', train_loss)
+                    valid_loss = model.get_training_loss(valid_x, valid_y)
+                    message('Validate Loss:', valid_loss)
+                    test_loss = model.get_training_loss(test_x, test_y)
+                    message('Test Loss:', test_loss)
 
                 if iteration % valid_freq == 0:
                     model.use_noise.set_value(0.)
@@ -762,7 +770,7 @@ def test_policy_IMDB():
     history_errs = []
     best_parameters = None
     bad_counter = 0
-    update_index = 0  # the number of update done
+    iteration = 0  # the number of update done
     early_stop = False  # early stop
     epoch = 0
     history_accuracy = []
@@ -781,7 +789,7 @@ def test_policy_IMDB():
             kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
 
             for _, train_index in kf:
-                update_index += 1
+                iteration += 1
                 model.use_noise.set_value(floatX(1.))
 
                 # Select the random examples for this minibatch
@@ -824,17 +832,21 @@ def test_policy_IMDB():
                     message('bad cost detected: ', cost)
                     return 1., 1., 1.
 
-                if update_index % display_freq == 0:
-                    message('Epoch ', epoch, 'Update ', update_index, 'Cost ', cost)
+                if iteration % display_freq == 0:
+                    message('Epoch ', epoch, 'Update ', iteration, 'Cost ', cost)
 
-                if save_to and update_index % save_freq == 0:
+                if save_to and iteration % save_freq == 0:
                     save_parameters(model, best_parameters, save_to, history_errs)
 
-                if update_index % ParamConfig['train_loss_freq'] == 0:
+                if iteration % ParamConfig['train_loss_freq'] == 0:
                     train_loss = model.get_training_loss(train_x, train_y)
                     message('Training Loss:', train_loss)
+                    valid_loss = model.get_training_loss(valid_x, valid_y)
+                    message('Validate Loss:', valid_loss)
+                    test_loss = model.get_training_loss(test_x, test_y)
+                    message('Test Loss:', test_loss)
 
-                if update_index % valid_freq == 0:
+                if iteration % valid_freq == 0:
                     model.use_noise.set_value(0.)
                     # train_err = model.predict_error(train_x, train_y, kf)
                     valid_err = model.predict_error(valid_x, valid_y, kf_valid)
