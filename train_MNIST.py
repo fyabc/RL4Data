@@ -93,6 +93,43 @@ def episode_final_message(best_validation_acc, best_iteration, test_score, start
     message('$  Time passed: {:.2f}s'.format(time.time() - start_time))
 
 
+class BatchUpdater(object):
+    def __init__(self, batch_size, f_train, *all_data):
+        self.batch_size = batch_size
+
+        # Data buffer.
+        self.buffer = deque()
+
+        # Train function of the model.
+        self.f_train = f_train
+
+        # Data. (a tuple, elements are x, y, ...)
+        self.all_data = all_data
+
+        self.train_batches = 0
+        self.total_accepted_cases = 0
+
+    def start_new_epoch(self):
+        self.train_batches = 0
+        self.total_accepted_cases = 0
+
+    def train_batch_buffer(self):
+        update_batch_index = [self.buffer.popleft() for _ in range(self.batch_size)]
+
+        # Get masked inputs and targets
+        selected_batch_data = [data[update_batch_index] for data in self.all_data]
+
+        part_train_cost = self.f_train(*selected_batch_data)
+
+        self.total_accepted_cases += len(selected_batch_data[0])
+        self.train_batches += 1
+
+        return part_train_cost
+
+    def add_batch(self):
+        pass
+
+
 def train_raw_MNIST():
     model = MNISTModel()
 
