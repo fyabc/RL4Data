@@ -4,12 +4,13 @@
 from __future__ import print_function, unicode_literals
 
 from collections import deque
+import heapq
 
 import numpy as np
 
 
 class BatchUpdater(object):
-    def __init__(self, model, *all_data):
+    def __init__(self, model, all_data):
         self.batch_size = model.train_batch_size
 
         # Data buffer.
@@ -47,7 +48,7 @@ class BatchUpdater(object):
         ----------
         batch_index: list of int
             a batch of indices in all_data.
-        args: some args
+        args: a list of some args
             other arguments required by policy or SPL.
             args[0]: int
                 epoch
@@ -97,22 +98,76 @@ class BatchUpdater(object):
             return None
 
 
-class DefaultUpdater(BatchUpdater):
-    def __init__(self, model, *all_data):
-        super(DefaultUpdater, self).__init__(model, *all_data)
+class RawUpdater(BatchUpdater):
+    def __init__(self, model, all_data):
+        super(RawUpdater, self).__init__(model, all_data)
 
     def filter_batch(self, batch_index, *args):
         return list(batch_index)
 
 
 class SPLUpdater(BatchUpdater):
-    def __init__(self, model, *all_data):
-        super(SPLUpdater, self).__init__(model, *all_data)
+    def __init__(self, model, all_data, epoch_per_episode):
+        """
+
+        Parameters
+        ----------
+        model
+        all_data : list
+            [NOTE]: The target must be the last one of the data list.
+        epoch_per_episode
+        """
+
+        super(SPLUpdater, self).__init__(model, all_data)
+
+        self.expected_total_iteration = epoch_per_episode * self.data_size // self.model.train_batch_size
+
+    def cost_threshold(self, iteration):
+        return 1 + (self.model.train_batch_size - 1) * iteration // self.expected_total_iteration
+
+    def filter_batch(self, batch_index, *args):
+        selected_number = self.cost_threshold(self.iteration)
+        selected_batch_data = [data[batch_index] for data in self.all_data]
+
+        targets = selected_batch_data[-1]
+
+        cost_list = self.model.f_cost_list_without_decay(*selected_batch_data)
+        label_cost_lists = [cost_list[targets == label] for label in range(self.model.output_size)]
+
+        result = []
+
+        for i, label_cost_list in enumerate(label_cost_lists):
+            if label_cost_list.size != 0:
+                threshold = heapq.nsmallest(selected_number, label_cost_list)[-1]
+                for j in range(len(targets)):
+                    if targets[j] == i and cost_list[j] <= threshold:
+                        result.append(batch_index[j])
+
+        return result
+
+
+class TrainPolicyUpdater(BatchUpdater):
+    def __init__(self, model, all_data, policy):
+        super(TrainPolicyUpdater, self).__init__(model, all_data)
+        self.policy = policy
+
+    def start_new_epoch(self):
+        super(TrainPolicyUpdater, self).start_new_epoch()
+        self.policy.start_new_epoch()
+
+    def filter_batch(self, batch_index, *args):
+        selected_batch_data = [data[batch_index] for data in self.all_data]
+        selected_batch_data.extend(args)
+
+        probability = self.model.get_policy_input(*selected_batch_data)
+        action = self.policy.take_action(probability)
+
+        return [index for i, index in enumerate(batch_index) if action[i]]
 
 
 class TestPolicyUpdater(BatchUpdater):
-    def __init__(self, model, policy, *all_data):
-        super(TestPolicyUpdater, self).__init__(model, *all_data)
+    def __init__(self, model, all_data, policy):
+        super(TestPolicyUpdater, self).__init__(model, all_data)
         self.policy = policy
 
     def filter_batch(self, batch_index, *args):
@@ -126,8 +181,8 @@ class TestPolicyUpdater(BatchUpdater):
 
 
 class RandomDropUpdater(BatchUpdater):
-    def __init__(self, model, random_drop_number_file, *all_data):
-        super(RandomDropUpdater, self).__init__(model, *all_data)
+    def __init__(self, model, all_data, random_drop_number_file):
+        super(RandomDropUpdater, self).__init__(model, all_data)
         self.random_drop_numbers = map(lambda l: int(l.strip()), list(open(random_drop_number_file, 'r')))
 
     def filter_batch(self, batch_index, *args):

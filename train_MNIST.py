@@ -213,6 +213,60 @@ def train_raw_MNIST():
     episode_final_message(best_validation_acc, best_iteration, test_score, start_time)
 
 
+def train_raw2_MNIST():
+    model = MNISTModel()
+
+    # Load the dataset and config
+    x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size = pre_process_data()
+    patience, patience_increase, improvement_threshold, validation_frequency = pre_process_config(model, train_size)
+
+    updater = RawUpdater(model, [x_train, y_train])
+
+    # Train the network
+    # Some variables
+    history_accuracy = []
+
+    best_validate_acc = -np.inf
+    best_iteration = 0
+    test_score = 0.0
+    start_time = time.time()
+
+    for epoch in range(ParamConfig['epoch_per_episode']):
+        print('[Epoch {}]'.format(epoch))
+        message('[Epoch {}]'.format(epoch))
+
+        updater.start_new_epoch()
+        epoch_start_time = time.time()
+
+        kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
+
+        for _, train_index in kf:
+            part_train_cost = updater.add_batch(train_index, epoch, history_accuracy)
+
+            if updater.total_train_batches > 0 and updater.total_train_batches % validation_frequency == 0:
+                validate_acc, test_acc = validate_point_message2(
+                    model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater)
+                history_accuracy.append(validate_acc)
+
+                if validate_acc > best_validate_acc:
+                    # improve patience if loss improvement is good enough
+                    if (1. - validate_acc) < (1. - best_validate_acc) * improvement_threshold:
+                        patience = max(patience, updater.iteration * patience_increase)
+                    best_validate_acc = validate_acc
+                    best_iteration = updater.iteration
+                    test_score = test_acc
+
+            if updater.total_train_batches >= patience:
+                break
+
+        message("Epoch {} of {} took {:.3f}s".format(
+            epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
+        if updater.iteration >= patience:
+            break
+
+    episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
+
+
 def train_SPL_MNIST():
     model = MNISTModel()
 
@@ -336,6 +390,60 @@ def train_SPL_MNIST():
             break
 
     episode_final_message(best_validation_acc, best_iteration, test_score, start_time)
+
+
+def train_SPL2_MNIST():
+    model = MNISTModel()
+
+    # Load the dataset and config
+    x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size = pre_process_data()
+    patience, patience_increase, improvement_threshold, validation_frequency = pre_process_config(model, train_size)
+
+    updater = SPLUpdater(model, [x_train, y_train], ParamConfig['epoch_per_episode'])
+
+    # Train the network
+    # Some variables
+    history_accuracy = []
+
+    best_validate_acc = -np.inf
+    best_iteration = 0
+    test_score = 0.0
+    start_time = time.time()
+
+    for epoch in range(ParamConfig['epoch_per_episode']):
+        print('[Epoch {}]'.format(epoch))
+        message('[Epoch {}]'.format(epoch))
+
+        updater.start_new_epoch()
+        epoch_start_time = time.time()
+
+        kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
+
+        for _, train_index in kf:
+            part_train_cost = updater.add_batch(train_index, epoch, history_accuracy)
+
+            if updater.total_train_batches > 0 and updater.total_train_batches % validation_frequency == 0:
+                validate_acc, test_acc = validate_point_message2(
+                    model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater)
+                history_accuracy.append(validate_acc)
+
+                if validate_acc > best_validate_acc:
+                    # improve patience if loss improvement is good enough
+                    if (1. - validate_acc) < (1. - best_validate_acc) * improvement_threshold:
+                        patience = max(patience, updater.iteration * patience_increase)
+                    best_validate_acc = validate_acc
+                    best_iteration = updater.iteration
+                    test_score = test_acc
+
+            if updater.total_train_batches >= patience:
+                break
+
+        message("Epoch {} of {} took {:.3f}s".format(
+            epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
+        if updater.iteration >= patience:
+            break
+
+    episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
 
 
 def train_policy_MNIST():
@@ -641,7 +749,10 @@ def train_actor_critic_MNIST():
             actor.save_policy()
 
 
-def test_policy2_MNIST():
+def test_policy_MNIST():
+    if Config['train_type'] == 'deterministic':
+        raise NotImplementedError('Deterministic test policy is not implemented in MNIST')
+
     model = MNISTModel()
 
     input_size = MNISTModel.get_policy_input_size()
@@ -652,7 +763,7 @@ def test_policy2_MNIST():
     patience, patience_increase, improvement_threshold, validation_frequency = pre_process_config(model, train_size)
 
     if Config['train_type'] == 'random_drop':
-        updater = RandomDropUpdater(model, ParamConfig['random_drop_number_file'], x_train, y_train)
+        updater = RandomDropUpdater(model, [x_train, y_train], ParamConfig['random_drop_number_file'])
     else:
         # Build policy
         policy = PolicyNetwork(input_size=input_size)
@@ -660,11 +771,10 @@ def test_policy2_MNIST():
         message('$    w = {}\n'
                 '$    b = {}'
                 .format(policy.W.get_value(), policy.b.get_value()))
-        updater = TestPolicyUpdater(model, policy, x_train, y_train)
+        updater = TestPolicyUpdater(model, [x_train, y_train], policy)
 
     # Train the network
     # Some variables
-    # Validation point iteration
     history_accuracy = []
 
     best_validate_acc = -np.inf
@@ -682,10 +792,7 @@ def test_policy2_MNIST():
         kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
 
         for _, train_index in kf:
-            if Config['train_type'] == 'deterministic':
-                raise NotImplementedError('Deterministic test policy is not implemented in MNIST')
-            else:
-                part_train_cost = updater.add_batch(train_index, epoch, history_accuracy)
+            part_train_cost = updater.add_batch(train_index, epoch, history_accuracy)
 
             if updater.total_train_batches > 0 and updater.total_train_batches % validation_frequency == 0:
                 validate_acc, test_acc = validate_point_message2(
@@ -724,11 +831,11 @@ if __name__ == '__main__':
         elif Config['train_type'] == 'actor_critic':
             train_actor_critic_MNIST()
         elif Config['train_type'] == 'deterministic':
-            test_policy2_MNIST()
+            test_policy_MNIST()
         elif Config['train_type'] == 'stochastic':
-            test_policy2_MNIST()
+            test_policy_MNIST()
         elif Config['train_type'] == 'random_drop':
-            test_policy2_MNIST()
+            test_policy_MNIST()
         else:
             raise Exception('Unknown train type {}'.format(Config['train_type']))
     except:
