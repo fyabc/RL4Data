@@ -687,7 +687,7 @@ def test_policy2_MNIST():
             else:
                 part_train_cost = updater.add_batch(train_index, epoch, history_accuracy)
 
-            if updater.total_train_batches % validation_frequency == 0:
+            if updater.total_train_batches > 0 and updater.total_train_batches % validation_frequency == 0:
                 validate_acc, test_acc = validate_point_message2(
                     model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater)
                 history_accuracy.append(validate_acc)
