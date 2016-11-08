@@ -641,127 +641,6 @@ def train_actor_critic_MNIST():
             actor.save_policy()
 
 
-def test_policy_MNIST():
-    model = MNISTModel()
-
-    input_size = MNISTModel.get_policy_input_size()
-    print('Input size of policy network:', input_size)
-    if Config['train_type'] == 'random_drop':
-        # Random drop configure
-        random_drop_numbers = map(lambda l: int(l.strip()), list(open(ParamConfig['random_drop_number_file'], 'r')))
-    else:
-        # Build policy
-        policy = PolicyNetwork(input_size=input_size)
-        policy.load_policy()
-        message('$    w = {}\n'
-                '$    b = {}'
-                .format(policy.W.get_value(), policy.b.get_value()))
-
-    # Load the dataset and config
-    x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size = pre_process_data()
-    patience, patience_increase, improvement_threshold, validation_frequency = pre_process_config(model, train_size)
-
-    # Train the network
-    # Some variables
-    # Iteration (number of batches)
-    iteration = 0
-    # Validation point iteration
-    validate_point_number = 0
-
-    history_accuracy = []
-
-    total_accepted_cases = 0
-
-    best_validation_acc = -np.inf
-    best_iteration = 0
-    test_score = 0.
-    start_time = time.time()
-
-    for epoch in range(ParamConfig['epoch_per_episode']):
-        print('[Epoch {}]'.format(epoch))
-        message('[Epoch {}]'.format(epoch))
-
-        total_accepted_cases = 0
-        history_train_loss = 0
-        train_batches = 0
-        epoch_start_time = time.time()
-
-        kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
-
-        for _, train_index in kf:
-            iteration += 1
-
-            inputs, targets = x_train[train_index], y_train[train_index]
-
-            probability = model.get_policy_input(inputs, targets, epoch, history_accuracy)
-
-            if Config['train_type'] == 'deterministic':
-                alpha = np.asarray([policy.output_function(prob) for prob in probability], dtype=fX)
-
-                alpha /= np.sum(alpha)
-
-                part_train_cost = model.f_alpha_train(inputs, targets, alpha)
-            else:
-                if Config['train_type'] == 'stochastic':
-                    actions = policy.take_action(probability, False)
-                elif Config['train_type'] == 'random_drop':
-                    actions = np.random.binomial(
-                        1,
-                        1 - float(random_drop_numbers[epoch]) / len(y_train),
-                        targets.shape
-                    ).astype(bool)
-
-                # get masked inputs and targets
-                inputs = inputs[actions]
-                targets = targets[actions]
-
-                part_train_cost = model.f_train(inputs, targets)
-
-            total_accepted_cases += len(inputs)
-
-            history_train_loss += part_train_cost
-
-            train_batches += 1
-
-            if iteration % validation_frequency == 0:
-                validate_point_number += 1
-                validate_acc, test_acc = validate_point_message(
-                    model, x_train, y_train, x_validate, y_validate, x_test, y_test,
-                    history_train_loss, train_batches, total_accepted_cases, epoch, iteration, validate_point_number)
-                history_accuracy.append(validate_acc)
-                # if we got the best validation score until now
-                if validate_acc > best_validation_acc:
-                    # improve patience if loss improvement is good enough
-                    if (1. - validate_acc) < (1. - best_validation_acc) * improvement_threshold:
-                        patience = max(patience, iteration * patience_increase)
-                    best_validation_acc = validate_acc
-                    best_iteration = iteration
-
-                    if test_acc is not None:
-                        test_score = test_acc
-                    else:
-                        # Must have a test at best validate accuracy point
-                        # Get test loss and accuracy
-                        test_loss, test_acc, test_batches = model.validate_or_test(x_test, y_test)
-                        test_loss /= test_batches
-                        test_acc /= test_batches
-
-                        message('Test Point: Epoch {} Iteration {}'.format(epoch, iteration))
-                        message('Test Loss:', test_loss),
-                        message('#Test accuracy:', test_acc)
-                        test_score = test_acc
-
-            if iteration >= patience:
-                break
-
-        message("Epoch {} of {} took {:.3f}s".format(
-            epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
-        if iteration >= patience:
-            break
-
-    episode_final_message(best_validation_acc, best_iteration, test_score, start_time)
-
-
 def test_policy2_MNIST():
     model = MNISTModel()
 
@@ -845,11 +724,11 @@ if __name__ == '__main__':
         elif Config['train_type'] == 'actor_critic':
             train_actor_critic_MNIST()
         elif Config['train_type'] == 'deterministic':
-            test_policy_MNIST()
+            test_policy2_MNIST()
         elif Config['train_type'] == 'stochastic':
-            test_policy_MNIST()
+            test_policy2_MNIST()
         elif Config['train_type'] == 'random_drop':
-            test_policy_MNIST()
+            test_policy2_MNIST()
         else:
             raise Exception('Unknown train type {}'.format(Config['train_type']))
     except:
