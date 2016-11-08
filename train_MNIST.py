@@ -16,6 +16,7 @@ from utils_MNIST import load_mnist_data
 from model_MNIST import MNISTModel
 from policyNetwork import PolicyNetwork
 from criticNetwork import CriticNetwork
+from batch_updater import *
 
 __author__ = 'fyabc'
 
@@ -85,49 +86,49 @@ def validate_point_message(model, x_train, y_train, x_validate, y_validate, x_te
     return validate_acc, test_acc
 
 
+def validate_point_message2(model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater):
+    # Get training loss
+    train_loss = model.get_training_loss(x_train, y_train)
+
+    # Get validation loss and accuracy
+    validate_loss, validate_acc, validate_batches = model.validate_or_test(x_validate, y_validate)
+    validate_loss /= validate_batches
+    validate_acc /= validate_batches
+
+    # Get test loss and accuracy
+    # [NOTE]: In this version, test at each validate point is fixed.
+    test_loss, test_acc, test_batches = model.validate_or_test(x_test, y_test)
+    test_loss /= test_batches
+    test_acc /= test_batches
+
+    message("""\
+Validate Point: Epoch {} Iteration {} Batch {} TotalBatch {}
+Training Loss: {}
+History Training Loss: {}
+Validate Loss: {}
+#Validate accuracy: {}
+Test Loss: {}
+#Test accuracy: {}
+Number of accepted cases: {} of {} total""".format(
+        updater.epoch, updater.iteration, updater.epoch_train_batches, updater.total_train_batches,
+        train_loss,
+        updater.epoch_history_train_loss / updater.epoch_train_batches,
+        validate_loss,
+        validate_acc,
+        test_loss,
+        test_acc,
+        updater.total_accepted_cases, updater.total_seen_cases,
+    ))
+
+    return validate_acc, test_acc
+
+
 def episode_final_message(best_validation_acc, best_iteration, test_score, start_time):
     message('$Final results:')
     message('$  best test accuracy:\t\t{} %'.format((test_score * 100.0) if test_score is not None else None))
     message('$  best validation accuracy: {}'.format(best_validation_acc))
     message('$  obtained at iteration {}'.format(best_iteration))
     message('$  Time passed: {:.2f}s'.format(time.time() - start_time))
-
-
-class BatchUpdater(object):
-    def __init__(self, batch_size, f_train, *all_data):
-        self.batch_size = batch_size
-
-        # Data buffer.
-        self.buffer = deque()
-
-        # Train function of the model.
-        self.f_train = f_train
-
-        # Data. (a tuple, elements are x, y, ...)
-        self.all_data = all_data
-
-        self.train_batches = 0
-        self.total_accepted_cases = 0
-
-    def start_new_epoch(self):
-        self.train_batches = 0
-        self.total_accepted_cases = 0
-
-    def train_batch_buffer(self):
-        update_batch_index = [self.buffer.popleft() for _ in range(self.batch_size)]
-
-        # Get masked inputs and targets
-        selected_batch_data = [data[update_batch_index] for data in self.all_data]
-
-        part_train_cost = self.f_train(*selected_batch_data)
-
-        self.total_accepted_cases += len(selected_batch_data[0])
-        self.train_batches += 1
-
-        return part_train_cost
-
-    def add_batch(self):
-        pass
 
 
 def train_raw_MNIST():
@@ -699,7 +700,7 @@ def test_policy_MNIST():
 
                 alpha /= np.sum(alpha)
 
-                history_train_loss += model.f_alpha_train(inputs, targets, alpha)
+                part_train_cost = model.f_alpha_train(inputs, targets, alpha)
             else:
                 if Config['train_type'] == 'stochastic':
                     actions = policy.take_action(probability, False)
@@ -714,9 +715,10 @@ def test_policy_MNIST():
                 inputs = inputs[actions]
                 targets = targets[actions]
 
+                part_train_cost = model.f_train(inputs, targets)
+
             total_accepted_cases += len(inputs)
 
-            part_train_cost = model.f_train(inputs, targets)
             history_train_loss += part_train_cost
 
             train_batches += 1
@@ -726,6 +728,7 @@ def test_policy_MNIST():
                 validate_acc, test_acc = validate_point_message(
                     model, x_train, y_train, x_validate, y_validate, x_test, y_test,
                     history_train_loss, train_batches, total_accepted_cases, epoch, iteration, validate_point_number)
+                history_accuracy.append(validate_acc)
                 # if we got the best validation score until now
                 if validate_acc > best_validation_acc:
                     # improve patience if loss improvement is good enough
@@ -757,6 +760,76 @@ def test_policy_MNIST():
             break
 
     episode_final_message(best_validation_acc, best_iteration, test_score, start_time)
+
+
+def test_policy2_MNIST():
+    model = MNISTModel()
+
+    input_size = MNISTModel.get_policy_input_size()
+    print('Input size of policy network:', input_size)
+
+    # Load the dataset and config
+    x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size = pre_process_data()
+    patience, patience_increase, improvement_threshold, validation_frequency = pre_process_config(model, train_size)
+
+    if Config['train_type'] == 'random_drop':
+        updater = RandomDropUpdater(model, ParamConfig['random_drop_number_file'], x_train, y_train)
+    else:
+        # Build policy
+        policy = PolicyNetwork(input_size=input_size)
+        policy.load_policy()
+        message('$    w = {}\n'
+                '$    b = {}'
+                .format(policy.W.get_value(), policy.b.get_value()))
+        updater = PolicyUpdater(model, policy, x_train, y_train)
+
+    # Train the network
+    # Some variables
+    # Validation point iteration
+    history_accuracy = []
+
+    best_validate_acc = -np.inf
+    best_iteration = 0
+    test_score = 0.0
+    start_time = time.time()
+
+    for epoch in range(ParamConfig['epoch_per_episode']):
+        print('[Epoch {}]'.format(epoch))
+        message('[Epoch {}]'.format(epoch))
+
+        updater.start_new_epoch()
+        epoch_start_time = time.time()
+
+        kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
+
+        for _, train_index in kf:
+            if Config['train_type'] == 'deterministic':
+                raise NotImplementedError('Deterministic test policy is not implemented in MNIST')
+            else:
+                part_train_cost = updater.add_batch(train_index)
+
+            if updater.total_train_batches % validation_frequency == 0:
+                validate_acc, test_acc = validate_point_message2(
+                    model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater)
+                history_accuracy.append(validate_acc)
+
+                if validate_acc > best_validate_acc:
+                    # improve patience if loss improvement is good enough
+                    if (1. - validate_acc) < (1. - best_validate_acc) * improvement_threshold:
+                        patience = max(patience, updater.iteration * patience_increase)
+                    best_validate_acc = validate_acc
+                    best_iteration = updater.iteration
+                    test_score = test_acc
+
+            if updater.total_train_batches >= patience:
+                break
+
+        message("Epoch {} of {} took {:.3f}s".format(
+            epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
+        if updater.iteration >= patience:
+            break
+
+    episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
 
 
 if __name__ == '__main__':
