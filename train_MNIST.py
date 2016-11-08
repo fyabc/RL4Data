@@ -660,7 +660,7 @@ def test_policy2_MNIST():
         message('$    w = {}\n'
                 '$    b = {}'
                 .format(policy.W.get_value(), policy.b.get_value()))
-        updater = PolicyUpdater(model, policy, x_train, y_train)
+        updater = TestPolicyUpdater(model, policy, x_train, y_train)
 
     # Train the network
     # Some variables
@@ -685,7 +685,7 @@ def test_policy2_MNIST():
             if Config['train_type'] == 'deterministic':
                 raise NotImplementedError('Deterministic test policy is not implemented in MNIST')
             else:
-                part_train_cost = updater.add_batch(train_index)
+                part_train_cost = updater.add_batch(train_index, epoch, history_accuracy)
 
             if updater.total_train_batches % validation_frequency == 0:
                 validate_acc, test_acc = validate_point_message2(

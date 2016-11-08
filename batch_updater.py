@@ -110,9 +110,9 @@ class SPLUpdater(BatchUpdater):
         super(SPLUpdater, self).__init__(model, *all_data)
 
 
-class PolicyUpdater(BatchUpdater):
+class TestPolicyUpdater(BatchUpdater):
     def __init__(self, model, policy, *all_data):
-        super(PolicyUpdater, self).__init__(model, *all_data)
+        super(TestPolicyUpdater, self).__init__(model, *all_data)
         self.policy = policy
 
     def filter_batch(self, batch_index, *args):
