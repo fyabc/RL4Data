@@ -8,6 +8,10 @@ import heapq
 
 import numpy as np
 
+from config import Config
+
+CSDL = Config['temp_job'] == 'check_selected_data_label'
+
 
 class BatchUpdater(object):
     def __init__(self, model, all_data):
@@ -32,6 +36,10 @@ class BatchUpdater(object):
 
         self.total_train_batches = 0
         self.total_accepted_cases = 0
+
+        if CSDL:
+            self.epoch_label_count = np.zeros((self.model.output_size,), dtype='int64')
+            self.total_label_count = np.zeros((self.model.output_size,), dtype='int64')
 
     @property
     def data_size(self):
@@ -68,10 +76,20 @@ class BatchUpdater(object):
         self.epoch_accepted_cases = 0
         self.epoch_history_train_loss = 0.0
 
+        if CSDL:
+            self.epoch_label_count.fill(0)
+
     def train_batch_buffer(self):
         update_batch_index = [self.buffer.popleft() for _ in range(self.batch_size)]
 
         selected_batch_data = [data[update_batch_index] for data in self.all_data]
+
+        if CSDL:
+            selected_batch_label = selected_batch_data[-1]
+            for i in range(len(self.epoch_label_count)):
+                count_i = sum(selected_batch_label == i)
+                self.epoch_label_count[i] += count_i
+                self.total_label_count[i] += count_i
 
         part_train_cost = self.model.f_train(*selected_batch_data)
 
@@ -177,7 +195,9 @@ class TestPolicyUpdater(BatchUpdater):
         probability = self.model.get_policy_input(*selected_batch_data)
         action = self.policy.take_action(probability, False)
 
-        return [index for i, index in enumerate(batch_index) if action[i]]
+        result = [index for i, index in enumerate(batch_index) if action[i]]
+
+        return result
 
 
 class RandomDropUpdater(BatchUpdater):

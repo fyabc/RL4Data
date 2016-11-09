@@ -120,6 +120,14 @@ Number of accepted cases: {} of {} total""".format(
         updater.total_accepted_cases, updater.total_seen_cases,
     ))
 
+    if CSDL:
+        message("""\
+Epoch label count: {}
+Total label count: {}""".format(
+            updater.epoch_label_count,
+            updater.total_label_count,
+        ))
+
     return validate_acc, test_acc
 
 
@@ -144,6 +152,9 @@ def train_raw_MNIST():
     # Some variables
     history_accuracy = []
 
+    # To prevent the double validate point
+    last_validate_point = -1
+
     best_validate_acc = -np.inf
     best_iteration = 0
     test_score = 0.0
@@ -161,7 +172,10 @@ def train_raw_MNIST():
         for _, train_index in kf:
             part_train_cost = updater.add_batch(train_index, epoch, history_accuracy)
 
-            if updater.total_train_batches > 0 and updater.total_train_batches % validation_frequency == 0:
+            if updater.total_train_batches > 0 and \
+                    updater.total_train_batches != last_validate_point and \
+                    updater.total_train_batches % validation_frequency == 0:
+                last_validate_point = updater.total_train_batches
                 validate_acc, test_acc = validate_point_message2(
                     model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater)
                 history_accuracy.append(validate_acc)
@@ -219,8 +233,8 @@ def train_SPL_MNIST():
             part_train_cost = updater.add_batch(train_index, epoch, history_accuracy)
 
             if updater.total_train_batches > 0 and \
-               updater.total_train_batches != last_validate_point and \
-               updater.total_train_batches % validation_frequency == 0:
+                    updater.total_train_batches != last_validate_point and \
+                    updater.total_train_batches % validation_frequency == 0:
                 last_validate_point = updater.total_train_batches
 
                 validate_acc, test_acc = validate_point_message2(
@@ -581,6 +595,9 @@ def test_policy_MNIST():
     # Some variables
     history_accuracy = []
 
+    # To prevent the double validate point
+    last_validate_point = -1
+
     best_validate_acc = -np.inf
     best_iteration = 0
     test_score = 0.0
@@ -598,7 +615,10 @@ def test_policy_MNIST():
         for _, train_index in kf:
             part_train_cost = updater.add_batch(train_index, epoch, history_accuracy)
 
-            if updater.total_train_batches > 0 and updater.total_train_batches % validation_frequency == 0:
+            if updater.total_train_batches > 0 and \
+                    updater.total_train_batches != last_validate_point and \
+                    updater.total_train_batches % validation_frequency == 0:
+                last_validate_point = updater.total_train_batches
                 validate_acc, test_acc = validate_point_message2(
                     model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater)
                 history_accuracy.append(validate_acc)
