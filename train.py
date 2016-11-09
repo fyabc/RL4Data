@@ -18,6 +18,9 @@ from criticNetwork import CriticNetwork
 __author__ = 'fyabc'
 
 
+# TODO: Change code into updaters
+
+
 def epoch_message(model, x_train, y_train, x_validate, y_validate, x_test, y_test,
                   history_accuracy, history_train_loss,
                   epoch, start_time, train_batches, total_accepted_cases):
@@ -214,7 +217,10 @@ def train_policy_CIFAR10():
     # Create the policy network
     input_size = CIFARModel.get_policy_input_size()
     print('Input size of policy network:', input_size)
-    policy = LRPolicyNetwork(input_size=input_size)
+    policy_model_name = eval(PolicyConfig['policy_model_name'])
+    policy = policy_model_name(input_size=input_size)
+    # policy = LRPolicyNetwork(input_size=input_size)
+    policy.message_parameters()
 
     # Load the dataset
     x_train, y_train, x_validate, y_validate, x_test, y_test = split_cifar10_data(load_cifar10_data())
@@ -321,7 +327,10 @@ def train_actor_critic_CIFAR10():
     # Create the actor network
     input_size = CIFARModel.get_policy_input_size()
     print('Input size of actor network:', input_size)
-    actor = LRPolicyNetwork(input_size=input_size)
+    policy_model_name = eval(PolicyConfig['policy_model_name'])
+    actor = policy_model_name(input_size=input_size)
+    # actor = LRPolicyNetwork(input_size=input_size)
+    actor.message_parameters()
     critic = CriticNetwork(feature_size=input_size, batch_size=model.train_batch_size)
 
     # Load the dataset
@@ -466,11 +475,11 @@ def test_policy_CIFAR10():
         random_drop_numbers = map(lambda l: int(l.strip()), list(open(ParamConfig['random_drop_number_file'], 'r')))
     else:
         # Build policy
-        policy = LRPolicyNetwork(input_size=input_size)
+        policy_model_name = eval(PolicyConfig['policy_model_name'])
+        policy = policy_model_name(input_size=input_size)
+        # policy = LRPolicyNetwork(input_size=input_size)
         policy.load_policy()
-        message('$    w = {}\n'
-                '$    b = {}'
-                .format(policy.W.get_value(), policy.b.get_value()))
+        policy.message_parameters()
 
     history_accuracy = []
 

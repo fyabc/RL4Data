@@ -23,6 +23,9 @@ from policyNetwork import LRPolicyNetwork
 __author__ = 'fyabc'
 
 
+# TODO: Change code into updaters
+
+
 def pre_process_data():
     np.random.seed(ParamConfig['seed'])
 
@@ -396,7 +399,10 @@ def train_policy_IMDB():
     # Build policy
     input_size = model.get_policy_input_size()
     print('Input size of policy network:', input_size)
-    policy = LRPolicyNetwork(input_size=input_size, start_b=PolicyConfig['b_init'])
+    policy_model_name = eval(PolicyConfig['policy_model_name'])
+    policy = policy_model_name(input_size=input_size)
+    # policy = LRPolicyNetwork(input_size=input_size)
+    policy.message_parameters()
 
     # Temp code.
     if Config['temp_job']:
@@ -572,7 +578,10 @@ def train_actor_critic_IMDB():
     # Build Actor and Critic network
     input_size = model.get_policy_input_size()
     print('Input size of policy network:', input_size)
-    actor = LRPolicyNetwork(input_size=input_size, start_b=PolicyConfig['b_init'])
+    policy_model_name = eval(PolicyConfig['policy_model_name'])
+    actor = policy_model_name(input_size=input_size)
+    # actor = LRPolicyNetwork(input_size=input_size)
+    actor.message_parameters()
     critic = CriticNetwork(feature_size=input_size, batch_size=model.train_batch_size)
 
     num_episodes = PolicyConfig['num_episodes']
@@ -760,11 +769,11 @@ def test_policy_IMDB():
         # Build policy
         input_size = model.get_policy_input_size()
         print('Input size of policy network:', input_size)
-        policy = LRPolicyNetwork(input_size=input_size, start_b=0.)
+        policy_model_name = eval(PolicyConfig['policy_model_name'])
+        policy = policy_model_name(input_size=input_size)
+        # policy = LRPolicyNetwork(input_size=input_size)
         policy.load_policy()
-        message('$    w = {}\n'
-                '$    b = {}'
-                .format(policy.W.get_value(), policy.b.get_value()))
+        policy.message_parameters()
 
     # Training
     history_errs = []

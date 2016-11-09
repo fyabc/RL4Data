@@ -11,7 +11,7 @@ import theano.tensor as T
 import theano
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
-from utils import fX, floatX, logging, message, average, get_minibatches_idx
+from utils import fX, floatX, logging, message, average, get_minibatches_idx, get_rank
 from utils_IMDB import prepare_imdb_data as prepare_data, pr, ortho_weight
 from optimizers import adadelta, adam, sgd, rmsprop
 from config import IMDBConfig as ParamConfig, PolicyConfig
@@ -55,13 +55,11 @@ class IMDBModelBase(object):
 
     @staticmethod
     def get_policy_input_size():
-        input_size = 2
-
+        input_size = IMDBModelBase.output_size
         if PolicyConfig['add_label_input']:
             input_size += 1
         if PolicyConfig['add_label']:
-            # input_size += 1
-            input_size += 2
+            input_size += IMDBModelBase.output_size
         if PolicyConfig['use_first_layer_output']:
             input_size += 16 * 32 * 32
         if PolicyConfig['add_epoch_number']:
@@ -72,41 +70,45 @@ class IMDBModelBase(object):
             input_size += 1
         if PolicyConfig['add_average_accuracy']:
             input_size += 1
+        if PolicyConfig['add_loss_rank']:
+            input_size += 1
+        if PolicyConfig['add_accepted_data_number']:
+            input_size += 1
         return input_size
 
-    def get_policy_input(self, x, mask, y, epoch, history_accuracy=None):
+    def get_policy_input(self, x, mask, y, updater, history_accuracy=None):
         batch_size = y.shape[0]
 
         probability = self.f_probs(x, mask)
+
+        to_be_stacked = [probability]
 
         if PolicyConfig['add_label_input']:
             label_inputs = np.zeros(shape=(batch_size, 1), dtype=fX)
             for i in range(batch_size):
                 # assert probability[i, targets[i]] > 0, 'Probability <= 0!!!'
                 label_inputs[i, 0] = np.log(max(probability[i, y[i]], 1e-9))
-            probability = np.hstack([probability, label_inputs])
+            to_be_stacked.append(label_inputs)
 
         if PolicyConfig['add_label']:
-            # labels = floatX(targets) * (1.0 / ParamConfig['cnn_output_size'])
-            # probability = np.hstack([probability, labels[:, None]])
-
             labels = np.zeros(shape=(batch_size, self.output_size), dtype=fX)
             for i, target in enumerate(y):
                 labels[i, target] = 1.
 
-            probability = np.hstack([probability, labels])
+            to_be_stacked.append(labels)
 
         # TODO add first layer output here
         if PolicyConfig['use_first_layer_output']:
             pass
 
         if PolicyConfig['add_epoch_number']:
-            epoch_number_inputs = np.full((batch_size, 1), floatX(epoch) / ParamConfig['epoch_per_episode'], dtype=fX)
-            probability = np.hstack([probability, epoch_number_inputs])
+            epoch_number_inputs = np.full((batch_size, 1),
+                                          floatX(updater.epoch) / ParamConfig['epoch_per_episode'], dtype=fX)
+            to_be_stacked.append(epoch_number_inputs)
 
         if PolicyConfig['add_learning_rate']:
             learning_rate_inputs = np.full((batch_size, 1), self.learning_rate, dtype=fX)
-            probability = np.hstack([probability, learning_rate_inputs])
+            to_be_stacked.append(learning_rate_inputs)
 
         if PolicyConfig['add_margin']:
             margin_inputs = np.zeros(shape=(batch_size, 1), dtype=fX)
@@ -116,13 +118,27 @@ class IMDBModelBase(object):
                 prob_i[y[i]] = -np.inf
 
                 margin_inputs[i, 0] -= np.max(prob_i)
-            probability = np.hstack([probability, margin_inputs])
+            to_be_stacked.append(margin_inputs)
 
         if PolicyConfig['add_average_accuracy']:
             avg_acc_inputs = np.full((batch_size, 1), average(history_accuracy), dtype=fX)
-            probability = np.hstack([probability, avg_acc_inputs])
+            to_be_stacked.append(avg_acc_inputs)
 
-        return probability
+        if PolicyConfig['add_loss_rank']:
+            cost_list_without_decay = self.f_cost_list_without_decay(x, mask, y)
+            rank = get_rank(cost_list_without_decay).astype(fX) / batch_size
+
+            to_be_stacked.append(rank.reshape((batch_size, 1)))
+
+        if PolicyConfig['add_accepted_data_number']:
+            accepted_data_number_inputs = np.full(
+                (batch_size, 1),
+                updater.total_accepted_cases / (updater.data_size * ParamConfig['epoch_per_episode']),
+                dtype=fX)
+
+            to_be_stacked.append(accepted_data_number_inputs)
+
+        return np.hstack(to_be_stacked)
 
 
 class IMDBModel(IMDBModelBase):

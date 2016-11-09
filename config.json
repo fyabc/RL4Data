@@ -38,6 +38,12 @@
     "temp_job": "",
 
     "policy": {
+        /// Name of policy network
+        // Candidates:
+        //     LRPolicyNetwork
+        //     MLPPolicyNetwork
+        "policy_model_name": "LRPolicyNetwork",
+
         "num_episodes": 1000,
 
         /// Policy input features

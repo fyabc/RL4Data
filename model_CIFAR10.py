@@ -25,7 +25,7 @@ from lasagne.layers.helper import get_all_param_values, set_all_param_values
 from lasagne.layers import LocalResponseNormalization2DLayer, MaxPool2DLayer
 
 from config import Config, CifarConfig as ParamConfig, PolicyConfig
-from utils import logging, iterate_minibatches, fX, floatX, shuffle_data, average, message
+from utils import logging, iterate_minibatches, fX, floatX, shuffle_data, average, message, get_rank
 
 
 class CIFARModelBase(object):
@@ -114,12 +114,11 @@ class CIFARModelBase(object):
 
     @staticmethod
     def get_policy_input_size():
-        input_size = ParamConfig['cnn_output_size']
+        input_size = CIFARModelBase.output_size
         if PolicyConfig['add_label_input']:
             input_size += 1
         if PolicyConfig['add_label']:
-            # input_size += 1
-            input_size += ParamConfig['cnn_output_size']
+            input_size += CIFARModelBase.output_size
         if PolicyConfig['use_first_layer_output']:
             input_size += 16 * 32 * 32
         if PolicyConfig['add_epoch_number']:
@@ -130,43 +129,47 @@ class CIFARModelBase(object):
             input_size += 1
         if PolicyConfig['add_average_accuracy']:
             input_size += 1
+        if PolicyConfig['add_loss_rank']:
+            input_size += 1
+        if PolicyConfig['add_accepted_data_number']:
+            input_size += 1
         return input_size
 
-    def get_policy_input(self, inputs, targets, epoch, history_accuracy=None):
+    def get_policy_input(self, inputs, targets, updater, history_accuracy=None):
         batch_size = targets.shape[0]
 
         probability = self.f_probs(inputs)
+
+        to_be_stacked = [probability]
 
         if PolicyConfig['add_label_input']:
             label_inputs = np.zeros(shape=(batch_size, 1), dtype=fX)
             for i in range(batch_size):
                 # assert probability[i, targets[i]] > 0, 'Probability <= 0!!!'
                 label_inputs[i, 0] = np.log(max(probability[i, targets[i]], 1e-9))
-            probability = np.hstack([probability, label_inputs])
+            to_be_stacked.append(label_inputs)
 
         if PolicyConfig['add_label']:
-            # labels = floatX(targets) * (1.0 / ParamConfig['cnn_output_size'])
-            # probability = np.hstack([probability, labels[:, None]])
-
             labels = np.zeros(shape=(batch_size, self.output_size), dtype=fX)
             for i, target in enumerate(targets):
                 labels[i, target] = 1.
 
-            probability = np.hstack([probability, labels])
+            to_be_stacked.append(labels)
 
         if PolicyConfig['use_first_layer_output']:
             first_layer_output = self.f_first_layer_output(inputs)
             shape_first = np.product(first_layer_output.shape[1:])
             first_layer_output = first_layer_output.reshape((batch_size, shape_first))
-            probability = np.hstack([probability, first_layer_output])
+            to_be_stacked.append(first_layer_output)
 
         if PolicyConfig['add_epoch_number']:
-            epoch_number_inputs = np.full((batch_size, 1), floatX(epoch) / ParamConfig['epoch_per_episode'], dtype=fX)
-            probability = np.hstack([probability, epoch_number_inputs])
+            epoch_number_inputs = np.full((batch_size, 1),
+                                          floatX(updater.epoch) / ParamConfig['epoch_per_episode'], dtype=fX)
+            to_be_stacked.append(epoch_number_inputs)
 
         if PolicyConfig['add_learning_rate']:
             learning_rate_inputs = np.full((batch_size, 1), self.learning_rate.get_value(), dtype=fX)
-            probability = np.hstack([probability, learning_rate_inputs])
+            to_be_stacked.append(learning_rate_inputs)
 
         if PolicyConfig['add_margin']:
             margin_inputs = np.zeros(shape=(batch_size, 1), dtype=fX)
@@ -176,13 +179,27 @@ class CIFARModelBase(object):
                 prob_i[targets[i]] = -np.inf
 
                 margin_inputs[i, 0] -= np.max(prob_i)
-            probability = np.hstack([probability, margin_inputs])
+            to_be_stacked.append(margin_inputs)
 
         if PolicyConfig['add_average_accuracy']:
             avg_acc_inputs = np.full((batch_size, 1), average(history_accuracy), dtype=fX)
-            probability = np.hstack([probability, avg_acc_inputs])
+            to_be_stacked.append(avg_acc_inputs)
 
-        return probability
+        if PolicyConfig['add_loss_rank']:
+            cost_list_without_decay = self.f_cost_list_without_decay(inputs, targets)
+            rank = get_rank(cost_list_without_decay).astype(fX) / batch_size
+
+            to_be_stacked.append(rank.reshape((batch_size, 1)))
+
+        if PolicyConfig['add_accepted_data_number']:
+            accepted_data_number_inputs = np.full(
+                (batch_size, 1),
+                updater.total_accepted_cases / (updater.data_size * ParamConfig['epoch_per_episode']),
+                dtype=fX)
+
+            to_be_stacked.append(accepted_data_number_inputs)
+
+        return np.hstack(to_be_stacked)
 
 
 class CIFARModel(CIFARModelBase):

@@ -266,7 +266,9 @@ def train_policy_MNIST():
     # Create the policy network
     input_size = MNISTModel.get_policy_input_size()
     print('Input size of policy network:', input_size)
-    policy = LRPolicyNetwork(input_size=input_size)
+    policy_model_name = eval(PolicyConfig['policy_model_name'])
+    policy = policy_model_name(input_size=input_size)
+    # policy = LRPolicyNetwork(input_size=input_size)
     policy.message_parameters()
 
     # Load the dataset and config
@@ -375,7 +377,9 @@ def train_actor_critic_MNIST():
     # Create the policy network
     input_size = MNISTModel.get_policy_input_size()
     print('Input size of policy network:', input_size)
-    actor = LRPolicyNetwork(input_size=input_size)
+    policy_model_name = eval(PolicyConfig['policy_model_name'])
+    actor = policy_model_name(input_size=input_size)
+    # actor = LRPolicyNetwork(input_size=input_size)
     actor.message_parameters()
     critic = CriticNetwork(feature_size=input_size, batch_size=model.train_batch_size)
 
@@ -544,7 +548,9 @@ def test_policy_MNIST():
         updater = RandomDropUpdater(model, [x_train, y_train], ParamConfig['random_drop_number_file'])
     else:
         # Build policy
-        policy = LRPolicyNetwork(input_size=input_size)
+        policy_model_name = eval(PolicyConfig['policy_model_name'])
+        policy = policy_model_name(input_size=input_size)
+        # policy = LRPolicyNetwork(input_size=input_size)
         policy.load_policy()
         policy.message_parameters()
         updater = TestPolicyUpdater(model, [x_train, y_train], policy)

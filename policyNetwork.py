@@ -231,7 +231,8 @@ class MLPPolicyNetwork(PolicyNetworkBase):
                  learning_rate=None,
                  gamma=None,
                  rb_update_rate=None,
-                 start_b=None):
+                 start_b=None,
+                 ):
         super(MLPPolicyNetwork, self).__init__(input_size, optimizer, rb_update_rate, learning_rate, gamma)
 
         self.hidden_size = hidden_size or PolicyConfig['hidden_size']

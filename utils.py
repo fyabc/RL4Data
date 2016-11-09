@@ -93,6 +93,14 @@ def average(sequence):
     return sum(sequence) / len(sequence)
 
 
+def get_rank(a):
+    temp = a.argsort()
+    ranks = np.empty_like(a)
+    ranks[temp] = np.arange(len(a))
+
+    return ranks
+
+
 ###############################
 # Data loading and processing #
 ###############################
