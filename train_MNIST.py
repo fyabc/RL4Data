@@ -408,7 +408,106 @@ def train_policy_MNIST():
 
 
 def train_policy2_MNIST():
-    pass
+    model = MNISTModel()
+
+    # Create the policy network
+    input_size = MNISTModel.get_policy_input_size()
+    print('Input size of policy network:', input_size)
+    policy = LRPolicyNetwork(input_size=input_size)
+    policy.message_parameters()
+
+    # Load the dataset and config
+    x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size = pre_process_data()
+    patience, patience_increase, improvement_threshold, validation_frequency = pre_process_config(model, train_size)
+
+    for episode in range(PolicyConfig['num_episodes']):
+        print('[Episode {}]'.format(episode))
+        message('[Episode {}]'.format(episode))
+
+        model.reset_parameters()
+
+        # Train the network
+        # Some variables
+        history_accuracy = []
+
+        # To prevent the double validate point
+        last_validate_point = -1
+
+        # Speed reward
+        first_over_cases = None
+
+        # get small training data
+        x_train_small, y_train_small = get_part_data(x_train, y_train, ParamConfig['train_small_size'])
+        train_small_size = len(x_train_small)
+        message('Training small size:', train_small_size)
+
+        updater = TrainPolicyUpdater(model, [x_train_small, y_train_small], policy)
+
+        best_validate_acc = -np.inf
+        best_iteration = 0
+        test_score = 0.0
+        start_time = time.time()
+
+        for epoch in range(ParamConfig['epoch_per_episode']):
+            print('[Epoch {}]'.format(epoch))
+            message('[Epoch {}]'.format(epoch))
+
+            updater.start_new_epoch()
+            epoch_start_time = time.time()
+
+            kf = get_minibatches_idx(train_small_size, model.train_batch_size, shuffle=True)
+
+            for _, train_index in kf:
+                part_train_cost = updater.add_batch(train_index, epoch, history_accuracy)
+
+                if updater.total_train_batches > 0 and \
+                        updater.total_train_batches != last_validate_point and \
+                        updater.total_train_batches % validation_frequency == 0:
+                    last_validate_point = updater.total_train_batches
+                    validate_acc, test_acc = validate_point_message2(
+                        model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater)
+                    history_accuracy.append(validate_acc)
+
+                    if validate_acc > best_validate_acc:
+                        # improve patience if loss improvement is good enough
+                        if (1. - validate_acc) < (1. - best_validate_acc) * improvement_threshold:
+                            patience = max(patience, updater.iteration * patience_increase)
+                        best_validate_acc = validate_acc
+                        best_iteration = updater.iteration
+                        test_score = test_acc
+
+                    # Check speed rewards
+                    if first_over_cases is None and validate_acc >= PolicyConfig['speed_reward_threshold']:
+                        first_over_cases = updater.total_accepted_cases
+
+                if updater.total_train_batches >= patience:
+                    break
+
+            message("Epoch {} of {} took {:.3f}s".format(
+                epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
+            if updater.iteration >= patience:
+                break
+
+        episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
+
+        # Updating policy
+        if PolicyConfig['speed_reward']:
+            expected_total_cases = ParamConfig['epoch_per_episode'] * train_small_size
+            if first_over_cases is None:
+                first_over_cases = expected_total_cases
+            terminal_reward = float(first_over_cases) / expected_total_cases
+            policy.update(-np.log(terminal_reward))
+
+            message('First over cases:', first_over_cases)
+            message('Total cases:', expected_total_cases)
+            message('Terminal reward:', terminal_reward)
+        else:
+            validate_acc = model.get_test_acc(x_validate, y_validate)
+            policy.update(validate_acc)
+
+        if Config['policy_save_freq'] > 0 and episode % Config['policy_save_freq'] == 0:
+            policy.save_policy(Config['policy_model_file'].replace('.npz', '_ep{}.npz'.format(episode)))
+            policy.save_policy()
 
 
 def train_actor_critic_MNIST():
@@ -588,9 +687,7 @@ def test_policy_MNIST():
         # Build policy
         policy = LRPolicyNetwork(input_size=input_size)
         policy.load_policy()
-        message('$    w = {}\n'
-                '$    b = {}'
-                .format(policy.W.get_value(), policy.b.get_value()))
+        policy.message_parameters()
         updater = TestPolicyUpdater(model, [x_train, y_train], policy)
 
     # Train the network
@@ -653,7 +750,7 @@ if __name__ == '__main__':
         elif Config['train_type'] == 'self_paced':
             train_SPL_MNIST()
         elif Config['train_type'] == 'policy':
-            train_policy_MNIST()
+            train_policy2_MNIST()
         elif Config['train_type'] == 'actor_critic':
             train_actor_critic_MNIST()
         elif Config['train_type'] == 'deterministic':

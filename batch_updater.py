@@ -176,15 +176,21 @@ class TrainPolicyUpdater(BatchUpdater):
         selected_batch_data.extend(args)
 
         probability = self.model.get_policy_input(*selected_batch_data)
-        action = self.policy.take_action(probability)
+        action = self.policy.take_action(probability, True)
 
-        return [index for i, index in enumerate(batch_index) if action[i]]
+        result = [index for i, index in enumerate(batch_index) if action[i]]
+
+        return result
 
 
 class TestPolicyUpdater(BatchUpdater):
     def __init__(self, model, all_data, policy):
         super(TestPolicyUpdater, self).__init__(model, all_data)
         self.policy = policy
+
+    def start_new_epoch(self):
+        super(TestPolicyUpdater, self).start_new_epoch()
+        self.policy.start_new_epoch()
 
     def filter_batch(self, batch_index, *args):
         selected_batch_data = [data[batch_index] for data in self.all_data]

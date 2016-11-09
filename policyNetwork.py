@@ -209,7 +209,10 @@ class LRPolicyNetwork(PolicyNetworkBase):
 
         # Parameters to be learned
         self.W = theano.shared(name='W', value=init_norm(input_size))
-        self.b = theano.shared(name='b', value=floatX(start_b or PolicyConfig['b_init']))
+
+        if start_b is None:
+            start_b = PolicyConfig['b_init']
+        self.b = theano.shared(name='b', value=floatX(start_b))
         self.parameters = [self.W, self.b]
 
         self.build_output_function()
@@ -223,14 +226,35 @@ class LRPolicyNetwork(PolicyNetworkBase):
 class MLPPolicyNetwork(PolicyNetworkBase):
     def __init__(self,
                  input_size,
+                 hidden_size=None,
                  optimizer=None,
                  learning_rate=None,
                  gamma=None,
-                 rb_update_rate=None,):
+                 rb_update_rate=None,
+                 start_b=None):
         super(MLPPolicyNetwork, self).__init__(input_size, optimizer, rb_update_rate, learning_rate, gamma)
+
+        self.hidden_size = hidden_size or PolicyConfig['hidden_size']
+
+        self.W0 = theano.shared(name='W0', value=init_norm(input_size, hidden_size))
+        self.b0 = theano.shared(name='b0', value=np.zeros((hidden_size,)))
+        self.W1 = theano.shared(name='W1', value=init_norm(hidden_size))
+
+        if start_b is None:
+            start_b = PolicyConfig['b_init']
+        self.b1 = theano.shared(name='b1', value=floatX(start_b))
+
+        self.parameters = [self.W0, self.b0, self.W1, self.b1]
+
+        self.build_output_function()
+        self.build_update_function()
 
     def make_output(self, input_=None):
         input_ = input_ or self.batch_input
+
+        hidden_layer = T.tanh(T.dot(input_, self.W0) + self.b0)
+
+        return T.nnet.sigmoid(T.dot(hidden_layer, self.W1) + self.b1)
 
 
 class LRPolicyNetwork2(object):
@@ -261,7 +285,10 @@ class LRPolicyNetwork2(object):
 
         # Parameters to be learned
         self.W = theano.shared(name='W', value=init_norm(input_size))
-        self.b = theano.shared(name='b', value=floatX(start_b or PolicyConfig['b_init']))
+
+        if start_b is None:
+            start_b = PolicyConfig['b_init']
+        self.b = theano.shared(name='b', value=floatX(start_b))
         self.parameters = [self.W, self.b]
 
         # A single case of input softmax probabilities
