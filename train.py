@@ -12,7 +12,7 @@ import numpy as np
 from config import Config, CifarConfig as ParamConfig, PolicyConfig
 from utils import *
 from model_CIFAR10 import CIFARModel, VaniliaCNNModel
-from policyNetwork import PolicyNetwork
+from policyNetwork import LRPolicyNetwork
 from criticNetwork import CriticNetwork
 
 __author__ = 'fyabc'
@@ -214,7 +214,7 @@ def train_policy_CIFAR10():
     # Create the policy network
     input_size = CIFARModel.get_policy_input_size()
     print('Input size of policy network:', input_size)
-    policy = PolicyNetwork(input_size=input_size)
+    policy = LRPolicyNetwork(input_size=input_size)
 
     # Load the dataset
     x_train, y_train, x_validate, y_validate, x_test, y_test = split_cifar10_data(load_cifar10_data())
@@ -321,7 +321,7 @@ def train_actor_critic_CIFAR10():
     # Create the actor network
     input_size = CIFARModel.get_policy_input_size()
     print('Input size of actor network:', input_size)
-    actor = PolicyNetwork(input_size=input_size)
+    actor = LRPolicyNetwork(input_size=input_size)
     critic = CriticNetwork(feature_size=input_size, batch_size=model.train_batch_size)
 
     # Load the dataset
@@ -466,7 +466,7 @@ def test_policy_CIFAR10():
         random_drop_numbers = map(lambda l: int(l.strip()), list(open(ParamConfig['random_drop_number_file'], 'r')))
     else:
         # Build policy
-        policy = PolicyNetwork(input_size=input_size)
+        policy = LRPolicyNetwork(input_size=input_size)
         policy.load_policy()
         message('$    w = {}\n'
                 '$    b = {}'

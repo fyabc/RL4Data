@@ -18,7 +18,7 @@ from utils_IMDB import prepare_imdb_data as prepare_data
 # Actor-Critic from ChangXu
 from criticNetwork import CriticNetwork
 
-from policyNetwork import PolicyNetwork
+from policyNetwork import LRPolicyNetwork
 
 __author__ = 'fyabc'
 
@@ -396,7 +396,7 @@ def train_policy_IMDB():
     # Build policy
     input_size = model.get_policy_input_size()
     print('Input size of policy network:', input_size)
-    policy = PolicyNetwork(input_size=input_size, start_b=PolicyConfig['b_init'])
+    policy = LRPolicyNetwork(input_size=input_size, start_b=PolicyConfig['b_init'])
 
     # Temp code.
     if Config['temp_job']:
@@ -572,7 +572,7 @@ def train_actor_critic_IMDB():
     # Build Actor and Critic network
     input_size = model.get_policy_input_size()
     print('Input size of policy network:', input_size)
-    actor = PolicyNetwork(input_size=input_size, start_b=PolicyConfig['b_init'])
+    actor = LRPolicyNetwork(input_size=input_size, start_b=PolicyConfig['b_init'])
     critic = CriticNetwork(feature_size=input_size, batch_size=model.train_batch_size)
 
     num_episodes = PolicyConfig['num_episodes']
@@ -760,7 +760,7 @@ def test_policy_IMDB():
         # Build policy
         input_size = model.get_policy_input_size()
         print('Input size of policy network:', input_size)
-        policy = PolicyNetwork(input_size=input_size, start_b=0.)
+        policy = LRPolicyNetwork(input_size=input_size, start_b=0.)
         policy.load_policy()
         message('$    w = {}\n'
                 '$    b = {}'

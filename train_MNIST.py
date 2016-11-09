@@ -14,7 +14,7 @@ from config import Config, MNISTConfig as ParamConfig, PolicyConfig
 from utils import *
 from utils_MNIST import load_mnist_data
 from model_MNIST import MNISTModel
-from policyNetwork import PolicyNetwork
+from policyNetwork import LRPolicyNetwork
 from criticNetwork import CriticNetwork
 from batch_updater import *
 
@@ -266,7 +266,7 @@ def train_policy_MNIST():
     # Create the policy network
     input_size = MNISTModel.get_policy_input_size()
     print('Input size of policy network:', input_size)
-    policy = PolicyNetwork(input_size=input_size)
+    policy = LRPolicyNetwork(input_size=input_size)
 
     # Load the dataset and config
     x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size = pre_process_data()
@@ -416,7 +416,7 @@ def train_actor_critic_MNIST():
     # Create the policy network
     input_size = MNISTModel.get_policy_input_size()
     print('Input size of policy network:', input_size)
-    actor = PolicyNetwork(input_size=input_size)
+    actor = LRPolicyNetwork(input_size=input_size)
     critic = CriticNetwork(feature_size=input_size, batch_size=model.train_batch_size)
 
     # Load the dataset and config
@@ -584,7 +584,7 @@ def test_policy_MNIST():
         updater = RandomDropUpdater(model, [x_train, y_train], ParamConfig['random_drop_number_file'])
     else:
         # Build policy
-        policy = PolicyNetwork(input_size=input_size)
+        policy = LRPolicyNetwork(input_size=input_size)
         policy.load_policy()
         message('$    w = {}\n'
                 '$    b = {}'
