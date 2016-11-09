@@ -198,6 +198,9 @@ def train_SPL_MNIST():
     # Some variables
     history_accuracy = []
 
+    # To prevent the double validate point
+    last_validate_point = -1
+
     best_validate_acc = -np.inf
     best_iteration = 0
     test_score = 0.0
@@ -215,7 +218,11 @@ def train_SPL_MNIST():
         for _, train_index in kf:
             part_train_cost = updater.add_batch(train_index, epoch, history_accuracy)
 
-            if updater.total_train_batches > 0 and updater.total_train_batches % validation_frequency == 0:
+            if updater.total_train_batches > 0 and \
+               updater.total_train_batches != last_validate_point and \
+               updater.total_train_batches % validation_frequency == 0:
+                last_validate_point = updater.total_train_batches
+
                 validate_acc, test_acc = validate_point_message2(
                     model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater)
                 history_accuracy.append(validate_acc)
@@ -383,6 +390,10 @@ def train_policy_MNIST():
         if Config['policy_save_freq'] > 0 and episode % Config['policy_save_freq'] == 0:
             policy.save_policy(Config['policy_model_file'].replace('.npz', '_ep{}.npz'.format(episode)))
             policy.save_policy()
+
+
+def train_policy2_MNIST():
+    pass
 
 
 def train_actor_critic_MNIST():
