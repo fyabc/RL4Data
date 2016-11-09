@@ -367,7 +367,7 @@ def train_policy_MNIST():
             policy.update(validate_acc)
 
         if Config['policy_save_freq'] > 0 and episode % Config['policy_save_freq'] == 0:
-            policy.save_policy(Config['policy_model_file'].replace('.npz', '_ep{}.npz'.format(episode)))
+            policy.save_policy(PolicyConfig['policy_model_file'].replace('.npz', '_ep{}.npz'.format(episode)))
             policy.save_policy()
 
 
@@ -527,7 +527,7 @@ def train_actor_critic_MNIST():
         actor.update(validate_acc)
 
         if Config['policy_save_freq'] > 0 and episode % Config['policy_save_freq'] == 0:
-            actor.save_policy(Config['policy_model_file'].replace('.npz', '_ep{}.npz'.format(episode)))
+            actor.save_policy(PolicyConfig['policy_model_file'].replace('.npz', '_ep{}.npz'.format(episode)))
             actor.save_policy()
 
 
@@ -606,8 +606,8 @@ def test_policy_MNIST():
     episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
 
 
-if __name__ == '__main__':
-    process_before_train(ParamConfig)
+def main(args=None):
+    process_before_train(args, ParamConfig)
 
     try:
         if Config['train_type'] == 'raw':
@@ -630,3 +630,7 @@ if __name__ == '__main__':
         message(traceback.format_exc())
     finally:
         finalize_logging_file()
+
+
+if __name__ == '__main__':
+    main()

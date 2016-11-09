@@ -13,6 +13,7 @@
     /// [NOTE]: you must NOT have any spaces in the expression above.
 
     /// Basic configurations.
+//    "dataset": "CIFAR10",
     "seed": 1234,
     "floatX": "float32",
     "logging_file": "./data/log.txt",
@@ -26,8 +27,6 @@
 
     /// TODO: Configuration to be moved into "cifar10"
     "model_file": "./data/cifar10_deep_residual_model.npz",
-    "policy_model_file": "./data/policy_model.npz",
-    "policy_save_freq": 1,
     "save_model": false,
     "model": null,
 
@@ -43,6 +42,9 @@
         //     LRPolicyNetwork
         //     MLPPolicyNetwork
         "policy_model_name": "LRPolicyNetwork",
+
+        "policy_model_file": "./data/policy_model.npz",
+        "policy_save_freq": 1,
 
         "num_episodes": 1000,
 

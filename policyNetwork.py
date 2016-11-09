@@ -177,13 +177,13 @@ Real cost (Final reward for terminal): {}""".format(cost, final_reward))
 
     @logging
     def save_policy(self, filename=None):
-        filename = filename or Config['policy_model_file']
+        filename = filename or PolicyConfig['policy_model_file']
         filename = filename.replace('.npz', '_{}.npz'.format(self.input_size))
         np.savez(filename, *[parameter.get_value() for parameter in self.parameters])
 
     @logging
     def load_policy(self, filename=None):
-        filename = filename or Config['policy_model_file']
+        filename = filename or PolicyConfig['policy_model_file']
         filename = filename.replace('.npz', '_{}.npz'.format(self.input_size))
 
         with np.load(filename) as f:

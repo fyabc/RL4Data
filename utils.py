@@ -281,17 +281,16 @@ def check_config(param_config, policy_config):
         'Speed reward must be terminal reward'
 
 
-def process_before_train(param_config=CifarConfig, policy_config=PolicyConfig):
+def process_before_train(args=None, param_config=CifarConfig, policy_config=PolicyConfig):
+    args = args or sys.argv
+
     import pprint
 
-    if '-h' in sys.argv or '--help' in sys.argv:
-        print('Usage: add properties just like this:\n'
-              '    add_label_prob=False\n'
-              '    %policy_save_freq=10\n'
-              '\n'
-              'properties starts with % are in Config, other properties are in ParamConfig.')
+    if '-h' in args or '--help' in args:
+        # TODO add more help message
+        exit()
 
-    args_dict, policy_args_dict, param_args_dict = simple_parse_args(sys.argv, param_config)
+    args_dict, policy_args_dict, param_args_dict = simple_parse_args(args, param_config)
     Config.update(args_dict)
     param_config.update(param_args_dict)
     policy_config.update(policy_args_dict)
