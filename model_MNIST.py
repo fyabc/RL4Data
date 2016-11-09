@@ -132,9 +132,13 @@ class MNISTModelBase(object):
             input_size += 1
         if PolicyConfig['add_average_accuracy']:
             input_size += 1
+        if PolicyConfig['add_loss_rank']:
+            input_size += 1
+        if PolicyConfig['add_accepted_data_number']:
+            input_size += 1
         return input_size
 
-    def get_policy_input(self, inputs, targets, epoch, history_accuracy=None):
+    def get_policy_input(self, inputs, targets, updater, history_accuracy=None):
         batch_size = targets.shape[0]
 
         probability = self.f_probs(inputs)
@@ -163,7 +167,8 @@ class MNISTModelBase(object):
             probability = np.hstack([probability, first_layer_output])
 
         if PolicyConfig['add_epoch_number']:
-            epoch_number_inputs = np.full((batch_size, 1), floatX(epoch) / ParamConfig['epoch_per_episode'], dtype=fX)
+            epoch_number_inputs = np.full((batch_size, 1),
+                                          floatX(updater.epoch) / ParamConfig['epoch_per_episode'], dtype=fX)
             probability = np.hstack([probability, epoch_number_inputs])
 
         if PolicyConfig['add_learning_rate']:
@@ -183,6 +188,13 @@ class MNISTModelBase(object):
         if PolicyConfig['add_average_accuracy']:
             avg_acc_inputs = np.full((batch_size, 1), average(history_accuracy), dtype=fX)
             probability = np.hstack([probability, avg_acc_inputs])
+
+        # TODO
+        if PolicyConfig['add_loss_rank']:
+            pass
+
+        if PolicyConfig['add_accepted_data_number']:
+            pass
 
         return probability
 

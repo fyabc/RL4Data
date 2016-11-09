@@ -170,7 +170,7 @@ def train_raw_MNIST():
         kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
 
         for _, train_index in kf:
-            part_train_cost = updater.add_batch(train_index, epoch, history_accuracy)
+            part_train_cost = updater.add_batch(train_index, updater, history_accuracy)
 
             if updater.total_train_batches > 0 and \
                     updater.total_train_batches != last_validate_point and \
@@ -230,7 +230,7 @@ def train_SPL_MNIST():
         kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
 
         for _, train_index in kf:
-            part_train_cost = updater.add_batch(train_index, epoch, history_accuracy)
+            part_train_cost = updater.add_batch(train_index, updater, history_accuracy)
 
             if updater.total_train_batches > 0 and \
                     updater.total_train_batches != last_validate_point and \
@@ -261,153 +261,6 @@ def train_SPL_MNIST():
 
 
 def train_policy_MNIST():
-    model = MNISTModel()
-
-    # Create the policy network
-    input_size = MNISTModel.get_policy_input_size()
-    print('Input size of policy network:', input_size)
-    policy = LRPolicyNetwork(input_size=input_size)
-    policy.message_parameters()
-
-    # Load the dataset and config
-    x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size = pre_process_data()
-    patience, patience_increase, improvement_threshold, validation_frequency = pre_process_config(model, train_size)
-
-    # Train the network
-    for episode in range(PolicyConfig['num_episodes']):
-        print('[Episode {}]'.format(episode))
-        message('[Episode {}]'.format(episode))
-
-        model.reset_parameters()
-
-        # get small training data
-        x_train_small, y_train_small = get_part_data(x_train, y_train, ParamConfig['train_small_size'])
-        train_small_size = len(x_train_small)
-        message('Training small size:', train_small_size)
-
-        # Some variables
-        # Iteration (number of batches)
-        iteration = 0
-        # Validation point iteration
-        validate_point_number = 0
-
-        history_accuracy = []
-
-        total_accepted_cases = 0
-
-        # Speed reward
-        first_over_iteration = None
-
-        best_validation_acc = -np.inf
-        best_iteration = 0
-        test_score = 0.
-        start_time = time.time()
-
-        for epoch in range(ParamConfig['epoch_per_episode']):
-            print('[Epoch {}]'.format(epoch))
-            message('[Epoch {}]'.format(epoch))
-
-            total_accepted_cases = 0
-            history_train_loss = 0
-            train_batches = 0
-            epoch_start_time = time.time()
-
-            kf = get_minibatches_idx(train_small_size, model.train_batch_size, shuffle=True)
-
-            policy.start_new_epoch()
-
-            for _, train_index in kf:
-                iteration += 1
-
-                inputs, targets = x_train_small[train_index], y_train_small[train_index]
-
-                probability = model.get_policy_input(inputs, targets, epoch, history_accuracy)
-                actions = policy.take_action(probability)
-
-                # get masked inputs and targets
-                inputs = inputs[actions]
-                targets = targets[actions]
-
-                total_accepted_cases += len(inputs)
-
-                part_train_cost = model.f_train(inputs, targets)
-                history_train_loss += part_train_cost
-
-                train_batches += 1
-
-                if ParamConfig['train_loss_freq'] > 0 and iteration % ParamConfig['train_loss_freq'] == 0:
-                    train_loss = model.get_training_loss(x_train, y_train)
-                    message('Training Loss (Full training set):', train_loss)
-
-                if iteration % validation_frequency == 0:
-                    validate_point_number += 1
-                    validate_acc, test_acc = validate_point_message(
-                        model, x_train_small, y_train_small, x_validate, y_validate, x_test, y_test,
-                        history_train_loss, train_batches, total_accepted_cases, epoch, iteration, validate_point_number)
-                    history_accuracy.append(validate_acc)
-
-                    # if we got the best validation score until now
-                    if validate_acc > best_validation_acc:
-                        # improve patience if loss improvement is good enough
-                        if (1. - validate_acc) < (1. - best_validation_acc) * improvement_threshold:
-                            patience = max(patience, iteration * patience_increase)
-                        best_validation_acc = validate_acc
-                        best_iteration = iteration
-
-                        if test_acc is not None:
-                            test_score = test_acc
-                        else:
-                            # Must have a test at best validate accuracy point
-                            # Get test loss and accuracy
-                            test_loss, test_acc, test_batches = model.validate_or_test(x_test, y_test)
-                            test_loss /= test_batches
-                            test_acc /= test_batches
-
-                            message('Test Point: Epoch {} Iteration {}'.format(epoch, iteration))
-                            message('Test Loss:', test_loss),
-                            message('#Test accuracy:', test_acc)
-                            test_score = test_acc
-
-                    # Check speed rewards
-                    if first_over_iteration is None and validate_acc >= PolicyConfig['speed_reward_threshold']:
-                        first_over_iteration = iteration
-
-                if iteration >= patience:
-                    break
-
-            message("Epoch {} of {} took {:.3f}s".format(
-                epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
-
-            # Immediate reward
-            if PolicyConfig['immediate_reward']:
-                validate_acc = model.get_test_acc(x_validate, y_validate)
-                policy.reward_buffer.append(validate_acc)
-
-            if iteration >= patience:
-                break
-
-        episode_final_message(best_validation_acc, best_iteration, test_score, start_time)
-
-        # Updating policy
-        if PolicyConfig['speed_reward']:
-            if first_over_iteration is None:
-                first_over_iteration = iteration + 1
-            terminal_reward = float(first_over_iteration) / iteration
-            policy.update(-np.log(terminal_reward))
-
-            message('First over index:', first_over_iteration)
-            message('Total index:', iteration)
-            message('Terminal reward:', terminal_reward)
-        else:
-            validate_acc = model.get_test_acc(x_validate, y_validate)
-            policy.update(validate_acc)
-
-        if Config['policy_save_freq'] > 0 and episode % Config['policy_save_freq'] == 0:
-            policy.save_policy(Config['policy_model_file'].replace('.npz', '_ep{}.npz'.format(episode)))
-            policy.save_policy()
-
-
-def train_policy2_MNIST():
     model = MNISTModel()
 
     # Create the policy network
@@ -458,7 +311,7 @@ def train_policy2_MNIST():
             kf = get_minibatches_idx(train_small_size, model.train_batch_size, shuffle=True)
 
             for _, train_index in kf:
-                part_train_cost = updater.add_batch(train_index, epoch, history_accuracy)
+                part_train_cost = updater.add_batch(train_index, updater, history_accuracy)
 
                 if updater.total_train_batches > 0 and \
                         updater.total_train_batches != last_validate_point and \
@@ -485,6 +338,12 @@ def train_policy2_MNIST():
 
             message("Epoch {} of {} took {:.3f}s".format(
                 epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
+
+            # Immediate reward
+            if PolicyConfig['immediate_reward']:
+                validate_acc = model.get_test_acc(x_validate, y_validate)
+                policy.reward_buffer.append(validate_acc)
+
             if updater.iteration >= patience:
                 break
 
@@ -712,7 +571,7 @@ def test_policy_MNIST():
         kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
 
         for _, train_index in kf:
-            part_train_cost = updater.add_batch(train_index, epoch, history_accuracy)
+            part_train_cost = updater.add_batch(train_index, updater, history_accuracy)
 
             if updater.total_train_batches > 0 and \
                     updater.total_train_batches != last_validate_point and \
@@ -750,7 +609,7 @@ if __name__ == '__main__':
         elif Config['train_type'] == 'self_paced':
             train_SPL_MNIST()
         elif Config['train_type'] == 'policy':
-            train_policy2_MNIST()
+            train_policy_MNIST()
         elif Config['train_type'] == 'actor_critic':
             train_actor_critic_MNIST()
         elif Config['train_type'] == 'deterministic':

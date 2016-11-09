@@ -38,17 +38,20 @@
     "temp_job": "",
 
     "policy": {
-        "num_episodes": 100,
+        "num_episodes": 1000,
 
         /// Policy input features
         "add_label_input": true,
-        "add_label": true,
+        "add_label": false,
         "use_first_layer_output": false,
         "add_margin": true,
         "add_average_accuracy": true,
-        "add_epoch_number": true,
+        "add_epoch_number": false,
         "add_learning_rate": false,
+        "add_loss_rank": true,
+        "add_accepted_data_number": true,
 
+        /// Immediate reward & speed reward
         "immediate_reward": false,
         "immediate_reward_sample_size": 10000,
 
