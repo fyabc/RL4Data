@@ -267,6 +267,7 @@ def train_policy_MNIST():
     input_size = MNISTModel.get_policy_input_size()
     print('Input size of policy network:', input_size)
     policy = LRPolicyNetwork(input_size=input_size)
+    policy.message_parameters()
 
     # Load the dataset and config
     x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size = pre_process_data()
@@ -417,6 +418,7 @@ def train_actor_critic_MNIST():
     input_size = MNISTModel.get_policy_input_size()
     print('Input size of policy network:', input_size)
     actor = LRPolicyNetwork(input_size=input_size)
+    actor.message_parameters()
     critic = CriticNetwork(feature_size=input_size, batch_size=model.train_batch_size)
 
     # Load the dataset and config

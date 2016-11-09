@@ -158,11 +158,9 @@ class PolicyNetworkBase(object):
 
         message("""\
 Cost: {}
-Real cost (Final reward for terminal): {}
-New parameters:""".format(cost, final_reward))
+Real cost (Final reward for terminal): {}""".format(cost, final_reward))
 
-        for parameter in self.parameters:
-            message('$    {} = {}'.format(parameter.name, parameter.get_value()))
+        self.message_parameters()
 
     def start_new_epoch(self):
         self.input_buffer.append([])
@@ -191,6 +189,11 @@ New parameters:""".format(cost, final_reward))
         with np.load(filename) as f:
             for i, parameter in enumerate(self.parameters):
                 parameter.set_value(f['arr_{}'.format(i)])
+
+    def message_parameters(self):
+        message('Parameters:')
+        for parameter in self.parameters:
+            message('$    {} = {}'.format(parameter.name, parameter.get_value()))
 
 
 class LRPolicyNetwork(PolicyNetworkBase):
