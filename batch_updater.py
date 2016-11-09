@@ -10,8 +10,6 @@ import numpy as np
 
 from config import Config
 
-CSDL = Config['temp_job'] == 'check_selected_data_label'
-
 
 class BatchUpdater(object):
     def __init__(self, model, all_data):
@@ -37,7 +35,7 @@ class BatchUpdater(object):
         self.total_train_batches = 0
         self.total_accepted_cases = 0
 
-        if CSDL:
+        if Config['temp_job'] == 'check_selected_data_label':
             self.epoch_label_count = np.zeros((self.model.output_size,), dtype='int64')
             self.total_label_count = np.zeros((self.model.output_size,), dtype='int64')
 
@@ -76,7 +74,7 @@ class BatchUpdater(object):
         self.epoch_accepted_cases = 0
         self.epoch_history_train_loss = 0.0
 
-        if CSDL:
+        if Config['temp_job'] == 'check_selected_data_label':
             self.epoch_label_count.fill(0)
 
     def train_batch_buffer(self):
@@ -84,7 +82,7 @@ class BatchUpdater(object):
 
         selected_batch_data = [data[update_batch_index] for data in self.all_data]
 
-        if CSDL:
+        if Config['temp_job'] == 'check_selected_data_label':
             selected_batch_label = selected_batch_data[-1]
             for i in range(len(self.epoch_label_count)):
                 count_i = sum(selected_batch_label == i)

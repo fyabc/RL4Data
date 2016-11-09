@@ -120,7 +120,7 @@ Number of accepted cases: {} of {} total""".format(
         updater.total_accepted_cases, updater.total_seen_cases,
     ))
 
-    if CSDL:
+    if Config['temp_job'] == 'check_selected_data_label':
         message("""\
 Epoch label count: {}
 Total label count: {}""".format(
