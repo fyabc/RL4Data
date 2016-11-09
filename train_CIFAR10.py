@@ -2,18 +2,15 @@
 
 from __future__ import print_function, unicode_literals
 
-import sys
 import heapq
 import traceback
 from collections import deque
 
-import numpy as np
-
-from config import Config, CifarConfig as ParamConfig, PolicyConfig
-from utils import *
-from model_CIFAR10 import CIFARModel, VaniliaCNNModel
-from policyNetwork import LRPolicyNetwork
+from config import CifarConfig as ParamConfig
 from criticNetwork import CriticNetwork
+from model_CIFAR10 import CIFARModel
+from utils import *
+from utils_CIFAR10 import load_cifar10_data, split_cifar10_data
 
 __author__ = 'fyabc'
 
