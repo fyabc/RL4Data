@@ -85,7 +85,7 @@
 
         // Use cost gap before and after update as immediate reward
         // Another immediate reward is the accuracy of sampled validation set
-        "cost_gap_AC_reward": true,
+        "cost_gap_AC_reward": false,
 
         // Update actor and critic frequency
         "AC_update_freq": 100,
@@ -189,7 +189,7 @@
         "train_loss_freq": 0,
         "display_freq": 100,
 
-        "train_small_size": 30000,
+        "train_small_size": 50000,
 
         "epoch_per_episode": 400,
 

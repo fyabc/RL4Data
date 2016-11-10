@@ -14,7 +14,7 @@ from config import Config, MNISTConfig as ParamConfig, PolicyConfig
 from utils import *
 from utils_MNIST import load_mnist_data
 from model_MNIST import MNISTModel
-from policyNetwork import LRPolicyNetwork
+from policyNetwork import LRPolicyNetwork, MLPPolicyNetwork
 from criticNetwork import CriticNetwork
 from batch_updater import *
 

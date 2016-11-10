@@ -18,7 +18,7 @@ from utils_IMDB import prepare_imdb_data as prepare_data
 # Actor-Critic from ChangXu
 from criticNetwork import CriticNetwork
 
-from policyNetwork import LRPolicyNetwork
+from policyNetwork import LRPolicyNetwork, MLPPolicyNetwork
 
 __author__ = 'fyabc'
 

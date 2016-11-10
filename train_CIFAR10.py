@@ -11,6 +11,8 @@ from criticNetwork import CriticNetwork
 from model_CIFAR10 import CIFARModel
 from utils import *
 from utils_CIFAR10 import load_cifar10_data, split_cifar10_data
+from policyNetwork import LRPolicyNetwork, MLPPolicyNetwork
+
 
 __author__ = 'fyabc'
 
