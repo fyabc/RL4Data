@@ -237,9 +237,9 @@ class MLPPolicyNetwork(PolicyNetworkBase):
 
         self.hidden_size = hidden_size or PolicyConfig['hidden_size']
 
-        self.W0 = theano.shared(name='W0', value=init_norm(input_size, hidden_size))
-        self.b0 = theano.shared(name='b0', value=np.zeros((hidden_size,)))
-        self.W1 = theano.shared(name='W1', value=init_norm(hidden_size))
+        self.W0 = theano.shared(name='W0', value=init_norm(self.input_size, self.hidden_size))
+        self.b0 = theano.shared(name='b0', value=np.zeros((self.hidden_size,), dtype=fX))
+        self.W1 = theano.shared(name='W1', value=init_norm(self.hidden_size))
 
         if start_b is None:
             start_b = PolicyConfig['b_init']
@@ -259,7 +259,7 @@ class MLPPolicyNetwork(PolicyNetworkBase):
 
 
 def test():
-    pn = LRPolicyNetwork(input_size=CifarConfig['cnn_output_size'])
+    pn = MLPPolicyNetwork(input_size=CifarConfig['cnn_output_size'])
 
     input_data = np.ones(shape=(4, CifarConfig['cnn_output_size']), dtype=fX)
 
