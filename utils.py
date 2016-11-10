@@ -126,42 +126,6 @@ def shuffle_data(x_train, y_train):
     return x_train[shuffled_indices], y_train[shuffled_indices]
 
 
-##############################
-# Other utilities of CIFAR10 #
-##############################
-
-def iterate_minibatches(inputs, targets, batch_size, shuffle=False, augment=False, return_indices=False):
-    assert len(inputs) == len(targets)
-    if shuffle:
-        indices = np.arange(len(inputs))
-        np.random.shuffle(indices)
-
-    for start_idx in range(0, len(inputs) - batch_size + 1, batch_size):
-        if shuffle:
-            excerpt = indices[start_idx:start_idx + batch_size]
-        else:
-            excerpt = slice(start_idx, start_idx + batch_size)
-        if augment:
-            # as in paper :
-            # pad feature arrays with 4 pixels on each side
-            # and do random cropping of 32x32
-            padded = np.pad(inputs[excerpt], ((0, 0), (0, 0), (4, 4), (4, 4)), mode=str('constant'))
-            random_cropped = np.zeros(inputs[excerpt].shape, dtype=np.float32)
-            crops = np.random.random_integers(0, high=8, size=(batch_size, 2))
-
-            for r in range(batch_size):
-                random_cropped[r, :, :, :] = padded[r, :, crops[r, 0]:(crops[r, 0] + 32),
-                                                    crops[r, 1]:(crops[r, 1] + 32)]
-            inp_exc = random_cropped
-        else:
-            inp_exc = inputs[excerpt]
-
-        if return_indices:
-            yield inp_exc, targets[excerpt], excerpt
-        else:
-            yield inp_exc, targets[excerpt]
-
-
 ########################################
 # Simple command line arguments parser #
 ########################################
@@ -246,6 +210,59 @@ def get_minibatches_idx(n, minibatch_size, shuffle=False):
         minibatches.append(idx_list[minibatch_start:])
 
     return list(enumerate(minibatches))
+
+
+def validate_point_message(model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater):
+    # Get training loss
+    train_loss = model.get_training_loss(x_train, y_train)
+
+    # Get validation loss and accuracy
+    validate_loss, validate_acc, validate_batches = model.validate_or_test(x_validate, y_validate)
+    validate_loss /= validate_batches
+    validate_acc /= validate_batches
+
+    # Get test loss and accuracy
+    # [NOTE]: In this version, test at each validate point is fixed.
+    test_loss, test_acc, test_batches = model.validate_or_test(x_test, y_test)
+    test_loss /= test_batches
+    test_acc /= test_batches
+
+    message("""\
+Validate Point: Epoch {} Iteration {} Batch {} TotalBatch {}
+Training Loss: {}
+History Training Loss: {}
+Validate Loss: {}
+#Validate accuracy: {}
+Test Loss: {}
+#Test accuracy: {}
+Number of accepted cases: {} of {} total""".format(
+        updater.epoch, updater.iteration, updater.epoch_train_batches, updater.total_train_batches,
+        train_loss,
+        updater.epoch_history_train_loss / updater.epoch_train_batches,
+        validate_loss,
+        validate_acc,
+        test_loss,
+        test_acc,
+        updater.total_accepted_cases, updater.total_seen_cases,
+    ))
+
+    if Config['temp_job'] == 'check_selected_data_label':
+        message("""\
+Epoch label count: {}
+Total label count: {}""".format(
+            updater.epoch_label_count,
+            updater.total_label_count,
+        ))
+
+    return validate_acc, test_acc
+
+
+def episode_final_message(best_validate_acc, best_iteration, test_score, start_time):
+    message('$Final results:')
+    message('$  best test accuracy:\t\t{} %'.format((test_score * 100.0) if test_score is not None else None))
+    message('$  best validation accuracy: {}'.format(best_validate_acc))
+    message('$  obtained at iteration {}'.format(best_iteration))
+    message('$  Time passed: {:.2f}s'.format(time.time() - start_time))
 
 
 def test():

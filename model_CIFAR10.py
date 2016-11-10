@@ -25,7 +25,8 @@ from lasagne.layers.helper import get_all_param_values, set_all_param_values
 from lasagne.layers import LocalResponseNormalization2DLayer, MaxPool2DLayer
 
 from config import Config, CifarConfig as ParamConfig, PolicyConfig
-from utils import logging, iterate_minibatches, fX, floatX, shuffle_data, average, message, get_rank
+from utils import logging, fX, floatX, shuffle_data, average, message, get_rank
+from utils_CIFAR10 import iterate_minibatches
 
 
 class CIFARModelBase(object):
@@ -69,12 +70,12 @@ class CIFARModelBase(object):
 
     @logging
     def save_model(self, filename=None):
-        filename = filename or Config['model_file']
+        filename = filename or ParamConfig['model_file']
         np.savez(filename, *get_all_param_values(self.network))
 
     @logging
     def load_model(self, filename=None):
-        filename = filename or Config['model_file']
+        filename = filename or ParamConfig['model_file']
         with np.load(filename) as f:
             param_values = [f['arr_%d' % i] for i in range(len(f.files))]
         lasagne.layers.set_all_param_values(self.network, param_values)

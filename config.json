@@ -26,8 +26,6 @@
     "train_type": "policy",
 
     /// TODO: Configuration to be moved into "cifar10"
-    "model_file": "./data/cifar10_deep_residual_model.npz",
-    "save_model": false,
     "model": null,
 
     /// Set this flag to some string to run some temp jobs.
@@ -105,6 +103,9 @@
         //     CIFARModel
         //     VaniliaCNNModel
         "model_name": "CIFARModel",
+
+        "model_file": "./data/cifar10/cifar10_deep_residual_model.npz",
+        "save_model": false,
 
         "total_size": 60000,
         "train_size": 50000,

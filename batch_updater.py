@@ -12,7 +12,17 @@ from config import Config
 
 
 class BatchUpdater(object):
-    def __init__(self, model, all_data):
+    def __init__(self, model, all_data, **kwargs):
+        """
+
+        Parameters
+        ----------
+        model
+        all_data
+        kwargs :
+            prepare_data:
+        """
+
         self.batch_size = model.train_batch_size
 
         # Data buffer.
@@ -41,6 +51,9 @@ class BatchUpdater(object):
 
         # A hook: the last update batch index.
         self.last_update_batch_index = None
+
+        # The prepare data hook
+        self.prepare_data = kwargs.get('prepare_data', lambda *data: data)
 
     @property
     def data_size(self):
@@ -84,6 +97,7 @@ class BatchUpdater(object):
         self.last_update_batch_index = [self.buffer.popleft() for _ in range(self.batch_size)]
 
         selected_batch_data = [data[self.last_update_batch_index] for data in self.all_data]
+        selected_batch_data = self.prepare_data(*selected_batch_data)
 
         if Config['temp_job'] == 'check_selected_data_label':
             selected_batch_label = selected_batch_data[-1]
@@ -118,15 +132,15 @@ class BatchUpdater(object):
 
 
 class RawUpdater(BatchUpdater):
-    def __init__(self, model, all_data):
-        super(RawUpdater, self).__init__(model, all_data)
+    def __init__(self, model, all_data, **kwargs):
+        super(RawUpdater, self).__init__(model, all_data, **kwargs)
 
     def filter_batch(self, batch_index, *args):
         return list(batch_index)
 
 
 class SPLUpdater(BatchUpdater):
-    def __init__(self, model, all_data, epoch_per_episode):
+    def __init__(self, model, all_data, epoch_per_episode, **kwargs):
         """
 
         Parameters
@@ -137,7 +151,7 @@ class SPLUpdater(BatchUpdater):
         epoch_per_episode
         """
 
-        super(SPLUpdater, self).__init__(model, all_data)
+        super(SPLUpdater, self).__init__(model, all_data, **kwargs)
 
         self.expected_total_iteration = epoch_per_episode * self.data_size // self.model.train_batch_size
 
@@ -146,7 +160,9 @@ class SPLUpdater(BatchUpdater):
 
     def filter_batch(self, batch_index, *args):
         selected_number = self.cost_threshold(self.iteration)
+
         selected_batch_data = [data[batch_index] for data in self.all_data]
+        selected_batch_data = self.prepare_data(*selected_batch_data)
 
         targets = selected_batch_data[-1]
 
@@ -166,8 +182,8 @@ class SPLUpdater(BatchUpdater):
 
 
 class TrainPolicyUpdater(BatchUpdater):
-    def __init__(self, model, all_data, policy):
-        super(TrainPolicyUpdater, self).__init__(model, all_data)
+    def __init__(self, model, all_data, policy, **kwargs):
+        super(TrainPolicyUpdater, self).__init__(model, all_data, **kwargs)
         self.policy = policy
 
     def start_new_epoch(self):
@@ -176,6 +192,7 @@ class TrainPolicyUpdater(BatchUpdater):
 
     def filter_batch(self, batch_index, *args):
         selected_batch_data = [data[batch_index] for data in self.all_data]
+        selected_batch_data = self.prepare_data(*selected_batch_data)
         selected_batch_data.extend(args)
 
         probability = self.model.get_policy_input(*selected_batch_data)
@@ -187,8 +204,8 @@ class TrainPolicyUpdater(BatchUpdater):
 
 
 class ACUpdater(BatchUpdater):
-    def __init__(self, model, all_data, policy):
-        super(ACUpdater, self).__init__(model, all_data)
+    def __init__(self, model, all_data, policy, **kwargs):
+        super(ACUpdater, self).__init__(model, all_data, **kwargs)
         self.policy = policy
 
         self.last_probability = None
@@ -200,6 +217,7 @@ class ACUpdater(BatchUpdater):
 
     def filter_batch(self, batch_index, *args):
         selected_batch_data = [data[batch_index] for data in self.all_data]
+        selected_batch_data = self.prepare_data(*selected_batch_data)
         selected_batch_data.extend(args)
 
         probability = self.model.get_policy_input(*selected_batch_data)
@@ -214,8 +232,8 @@ class ACUpdater(BatchUpdater):
 
 
 class TestPolicyUpdater(BatchUpdater):
-    def __init__(self, model, all_data, policy):
-        super(TestPolicyUpdater, self).__init__(model, all_data)
+    def __init__(self, model, all_data, policy, **kwargs):
+        super(TestPolicyUpdater, self).__init__(model, all_data, **kwargs)
         self.policy = policy
 
     def start_new_epoch(self):
@@ -224,6 +242,7 @@ class TestPolicyUpdater(BatchUpdater):
 
     def filter_batch(self, batch_index, *args):
         selected_batch_data = [data[batch_index] for data in self.all_data]
+        selected_batch_data = self.prepare_data(*selected_batch_data)
         selected_batch_data.extend(args)
 
         probability = self.model.get_policy_input(*selected_batch_data)
@@ -235,8 +254,8 @@ class TestPolicyUpdater(BatchUpdater):
 
 
 class RandomDropUpdater(BatchUpdater):
-    def __init__(self, model, all_data, random_drop_number_file):
-        super(RandomDropUpdater, self).__init__(model, all_data)
+    def __init__(self, model, all_data, random_drop_number_file, **kwargs):
+        super(RandomDropUpdater, self).__init__(model, all_data, **kwargs)
         self.random_drop_numbers = map(lambda l: int(l.strip()), list(open(random_drop_number_file, 'r')))
 
     def filter_batch(self, batch_index, *args):

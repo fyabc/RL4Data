@@ -2,24 +2,23 @@
 
 from __future__ import print_function, unicode_literals
 
-import heapq
 import traceback
-from collections import deque
 
+from batch_updater import *
 from config import CifarConfig as ParamConfig
 from criticNetwork import CriticNetwork
 from model_CIFAR10 import CIFARModel
 from utils import *
-from utils_CIFAR10 import load_cifar10_data, split_cifar10_data
-from policyNetwork import LRPolicyNetwork, MLPPolicyNetwork
-
+from utils_CIFAR10 import load_cifar10_data, split_cifar10_data, iterate_minibatches, pre_process_CIFAR10_data, prepare_CIFAR10_data
 
 __author__ = 'fyabc'
 
 
 # TODO: Change code into updaters
+# Done: raw
 
 
+# [NOTE]: In CIFAR10, validate point at end of each epoch.
 def epoch_message(model, x_train, y_train, x_validate, y_validate, x_test, y_test,
                   history_accuracy, history_train_loss,
                   epoch, start_time, train_batches, total_accepted_cases):
@@ -54,11 +53,7 @@ def train_raw_CIFAR10():
     # model = VaniliaCNNModel()
 
     # Load the dataset
-    x_train, y_train, x_validate, y_validate, x_test, y_test = split_cifar10_data(load_cifar10_data())
-
-    message('Training data size:', y_train.shape[0])
-    message('Validation data size:', y_validate.shape[0])
-    message('Test data size:', y_test.shape[0])
+    x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size = pre_process_CIFAR10_data()
 
     # Train the network
     if ParamConfig['warm_start']:
@@ -101,12 +96,69 @@ def train_raw_CIFAR10():
             if (epoch + 1) in (41, 61):
                 model.update_learning_rate()
 
-    if Config['save_model']:
-        message('Saving CNN model warm start... ', end='')
+    if ParamConfig['save_model']:
         model.save_model()
-        message('done')
 
     model.test(x_test, y_test)
+
+
+def train_raw2_CIFAR10():
+    model_name = eval(ParamConfig['model_name'])
+    # Create neural network model
+    model = model_name()
+    # model = VaniliaCNNModel()
+
+    # Load the dataset
+    x_train, y_train, x_validate, y_validate, x_test, y_test,\
+        train_size, validate_size, test_size = pre_process_CIFAR10_data()
+
+    updater = RawUpdater(model, [x_train, y_train], prepare_data=prepare_CIFAR10_data)
+
+    # Train the network
+    if ParamConfig['warm_start']:
+        model.load_model(Config['model_file'])
+
+    # Train the network
+    # Some variables
+    history_accuracy = []
+
+    best_validate_acc = -np.inf
+    best_iteration = 0
+    test_score = 0.0
+    start_time = time.time()
+
+    for epoch in range(ParamConfig['epoch_per_episode']):
+        print('[Epoch {}]'.format(epoch))
+        message('[Epoch {}]'.format(epoch))
+
+        updater.start_new_epoch()
+        epoch_start_time = time.time()
+
+        kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
+
+        for _, train_index in kf:
+            part_train_cost = updater.add_batch(train_index, updater, history_accuracy)
+
+        validate_acc, test_acc = validate_point_message(
+            model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater)
+        history_accuracy.append(validate_acc)
+
+        if validate_acc > best_validate_acc:
+            best_validate_acc = validate_acc
+            best_iteration = updater.iteration
+            test_score = test_acc
+
+        if model_name == CIFARModel:
+            if (epoch + 1) in (41, 61):
+                model.update_learning_rate()
+
+        message("Epoch {} of {} took {:.3f}s".format(
+            epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
+
+    episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
+
+    if ParamConfig['save_model']:
+        model.save_model()
 
 
 def train_SPL_CIFAR10():
@@ -116,11 +168,7 @@ def train_SPL_CIFAR10():
     # model = VaniliaCNNModel()
 
     # Load the dataset
-    x_train, y_train, x_validate, y_validate, x_test, y_test = split_cifar10_data(load_cifar10_data())
-
-    message('Training data size:', y_train.shape[0])
-    message('Validation data size:', y_validate.shape[0])
-    message('Test data size:', y_test.shape[0])
+    x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size = pre_process_CIFAR10_data()
 
     # Self-paced learning iterate on data cases
     total_iteration_number = ParamConfig['epoch_per_episode'] * len(x_train) // model.train_batch_size
@@ -539,7 +587,7 @@ def main(args=None):
 
     try:
         if Config['train_type'] == 'raw':
-            train_raw_CIFAR10()
+            train_raw2_CIFAR10()
         elif Config['train_type'] == 'self_paced':
             train_SPL_CIFAR10()
         elif Config['train_type'] == 'policy':

@@ -3,35 +3,17 @@
 
 from __future__ import print_function, unicode_literals
 
-import sys
-import heapq
 import traceback
-from collections import deque
 
-import numpy as np
-
-from config import Config, MNISTConfig as ParamConfig, PolicyConfig
-from utils import *
-from utils_MNIST import load_mnist_data
-from model_MNIST import MNISTModel
-from policyNetwork import LRPolicyNetwork, MLPPolicyNetwork
-from criticNetwork import CriticNetwork
 from batch_updater import *
+from config import MNISTConfig as ParamConfig
+from criticNetwork import CriticNetwork
+from model_MNIST import MNISTModel
+from utils import *
+from utils import episode_final_message
+from utils_MNIST import pre_process_MNIST_data
 
 __author__ = 'fyabc'
-
-
-def pre_process_data():
-    # Load the dataset
-    x_train, y_train, x_validate, y_validate, x_test, y_test = load_mnist_data()
-
-    train_size, validate_size, test_size = y_train.shape[0], y_validate.shape[0], y_test.shape[0]
-
-    message('Training data size:', train_size)
-    message('Validation data size:', validate_size)
-    message('Test data size:', test_size)
-
-    return x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size
 
 
 def pre_process_config(model, train_size):
@@ -52,64 +34,11 @@ def pre_process_config(model, train_size):
     return patience, patience_increase, improvement_threshold, validation_frequency
 
 
-def validate_point_message(model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater):
-    # Get training loss
-    train_loss = model.get_training_loss(x_train, y_train)
-
-    # Get validation loss and accuracy
-    validate_loss, validate_acc, validate_batches = model.validate_or_test(x_validate, y_validate)
-    validate_loss /= validate_batches
-    validate_acc /= validate_batches
-
-    # Get test loss and accuracy
-    # [NOTE]: In this version, test at each validate point is fixed.
-    test_loss, test_acc, test_batches = model.validate_or_test(x_test, y_test)
-    test_loss /= test_batches
-    test_acc /= test_batches
-
-    message("""\
-Validate Point: Epoch {} Iteration {} Batch {} TotalBatch {}
-Training Loss: {}
-History Training Loss: {}
-Validate Loss: {}
-#Validate accuracy: {}
-Test Loss: {}
-#Test accuracy: {}
-Number of accepted cases: {} of {} total""".format(
-        updater.epoch, updater.iteration, updater.epoch_train_batches, updater.total_train_batches,
-        train_loss,
-        updater.epoch_history_train_loss / updater.epoch_train_batches,
-        validate_loss,
-        validate_acc,
-        test_loss,
-        test_acc,
-        updater.total_accepted_cases, updater.total_seen_cases,
-    ))
-
-    if Config['temp_job'] == 'check_selected_data_label':
-        message("""\
-Epoch label count: {}
-Total label count: {}""".format(
-            updater.epoch_label_count,
-            updater.total_label_count,
-        ))
-
-    return validate_acc, test_acc
-
-
-def episode_final_message(best_validate_acc, best_iteration, test_score, start_time):
-    message('$Final results:')
-    message('$  best test accuracy:\t\t{} %'.format((test_score * 100.0) if test_score is not None else None))
-    message('$  best validation accuracy: {}'.format(best_validate_acc))
-    message('$  obtained at iteration {}'.format(best_iteration))
-    message('$  Time passed: {:.2f}s'.format(time.time() - start_time))
-
-
 def train_raw_MNIST():
     model = MNISTModel()
 
     # Load the dataset and config
-    x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size = pre_process_data()
+    x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size = pre_process_MNIST_data()
     patience, patience_increase, improvement_threshold, validation_frequency = pre_process_config(model, train_size)
 
     updater = RawUpdater(model, [x_train, y_train])
@@ -169,7 +98,7 @@ def train_SPL_MNIST():
     model = MNISTModel()
 
     # Load the dataset and config
-    x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size = pre_process_data()
+    x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size = pre_process_MNIST_data()
     patience, patience_increase, improvement_threshold, validation_frequency = pre_process_config(model, train_size)
 
     updater = SPLUpdater(model, [x_train, y_train], ParamConfig['epoch_per_episode'])
@@ -238,7 +167,7 @@ def train_policy_MNIST():
     policy.message_parameters()
 
     # Load the dataset and config
-    x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size = pre_process_data()
+    x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size = pre_process_MNIST_data()
     patience, patience_increase, improvement_threshold, validation_frequency = pre_process_config(model, train_size)
 
     for episode in range(PolicyConfig['num_episodes']):
@@ -350,7 +279,7 @@ def train_actor_critic_MNIST():
     critic = CriticNetwork(feature_size=input_size, batch_size=model.train_batch_size)
 
     # Load the dataset and config
-    x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size = pre_process_data()
+    x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size = pre_process_MNIST_data()
     patience, patience_increase, improvement_threshold, validation_frequency = pre_process_config(model, train_size)
 
     # Train the network
@@ -484,7 +413,7 @@ def test_policy_MNIST():
     print('Input size of policy network:', input_size)
 
     # Load the dataset and config
-    x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size = pre_process_data()
+    x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size = pre_process_MNIST_data()
     patience, patience_increase, improvement_threshold, validation_frequency = pre_process_config(model, train_size)
 
     if Config['train_type'] == 'random_drop':

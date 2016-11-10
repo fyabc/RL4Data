@@ -7,7 +7,7 @@ import os
 import numpy as np
 
 from config import CifarConfig
-from utils import logging, unpickle, floatX
+from utils import logging, unpickle, floatX, message, fX
 
 __author__ = 'fyabc'
 
@@ -66,8 +66,6 @@ def load_cifar10_data(data_dir=CifarConfig['data_dir']):
     x_test = x[train_size:, :, :, :]
     y_test = y[train_size:]
 
-    print(x_train.shape, y_train.shape, x_test.shape, y_test.shape)
-
     return {
         'x_train': floatX(x_train),
         'y_train': y_train.astype('int32'),
@@ -93,3 +91,60 @@ def split_cifar10_data(data):
     # y_validate = y_train[:CifarConfig['validation_size']]
 
     return x_train, y_train, x_validate, y_validate, x_test, y_test
+
+
+def prepare_CIFAR10_data(inputs, targets):
+    batch_size = len(targets)
+    padded = np.pad(inputs, ((0, 0), (0, 0), (4, 4), (4, 4)), mode=str('constant'))
+    random_cropped = np.zeros_like(inputs, dtype=fX)
+    crops = np.random.random_integers(0, high=8, size=(batch_size, 2))
+
+    for r in range(batch_size):
+        random_cropped[r, :, :, :] = padded[r, :, crops[r, 0]:(crops[r, 0] + 32), crops[r, 1]:(crops[r, 1] + 32)]
+
+    return random_cropped, targets
+
+
+def iterate_minibatches(inputs, targets, batch_size, shuffle=False, augment=False, return_indices=False):
+    assert len(inputs) == len(targets)
+    if shuffle:
+        indices = np.arange(len(inputs))
+        np.random.shuffle(indices)
+
+    for start_idx in range(0, len(inputs) - batch_size + 1, batch_size):
+        if shuffle:
+            excerpt = indices[start_idx:start_idx + batch_size]
+        else:
+            excerpt = slice(start_idx, start_idx + batch_size)
+        if augment:
+            # as in paper :
+            # pad feature arrays with 4 pixels on each side
+            # and do random cropping of 32x32
+            padded = np.pad(inputs[excerpt], ((0, 0), (0, 0), (4, 4), (4, 4)), mode=str('constant'))
+            random_cropped = np.zeros(inputs[excerpt].shape, dtype=fX)
+            crops = np.random.random_integers(0, high=8, size=(batch_size, 2))
+
+            for r in range(batch_size):
+                random_cropped[r, :, :, :] = padded[r, :, crops[r, 0]:(crops[r, 0] + 32),
+                                                    crops[r, 1]:(crops[r, 1] + 32)]
+            inp_exc = random_cropped
+        else:
+            inp_exc = inputs[excerpt]
+
+        if return_indices:
+            yield inp_exc, targets[excerpt], excerpt
+        else:
+            yield inp_exc, targets[excerpt]
+
+
+def pre_process_CIFAR10_data():
+    # Load the dataset
+    x_train, y_train, x_validate, y_validate, x_test, y_test = split_cifar10_data(load_cifar10_data())
+
+    train_size, validate_size, test_size = y_train.shape[0], y_validate.shape[0], y_test.shape[0]
+
+    message('Training data size:', train_size)
+    message('Validation data size:', validate_size)
+    message('Test data size:', test_size)
+
+    return x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size

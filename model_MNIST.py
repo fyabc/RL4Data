@@ -26,7 +26,7 @@ from lasagne.layers.helper import get_all_param_values, set_all_param_values
 from lasagne.layers import LocalResponseNormalization2DLayer, MaxPool2DLayer
 
 from config import Config, MNISTConfig as ParamConfig, PolicyConfig
-from utils import logging, iterate_minibatches, fX, floatX, shuffle_data, average, message, get_rank
+from utils import logging, fX, floatX, average, message, get_rank, get_minibatches_idx
 
 
 class MNISTModelBase(object):
@@ -79,12 +79,13 @@ class MNISTModelBase(object):
 
     def get_training_loss(self, x_train, y_train):
         sum_loss = 0.0
-        training_batches = 0
-        for batch in iterate_minibatches(x_train, y_train, self.train_batch_size, shuffle=False, augment=False):
-            training_batches += 1
-            inputs, targets = batch
+        kf = get_minibatches_idx(len(y_train), self.train_batch_size, shuffle=False)
+        for _, train_index in kf:
+            inputs = x_train[train_index]
+            targets = y_train[train_index]
+
             sum_loss += self.f_cost(inputs, targets)
-        return sum_loss / training_batches
+        return sum_loss / len(kf)
 
     @logging
     def test(self, x_test, y_test):
@@ -95,17 +96,19 @@ class MNISTModelBase(object):
             test_acc / test_batches * 100))
 
     def validate_or_test(self, x_test, y_test):
-        # Calculate validation error of model:
-        test_err = 0
-        test_acc = 0
-        test_batches = 0
-        for batch in iterate_minibatches(x_test, y_test, self.validate_batch_size, shuffle=False):
-            inputs, targets = batch
+        test_err = 0.0
+        test_acc = 0.0
+        kf = get_minibatches_idx(len(y_test), self.train_batch_size, shuffle=False)
+
+        for _, test_index in kf:
+            inputs = x_test[test_index]
+            targets = y_test[test_index]
+
             err, acc = self.f_validate(inputs, targets)
             test_err += err
             test_acc += acc
-            test_batches += 1
-        return test_err, test_acc, test_batches
+
+        return test_err, test_acc, len(kf)
 
     def get_test_acc(self, x_test, y_test):
         test_loss, test_acc, test_batches = self.validate_or_test(x_test, y_test)

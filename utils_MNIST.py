@@ -10,7 +10,7 @@ import theano
 import theano.tensor as T
 
 from config import Config, MNISTConfig
-from utils import fX
+from utils import fX, message
 
 
 def load_mnist_data(data_dir=None):
@@ -74,6 +74,19 @@ def load_mnist_data(data_dir=None):
     rval = (train_set_x, train_set_y, valid_set_x, valid_set_y,
             test_set_x, test_set_y)
     return rval
+
+
+def pre_process_MNIST_data():
+    # Load the dataset
+    x_train, y_train, x_validate, y_validate, x_test, y_test = load_mnist_data()
+
+    train_size, validate_size, test_size = y_train.shape[0], y_validate.shape[0], y_test.shape[0]
+
+    message('Training data size:', train_size)
+    message('Validation data size:', validate_size)
+    message('Test data size:', test_size)
+
+    return x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size
 
 
 def test():
