@@ -418,14 +418,11 @@ def train_actor_critic_MNIST():
             print('[Epoch {}]'.format(epoch))
             message('[Epoch {}]'.format(epoch))
 
-            total_accepted_cases = 0
-            history_train_loss = 0
-            train_batches = 0
             epoch_start_time = time.time()
 
             kf = get_minibatches_idx(train_small_size, model.train_batch_size, shuffle=True)
 
-            actor.start_new_epoch()
+            updater.start_new_epoch()
 
             for _, train_index in kf:
                 part_train_cost = updater.add_batch(train_index, updater, history_accuracy)
