@@ -264,6 +264,7 @@ def test():
     input_data = np.ones(shape=(4, CifarConfig['cnn_output_size']), dtype=fX)
 
     print(pn.take_action(input_data, False))
+    pn.message_parameters()
 
 
 if __name__ == '__main__':

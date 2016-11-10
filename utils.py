@@ -77,7 +77,9 @@ def floatX(value):
 
 
 def init_norm(*dims):
-    return floatX(np.random.randn(*dims))
+    result = floatX(np.random.randn(*dims))
+    result /= np.sqrt(result.size)
+    return result
 
 
 def unpickle(filename):
