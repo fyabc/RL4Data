@@ -131,10 +131,10 @@ Total label count: {}""".format(
     return validate_acc, test_acc
 
 
-def episode_final_message(best_validation_acc, best_iteration, test_score, start_time):
+def episode_final_message(best_validate_acc, best_iteration, test_score, start_time):
     message('$Final results:')
     message('$  best test accuracy:\t\t{} %'.format((test_score * 100.0) if test_score is not None else None))
-    message('$  best validation accuracy: {}'.format(best_validation_acc))
+    message('$  best validation accuracy: {}'.format(best_validate_acc))
     message('$  obtained at iteration {}'.format(best_iteration))
     message('$  Time passed: {:.2f}s'.format(time.time() - start_time))
 
@@ -394,24 +394,24 @@ def train_actor_critic_MNIST():
 
         model.reset_parameters()
 
+        # Train the network
+        # Some variables
+        history_accuracy = []
+
+        # To prevent the double validate / AC update point
+        last_validate_point = -1
+        last_AC_update_point = -1
+
         # get small training data
         x_train_small, y_train_small = get_part_data(x_train, y_train, ParamConfig['train_small_size'])
         train_small_size = len(x_train_small)
         message('Training small size:', train_small_size)
 
-        # Some variables
-        # Iteration (number of batches)
-        iteration = 0
-        # Validation point iteration
-        validate_point_number = 0
+        updater = ACUpdater(model, [x_train_small, y_train_small], actor)
 
-        history_accuracy = []
-
-        total_accepted_cases = 0
-
-        best_validation_acc = -np.inf
+        best_validate_acc = -np.inf
         best_iteration = 0
-        test_score = 0.
+        test_score = 0.0
         start_time = time.time()
 
         for epoch in range(ParamConfig['epoch_per_episode']):
@@ -428,38 +428,33 @@ def train_actor_critic_MNIST():
             actor.start_new_epoch()
 
             for _, train_index in kf:
-                iteration += 1
+                part_train_cost = updater.add_batch(train_index, updater, history_accuracy)
 
-                inputs, targets = x_train_small[train_index], y_train_small[train_index]
+                if updater.total_train_batches > 0 and \
+                        updater.total_train_batches != last_AC_update_point and \
+                        updater.total_train_batches % PolicyConfig['AC_update_freq'] == 0:
+                    last_AC_update_point = updater.total_train_batches
 
-                probability = model.get_policy_input(inputs, targets, epoch, history_accuracy)
-                actions = actor.take_action(probability)
+                    # [NOTE]: The batch is the batch sent into updater, NOT the buffer's batch.
+                    inputs = x_train_small[train_index]
+                    targets = y_train_small[train_index]
+                    probability = updater.last_probability
+                    actions = updater.last_action
 
-                # get masked inputs and targets
-                inputs_selected = inputs[actions]
-                targets_selected = targets[actions]
-
-                total_accepted_cases += len(inputs_selected)
-
-                part_train_cost = model.f_train(inputs_selected, targets_selected)
-                history_train_loss += part_train_cost
-
-                train_batches += 1
-
-                if iteration % PolicyConfig['AC_update_freq'] == 0:
                     # Get immediate reward
-                    if PolicyConfig['cost_gap_AC_reward']:
-                        cost_old = part_train_cost
-                        cost_new = model.f_cost_without_decay(inputs, targets)
-                        imm_reward = cost_old - cost_new
-                    else:
-                        valid_part_x, valid_part_y = get_part_data(
-                            np.asarray(x_validate), np.asarray(y_validate), PolicyConfig['immediate_reward_sample_size'])
-                        _, valid_err, validate_batches = model.validate_or_test(valid_part_x, valid_part_y)
-                        imm_reward = valid_err / validate_batches
+                    # [NOTE]: Cost gap reward is removed
+                    # if PolicyConfig['cost_gap_AC_reward']:
+                    #     cost_old = part_train_cost
+                    #
+                    #     cost_new = model.f_cost_without_decay(inputs, targets)
+                    #     imm_reward = cost_old - cost_new
+                    valid_part_x, valid_part_y = get_part_data(
+                        np.asarray(x_validate), np.asarray(y_validate), PolicyConfig['immediate_reward_sample_size'])
+                    _, valid_acc, validate_batches = model.validate_or_test(valid_part_x, valid_part_y)
+                    imm_reward = valid_acc / validate_batches
 
                     # Get new state, new actions, and compute new Q value
-                    probability_new = model.get_policy_input(inputs, targets, epoch, history_accuracy)
+                    probability_new = model.get_policy_input(inputs, targets, updater, history_accuracy)
                     actions_new = actor.take_action(probability_new, log_replay=False)
 
                     Q_value_new = critic.Q_function(state=probability_new, action=actions_new)
@@ -476,55 +471,40 @@ def train_actor_critic_MNIST():
                                                   np.full(actions.shape, label, dtype=probability.dtype))
 
                     if PolicyConfig['AC_update_freq'] >= ParamConfig['display_freq'] or \
-                       iteration % ParamConfig['display_freq'] == 0:
-                        message('Epoch {}\tIteration {}\tCost {}\tCritic loss {}\tActor loss {}'
-                                .format(epoch, iteration, part_train_cost, Q_loss, actor_loss))
+                       updater.total_train_batches % ParamConfig['display_freq'] == 0:
+                        message('Epoch {}\tTotalBatches {}\tCost {}\tCritic loss {}\tActor loss {}'
+                                .format(epoch, updater.total_train_batches, part_train_cost, Q_loss, actor_loss))
 
-                if ParamConfig['train_loss_freq'] > 0 and iteration % ParamConfig['train_loss_freq'] == 0:
-                    train_loss = model.get_training_loss(x_train, y_train)
-                    message('Training Loss (Full training set):', train_loss)
+                if updater.total_train_batches > 0 and \
+                        updater.total_train_batches != last_validate_point and \
+                        updater.total_train_batches % validation_frequency == 0:
+                    last_validate_point = updater.total_train_batches
 
-                if iteration % validation_frequency == 0:
-                    validate_point_number += 1
-                    validate_acc, test_acc = validate_point_message(
-                        model, x_train_small, y_train_small, x_validate, y_validate, x_test, y_test,
-                        history_train_loss, train_batches, total_accepted_cases, epoch, iteration, validate_point_number)
+                    validate_acc, test_acc = validate_point_message2(
+                        model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater)
                     history_accuracy.append(validate_acc)
 
-                    # if we got the best validation score until now
-                    if validate_acc > best_validation_acc:
+                    if validate_acc > best_validate_acc:
                         # improve patience if loss improvement is good enough
-                        if (1. - validate_acc) < (1. - best_validation_acc) * improvement_threshold:
-                            patience = max(patience, iteration * patience_increase)
-                        best_validation_acc = validate_acc
-                        best_iteration = iteration
+                        if (1. - validate_acc) < (1. - best_validate_acc) * improvement_threshold:
+                            patience = max(patience, updater.iteration * patience_increase)
+                        best_validate_acc = validate_acc
+                        best_iteration = updater.iteration
+                        test_score = test_acc
 
-                        if test_acc is not None:
-                            test_score = test_acc
-                        else:
-                            # Must have a test at best validate accuracy point
-                            # Get test loss and accuracy
-                            test_loss, test_acc, test_batches = model.validate_or_test(x_test, y_test)
-                            test_loss /= test_batches
-                            test_acc /= test_batches
-
-                            message('Test Point: Epoch {} Iteration {}'.format(epoch, iteration))
-                            message('Test Loss:', test_loss),
-                            message('#Test accuracy:', test_acc)
-                            test_score = test_acc
-
-                if iteration >= patience:
+                if updater.total_train_batches >= patience:
                     break
 
             message("Epoch {} of {} took {:.3f}s".format(
                 epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
-            if iteration >= patience:
+            if updater.total_train_batches >= patience:
                 break
 
-        episode_final_message(best_validation_acc, best_iteration, test_score, start_time)
+        episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
 
-        validate_acc = model.get_test_acc(x_validate, y_validate)
-        actor.update(validate_acc)
+        # [NOTE]: Remove update of terminal reward in AC.
+        # validate_acc = model.get_test_acc(x_validate, y_validate)
+        # actor.update(validate_acc)
 
         if Config['policy_save_freq'] > 0 and episode % Config['policy_save_freq'] == 0:
             actor.save_policy(PolicyConfig['policy_model_file'].replace('.npz', '_ep{}.npz'.format(episode)))

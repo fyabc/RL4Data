@@ -39,6 +39,9 @@ class BatchUpdater(object):
             self.epoch_label_count = np.zeros((self.model.output_size,), dtype='int64')
             self.total_label_count = np.zeros((self.model.output_size,), dtype='int64')
 
+        # A hook: the last update batch index.
+        self.last_update_batch_index = None
+
     @property
     def data_size(self):
         return len(self.all_data[0])
@@ -78,9 +81,9 @@ class BatchUpdater(object):
             self.epoch_label_count.fill(0)
 
     def train_batch_buffer(self):
-        update_batch_index = [self.buffer.popleft() for _ in range(self.batch_size)]
+        self.last_update_batch_index = [self.buffer.popleft() for _ in range(self.batch_size)]
 
-        selected_batch_data = [data[update_batch_index] for data in self.all_data]
+        selected_batch_data = [data[self.last_update_batch_index] for data in self.all_data]
 
         if Config['temp_job'] == 'check_selected_data_label':
             selected_batch_label = selected_batch_data[-1]
@@ -171,14 +174,30 @@ class TrainPolicyUpdater(BatchUpdater):
         super(TrainPolicyUpdater, self).start_new_epoch()
         self.policy.start_new_epoch()
 
+
+class ACUpdater(BatchUpdater):
+    def __init__(self, model, all_data, policy):
+        super(ACUpdater, self).__init__(model, all_data)
+        self.policy = policy
+
+        self.last_probability = None
+        self.last_action = None
+
+    def start_new_epoch(self):
+        super(ACUpdater, self).start_new_epoch()
+        self.policy.start_new_epoch()
+
     def filter_batch(self, batch_index, *args):
         selected_batch_data = [data[batch_index] for data in self.all_data]
         selected_batch_data.extend(args)
 
         probability = self.model.get_policy_input(*selected_batch_data)
-        action = self.policy.take_action(probability, True)
+        action = self.policy.take_action(probability, False)
 
         result = [index for i, index in enumerate(batch_index) if action[i]]
+
+        self.last_probability = probability
+        self.last_action = action
 
         return result
 
