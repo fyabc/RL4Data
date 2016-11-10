@@ -52,41 +52,7 @@ def pre_process_config(model, train_size):
     return patience, patience_increase, improvement_threshold, validation_frequency
 
 
-def validate_point_message(model, x_train, y_train, x_validate, y_validate, x_test, y_test,
-                           history_train_loss, train_batches, total_accepted_cases, epoch, iteration,
-                           validate_point_number):
-    # Get training loss
-    train_loss = model.get_training_loss(x_train, y_train)
-
-    # Get validation loss and accuracy
-    validate_loss, validate_acc, validate_batches = model.validate_or_test(x_validate, y_validate)
-    validate_loss /= validate_batches
-    validate_acc /= validate_batches
-
-    message('Validate Point: Epoch {} Iteration {}'.format(epoch, iteration))
-    message('Training Loss:', train_loss)
-    message('History Training Loss:', history_train_loss / train_batches)
-    message('Validate Loss:', validate_loss)
-    message('#Validate accuracy:', validate_acc)
-
-    if ParamConfig['test_per_point'] > 0 and validate_point_number % ParamConfig['test_per_point'] == 0:
-        # Get test loss and accuracy
-        test_loss, test_acc, test_batches = model.validate_or_test(x_test, y_test)
-        test_loss /= test_batches
-        test_acc /= test_batches
-
-        message('Test Loss:', test_loss),
-        message('#Test accuracy:', test_acc)
-    else:
-        test_acc = None
-
-    message('Number of accepted cases: {} of {} total'.format(
-        total_accepted_cases, train_batches * model.train_batch_size))
-
-    return validate_acc, test_acc
-
-
-def validate_point_message2(model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater):
+def validate_point_message(model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater):
     # Get training loss
     train_loss = model.get_training_loss(x_train, y_train)
 
@@ -176,7 +142,7 @@ def train_raw_MNIST():
                     updater.total_train_batches != last_validate_point and \
                     updater.total_train_batches % validation_frequency == 0:
                 last_validate_point = updater.total_train_batches
-                validate_acc, test_acc = validate_point_message2(
+                validate_acc, test_acc = validate_point_message(
                     model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater)
                 history_accuracy.append(validate_acc)
 
@@ -237,7 +203,7 @@ def train_SPL_MNIST():
                     updater.total_train_batches % validation_frequency == 0:
                 last_validate_point = updater.total_train_batches
 
-                validate_acc, test_acc = validate_point_message2(
+                validate_acc, test_acc = validate_point_message(
                     model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater)
                 history_accuracy.append(validate_acc)
 
@@ -319,7 +285,7 @@ def train_policy_MNIST():
                         updater.total_train_batches != last_validate_point and \
                         updater.total_train_batches % validation_frequency == 0:
                     last_validate_point = updater.total_train_batches
-                    validate_acc, test_acc = validate_point_message2(
+                    validate_acc, test_acc = validate_point_message(
                         model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater)
                     history_accuracy.append(validate_acc)
 
@@ -366,7 +332,7 @@ def train_policy_MNIST():
             validate_acc = model.get_test_acc(x_validate, y_validate)
             policy.update(validate_acc)
 
-        if Config['policy_save_freq'] > 0 and episode % Config['policy_save_freq'] == 0:
+        if PolicyConfig['policy_save_freq'] > 0 and episode % PolicyConfig['policy_save_freq'] == 0:
             policy.save_policy(PolicyConfig['policy_model_file'].replace('.npz', '_ep{}.npz'.format(episode)))
             policy.save_policy()
 
@@ -477,7 +443,7 @@ def train_actor_critic_MNIST():
                         updater.total_train_batches % validation_frequency == 0:
                     last_validate_point = updater.total_train_batches
 
-                    validate_acc, test_acc = validate_point_message2(
+                    validate_acc, test_acc = validate_point_message(
                         model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater)
                     history_accuracy.append(validate_acc)
 
@@ -503,7 +469,7 @@ def train_actor_critic_MNIST():
         # validate_acc = model.get_test_acc(x_validate, y_validate)
         # actor.update(validate_acc)
 
-        if Config['policy_save_freq'] > 0 and episode % Config['policy_save_freq'] == 0:
+        if PolicyConfig['policy_save_freq'] > 0 and episode % PolicyConfig['policy_save_freq'] == 0:
             actor.save_policy(PolicyConfig['policy_model_file'].replace('.npz', '_ep{}.npz'.format(episode)))
             actor.save_policy()
 
@@ -560,7 +526,7 @@ def test_policy_MNIST():
                     updater.total_train_batches != last_validate_point and \
                     updater.total_train_batches % validation_frequency == 0:
                 last_validate_point = updater.total_train_batches
-                validate_acc, test_acc = validate_point_message2(
+                validate_acc, test_acc = validate_point_message(
                     model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater)
                 history_accuracy.append(validate_acc)
 
