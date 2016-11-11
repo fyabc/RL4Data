@@ -55,7 +55,8 @@ def train_raw_CIFAR10():
     # model = VaniliaCNNModel()
 
     # Load the dataset
-    x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size = pre_process_CIFAR10_data()
+    x_train, y_train, x_validate, y_validate, x_test, y_test,\
+        train_size, validate_size, test_size = pre_process_CIFAR10_data()
 
     # Train the network
     if ParamConfig['warm_start']:
@@ -170,7 +171,7 @@ def train_SPL_CIFAR10():
 
     # Load the dataset
     x_train, y_train, x_validate, y_validate, x_test, y_test, \
-    train_size, validate_size, test_size = pre_process_CIFAR10_data()
+        train_size, validate_size, test_size = pre_process_CIFAR10_data()
 
     # Self-paced learning iterate on data cases
     total_iteration_number = ParamConfig['epoch_per_episode'] * len(x_train) // model.train_batch_size
@@ -265,7 +266,7 @@ def train_SPL2_CIFAR10():
 
     # Load the dataset
     x_train, y_train, x_validate, y_validate, x_test, y_test, \
-    train_size, validate_size, test_size = pre_process_CIFAR10_data()
+        train_size, validate_size, test_size = pre_process_CIFAR10_data()
 
     updater = SPLUpdater(model, [x_train, y_train], ParamConfig['epoch_per_episode'])
 
