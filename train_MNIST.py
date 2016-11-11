@@ -13,6 +13,8 @@ from utils import *
 from utils import episode_final_message
 from utils_MNIST import pre_process_MNIST_data
 
+from policyNetwork import LRPolicyNetwork, MLPPolicyNetwork
+
 __author__ = 'fyabc'
 
 

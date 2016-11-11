@@ -9,7 +9,9 @@ from config import CifarConfig as ParamConfig
 from criticNetwork import CriticNetwork
 from model_CIFAR10 import CIFARModel
 from utils import *
-from utils_CIFAR10 import load_cifar10_data, split_cifar10_data, iterate_minibatches, pre_process_CIFAR10_data, prepare_CIFAR10_data
+from utils_CIFAR10 import load_cifar10_data, split_cifar10_data, iterate_minibatches, pre_process_CIFAR10_data, \
+    prepare_CIFAR10_data
+from policyNetwork import LRPolicyNetwork, MLPPolicyNetwork
 
 __author__ = 'fyabc'
 
@@ -109,8 +111,8 @@ def train_raw2_CIFAR10():
     # model = VaniliaCNNModel()
 
     # Load the dataset
-    x_train, y_train, x_validate, y_validate, x_test, y_test,\
-        train_size, validate_size, test_size = pre_process_CIFAR10_data()
+    x_train, y_train, x_validate, y_validate, x_test, y_test, \
+    train_size, validate_size, test_size = pre_process_CIFAR10_data()
 
     updater = RawUpdater(model, [x_train, y_train], prepare_data=prepare_CIFAR10_data)
 
@@ -167,8 +169,8 @@ def train_SPL_CIFAR10():
     # model = VaniliaCNNModel()
 
     # Load the dataset
-    x_train, y_train, x_validate, y_validate, x_test, y_test,\
-        train_size, validate_size, test_size = pre_process_CIFAR10_data()
+    x_train, y_train, x_validate, y_validate, x_test, y_test, \
+    train_size, validate_size, test_size = pre_process_CIFAR10_data()
 
     # Self-paced learning iterate on data cases
     total_iteration_number = ParamConfig['epoch_per_episode'] * len(x_train) // model.train_batch_size
@@ -262,8 +264,8 @@ def train_SPL2_CIFAR10():
     # model = VaniliaCNNModel()
 
     # Load the dataset
-    x_train, y_train, x_validate, y_validate, x_test, y_test,\
-        train_size, validate_size, test_size = pre_process_CIFAR10_data()
+    x_train, y_train, x_validate, y_validate, x_test, y_test, \
+    train_size, validate_size, test_size = pre_process_CIFAR10_data()
 
     updater = SPLUpdater(model, [x_train, y_train], ParamConfig['epoch_per_episode'])
 
@@ -499,7 +501,8 @@ def train_actor_critic_CIFAR10():
                         imm_reward = cost_old - cost_new
                     else:
                         valid_part_x, valid_part_y = get_part_data(
-                            np.asarray(x_validate), np.asarray(y_validate), PolicyConfig['immediate_reward_sample_size'])
+                            np.asarray(x_validate), np.asarray(y_validate),
+                            PolicyConfig['immediate_reward_sample_size'])
                         _, valid_err, validate_batches = model.validate_or_test(valid_part_x, valid_part_y)
                         imm_reward = valid_err / validate_batches
 
@@ -521,7 +524,7 @@ def train_actor_critic_CIFAR10():
                                                   np.full(actions.shape, label, dtype=probability.dtype))
 
                     if PolicyConfig['AC_update_freq'] >= ParamConfig['display_freq'] or \
-                       iteration % ParamConfig['display_freq'] == 0:
+                                            iteration % ParamConfig['display_freq'] == 0:
                         message('Epoch {}\tIteration {}\tCost {}\tCritic loss {}\tActor loss {}'
                                 .format(epoch, iteration, part_train_err, Q_loss, actor_loss))
 
