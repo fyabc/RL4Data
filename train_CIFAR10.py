@@ -340,6 +340,10 @@ def train_policy2_CIFAR10():
                 best_iteration = updater.iteration
                 test_score = test_acc
 
+            # Check speed rewards
+            if first_over_cases is None and validate_acc >= PolicyConfig['speed_reward_threshold']:
+                first_over_cases = updater.total_accepted_cases
+
             if model_name == CIFARModel:
                 if (epoch + 1) in (41, 61):
                     model.update_learning_rate()
