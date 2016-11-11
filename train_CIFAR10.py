@@ -268,7 +268,7 @@ def train_SPL2_CIFAR10():
     x_train, y_train, x_validate, y_validate, x_test, y_test, \
         train_size, validate_size, test_size = pre_process_CIFAR10_data()
 
-    updater = SPLUpdater(model, [x_train, y_train], ParamConfig['epoch_per_episode'])
+    updater = SPLUpdater(model, [x_train, y_train], ParamConfig['epoch_per_episode'], prepare_data=prepare_CIFAR10_data)
 
     if ParamConfig['warm_start']:
         model.load_model(Config['model_file'])
