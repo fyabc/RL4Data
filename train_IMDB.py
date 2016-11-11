@@ -883,6 +883,15 @@ def test_policy_IMDB():
                           save_to=False)
 
 
+def just_ref():
+    """
+    This function is just refer some names to prevent them from being optimized by Pycharm.
+    """
+
+    _ = sys
+    _ = LRPolicyNetwork, MLPPolicyNetwork
+
+
 def main(args=None):
     process_before_train(args, ParamConfig)
 

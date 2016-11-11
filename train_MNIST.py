@@ -169,7 +169,8 @@ def train_policy_MNIST():
     policy.message_parameters()
 
     # Load the dataset and config
-    x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size = pre_process_MNIST_data()
+    x_train, y_train, x_validate, y_validate, x_test, y_test,\
+        train_size, validate_size, test_size = pre_process_MNIST_data()
     patience, patience_increase, improvement_threshold, validation_frequency = pre_process_config(model, train_size)
 
     for episode in range(PolicyConfig['num_episodes']):
@@ -478,6 +479,14 @@ def test_policy_MNIST():
             break
 
     episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
+
+
+def just_ref():
+    """
+    This function is just refer some names to prevent them from being optimized by Pycharm.
+    """
+
+    _ = LRPolicyNetwork, MLPPolicyNetwork
 
 
 def main(args=None):

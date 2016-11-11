@@ -7,7 +7,7 @@ import traceback
 from batch_updater import *
 from config import CifarConfig as ParamConfig
 from criticNetwork import CriticNetwork
-from model_CIFAR10 import CIFARModel
+from model_CIFAR10 import CIFARModelBase, CIFARModel, VaniliaCNNModel
 from utils import *
 from utils_CIFAR10 import load_cifar10_data, split_cifar10_data, iterate_minibatches, pre_process_CIFAR10_data, \
     prepare_CIFAR10_data
@@ -55,65 +55,8 @@ def train_raw_CIFAR10():
     # model = VaniliaCNNModel()
 
     # Load the dataset
-    x_train, y_train, x_validate, y_validate, x_test, y_test,\
-        train_size, validate_size, test_size = pre_process_CIFAR10_data()
-
-    # Train the network
-    if ParamConfig['warm_start']:
-        model.load_model(Config['model_file'])
-    else:
-        model.reset_parameters()
-
-    # Iteration (number of batches)
-    iteration = 0
-
-    for epoch in range(ParamConfig['epoch_per_episode']):
-        print('[Epoch {}]'.format(epoch))
-        message('[Epoch {}]'.format(epoch))
-
-        total_accepted_cases = 0
-        history_train_loss = 0
-        train_batches = 0
-        start_time = time.time()
-
-        for batch in iterate_minibatches(x_train, y_train, ParamConfig['train_batch_size'], shuffle=True, augment=True):
-            iteration += 1
-
-            inputs, targets = batch
-
-            total_accepted_cases += len(inputs)
-
-            part_train_cost = model.f_train(inputs, targets)
-
-            if iteration % ParamConfig['display_freq'] == 0:
-                message('Train error of iteration {} is {}'.format(iteration, part_train_cost))
-
-            history_train_loss += part_train_cost
-            train_batches += 1
-
-        epoch_message(model, x_train, y_train, x_validate, y_validate, x_test, y_test,
-                      [], history_train_loss,
-                      epoch, start_time, train_batches, total_accepted_cases)
-
-        if model_name == CIFARModel:
-            if (epoch + 1) in (41, 61):
-                model.update_learning_rate()
-
-    if ParamConfig['save_model']:
-        model.save_model()
-
-    model.test(x_test, y_test)
-
-
-def train_raw2_CIFAR10():
-    model_name = eval(ParamConfig['model_name'])
-    # Create neural network model
-    model = model_name()
-    # model = VaniliaCNNModel()
-
-    # Load the dataset
     x_train, y_train, x_validate, y_validate, x_test, y_test, \
-    train_size, validate_size, test_size = pre_process_CIFAR10_data()
+        train_size, validate_size, test_size = pre_process_CIFAR10_data()
 
     updater = RawUpdater(model, [x_train, y_train], prepare_data=prepare_CIFAR10_data)
 
@@ -164,101 +107,6 @@ def train_raw2_CIFAR10():
 
 
 def train_SPL_CIFAR10():
-    model_name = eval(ParamConfig['model_name'])
-    # Create neural network model
-    model = model_name()
-    # model = VaniliaCNNModel()
-
-    # Load the dataset
-    x_train, y_train, x_validate, y_validate, x_test, y_test, \
-        train_size, validate_size, test_size = pre_process_CIFAR10_data()
-
-    # Self-paced learning iterate on data cases
-    total_iteration_number = ParamConfig['epoch_per_episode'] * len(x_train) // model.train_batch_size
-
-    # Get the cost threshold \lambda.
-    def cost_threshold(iteration):
-        return 1 + (model.train_batch_size - 1) * iteration / total_iteration_number
-
-    # Data buffer
-    spl_buffer = deque()
-
-    # When collect such number of cases, update them.
-    update_maxlen = model.train_batch_size
-
-    # # Self-paced learning setting end
-
-    # Train the network
-    if ParamConfig['warm_start']:
-        model.load_model(Config['model_file'])
-    else:
-        model.reset_parameters()
-
-    # Iteration (number of batches)
-    iteration = 0
-
-    for epoch in range(ParamConfig['epoch_per_episode']):
-        print('[Epoch {}]'.format(epoch))
-        message('[Epoch {}]'.format(epoch))
-
-        total_accepted_cases = 0
-        history_train_loss = 0
-        train_batches = 0
-        start_time = time.time()
-
-        for batch in iterate_minibatches(x_train, y_train, ParamConfig['train_batch_size'],
-                                         shuffle=True, augment=True, return_indices=True):
-            iteration += 1
-
-            inputs, targets, indices = batch
-
-            selected_number = cost_threshold(iteration)
-
-            cost_list = model.f_cost_list_without_decay(inputs, targets)
-            label_cost_lists = [cost_list[targets == label] for label in range(10)]
-
-            for i, label_cost_list in enumerate(label_cost_lists):
-                if label_cost_list.size != 0:
-                    threshold = heapq.nsmallest(selected_number, label_cost_list)[-1]
-                    for j in range(len(targets)):
-                        if targets[j] == i and cost_list[j] <= threshold:
-                            spl_buffer.append(indices[j])
-
-            if len(spl_buffer) >= update_maxlen:
-                # message('SPL buffer full, update...', end='')
-
-                update_batch_index = [spl_buffer.popleft() for _ in range(update_maxlen)]
-                # Get masked inputs and targets
-                inputs_selected = x_train[update_batch_index]
-                targets_selected = y_train[update_batch_index]
-
-                total_accepted_cases += len(inputs_selected)
-
-                part_train_err = model.f_train(inputs_selected, targets_selected)
-
-                # message('done')
-            else:
-                part_train_err = None
-
-            # # In SPL, display after each update
-            # if iteration % CifarConfig['display_freq'] == 0:
-            if part_train_err is not None:
-                message('Train error of iteration {} is {}'.format(iteration, part_train_err))
-                history_train_loss += part_train_err
-            train_batches += 1
-
-        epoch_message(model, x_train, y_train, x_validate, y_validate, x_test, y_test,
-                      [], history_train_loss,
-                      epoch, start_time, train_batches, total_accepted_cases)
-
-        if model_name == CIFARModel:
-            if (epoch + 1) in (41, 61):
-                model.update_learning_rate()
-
-    model.test(x_test, y_test)
-
-
-def train_SPL2_CIFAR10():
     model_name = eval(ParamConfig['model_name'])
     # Create neural network model
     model = model_name()
@@ -320,7 +168,7 @@ def train_policy_CIFAR10():
     # model = VaniliaCNNModel()
 
     # Create the policy network
-    input_size = CIFARModel.get_policy_input_size()
+    input_size = CIFARModelBase.get_policy_input_size()
     print('Input size of policy network:', input_size)
     policy_model_name = eval(PolicyConfig['policy_model_name'])
     policy = policy_model_name(input_size=input_size)
@@ -416,6 +264,109 @@ def train_policy_CIFAR10():
             terminal_reward = floatX(first_over_index) / ParamConfig['epoch_per_episode']
             policy.update(-np.log(terminal_reward))
         else:
+            policy.update(validate_acc)
+
+        if PolicyConfig['policy_save_freq'] > 0 and episode % PolicyConfig['policy_save_freq'] == 0:
+            policy.save_policy(PolicyConfig['policy_model_file'].replace('.npz', '_ep{}.npz'.format(episode)))
+            policy.save_policy()
+
+
+def train_policy2_CIFAR10():
+    model_name = eval(ParamConfig['model_name'])
+    # Create neural network model
+    model = model_name()
+    # model = VaniliaCNNModel()
+
+    # Create the policy network
+    input_size = CIFARModelBase.get_policy_input_size()
+    print('Input size of policy network:', input_size)
+    policy_model_name = eval(PolicyConfig['policy_model_name'])
+    policy = policy_model_name(input_size=input_size)
+    # policy = LRPolicyNetwork(input_size=input_size)
+    policy.message_parameters()
+
+    # Load the dataset
+    x_train, y_train, x_validate, y_validate, x_test, y_test, \
+        train_size, validate_size, test_size = pre_process_CIFAR10_data()
+
+    # Train the network
+    for episode in range(PolicyConfig['num_episodes']):
+        print('[Episode {}]'.format(episode))
+        message('[Episode {}]'.format(episode))
+
+        if ParamConfig['warm_start']:
+            model.load_model(Config['model_file'])
+        else:
+            model.reset_parameters()
+        model.reset_learning_rate()
+
+        # Train the network
+        # Some variables
+        history_accuracy = []
+
+        # Speed reward
+        first_over_cases = None
+
+        # get small training data
+        x_train_small, y_train_small = get_part_data(x_train, y_train, ParamConfig['train_small_size'])
+        train_small_size = len(x_train_small)
+        message('Training small size:', train_small_size)
+
+        updater = TrainPolicyUpdater(model, [x_train_small, y_train_small], policy, prepare_data=prepare_CIFAR10_data)
+
+        best_validate_acc = -np.inf
+        best_iteration = 0
+        test_score = 0.0
+        start_time = time.time()
+
+        for epoch in range(ParamConfig['epoch_per_episode']):
+            print('[Epoch {}]'.format(epoch))
+            message('[Epoch {}]'.format(epoch))
+
+            updater.start_new_epoch()
+            epoch_start_time = time.time()
+
+            kf = get_minibatches_idx(train_small_size, model.train_batch_size, shuffle=True)
+
+            for _, train_index in kf:
+                part_train_cost = updater.add_batch(train_index, updater, history_accuracy)
+
+            validate_acc, test_acc = validate_point_message(
+                model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater)
+            history_accuracy.append(validate_acc)
+
+            if validate_acc > best_validate_acc:
+                best_validate_acc = validate_acc
+                best_iteration = updater.iteration
+                test_score = test_acc
+
+            if model_name == CIFARModel:
+                if (epoch + 1) in (41, 61):
+                    model.update_learning_rate()
+
+            message("Epoch {} of {} took {:.3f}s".format(
+                epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
+
+            # Immediate reward
+            if PolicyConfig['immediate_reward']:
+                validate_acc = model.get_test_acc(x_validate, y_validate)
+                policy.reward_buffer.append(validate_acc)
+
+        episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
+
+        # Updating policy
+        if PolicyConfig['speed_reward']:
+            expected_total_cases = ParamConfig['epoch_per_episode'] * train_small_size
+            if first_over_cases is None:
+                first_over_cases = expected_total_cases
+            terminal_reward = float(first_over_cases) / expected_total_cases
+            policy.update(-np.log(terminal_reward))
+
+            message('First over cases:', first_over_cases)
+            message('Total cases:', expected_total_cases)
+            message('Terminal reward:', terminal_reward)
+        else:
+            validate_acc = model.get_test_acc(x_validate, y_validate)
             policy.update(validate_acc)
 
         if PolicyConfig['policy_save_freq'] > 0 and episode % PolicyConfig['policy_save_freq'] == 0:
@@ -641,16 +592,25 @@ def test_policy_CIFAR10():
         model.test(x_test, y_test)
 
 
+def just_ref():
+    """
+    This function is just refer some names to prevent them from being optimized by Pycharm.
+    """
+
+    _ = CIFARModelBase, CIFARModel, VaniliaCNNModel
+    _ = LRPolicyNetwork, MLPPolicyNetwork
+
+
 def main(args=None):
     process_before_train(args, ParamConfig)
 
     try:
         if Config['train_type'] == 'raw':
-            train_raw2_CIFAR10()
+            train_raw_CIFAR10()
         elif Config['train_type'] == 'self_paced':
-            train_SPL2_CIFAR10()
+            train_SPL_CIFAR10()
         elif Config['train_type'] == 'policy':
-            train_policy_CIFAR10()
+            train_policy2_CIFAR10()
         elif Config['train_type'] == 'actor_critic':
             train_actor_critic_CIFAR10()
         elif Config['train_type'] == 'deterministic':
