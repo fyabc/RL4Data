@@ -64,6 +64,12 @@
         "speed_reward": false,
         "speed_reward_threshold": 0.8,
 
+        "speed_reward_config": [
+            [0.95, 0.5],
+            [0.97, 0.3333333],
+            [0.98, 0.1666667]
+        ],
+
         "policy_optimizer": "adam",
         "policy_learning_rate": 0.02,
         "policy_learning_rate_discount": 0.7,
@@ -74,6 +80,8 @@
 
         "gamma": 0.9,
         "b_init": 2.0,
+        // Use normalize when initializing W
+        "W_normalize": true,
 
         "reward_baseline": false,
         "reward_baseline_update_rate": 0.8,

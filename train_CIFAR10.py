@@ -17,7 +17,7 @@ __author__ = 'fyabc'
 
 
 # TODO: Change code into updaters
-# Done: raw
+# Done: raw, REINFORCE
 
 
 # [NOTE]: In CIFAR10, validate point at end of each epoch.
@@ -176,116 +176,6 @@ def train_policy_CIFAR10():
     policy.message_parameters()
 
     # Load the dataset
-    x_train, y_train, x_validate, y_validate, x_test, y_test = split_cifar10_data(load_cifar10_data())
-    train_small_size = ParamConfig['train_small_size']
-    x_train_small, y_train_small = get_part_data(x_train, y_train, train_small_size)
-
-    message('Training data size:', y_train_small.shape[0])
-    message('Validation data size:', y_validate.shape[0])
-    message('Test data size:', y_test.shape[0])
-
-    # Train the network
-    for episode in range(PolicyConfig['num_episodes']):
-        print('[Episode {}]'.format(episode))
-        message('[Episode {}]'.format(episode))
-
-        if ParamConfig['warm_start']:
-            model.load_model(Config['model_file'])
-        else:
-            model.reset_parameters()
-        model.reset_learning_rate()
-
-        history_accuracy = []
-
-        # Speed reward
-        first_over_index = None
-
-        for epoch in range(ParamConfig['epoch_per_episode']):
-            print('[Epoch {}]'.format(epoch))
-            message('[Epoch {}]'.format(epoch))
-
-            policy.start_new_epoch()
-
-            total_accepted_cases = 0
-            history_train_loss = 0
-            train_batches = 0
-            start_time = time.time()
-
-            for batch in iterate_minibatches(x_train_small, y_train_small, model.train_batch_size,
-                                             shuffle=True, augment=True):
-                inputs, targets = batch
-
-                probability = model.get_policy_input(inputs, targets, epoch, history_accuracy)
-                actions = policy.take_action(probability)
-
-                # get masked inputs and targets
-                inputs = inputs[actions]
-                targets = targets[actions]
-
-                total_accepted_cases += len(inputs)
-
-                history_train_loss += model.f_train(inputs, targets)
-                train_batches += 1
-
-            validate_loss, validate_acc, validate_batches = model.validate_or_test(x_validate, y_validate)
-            validate_acc /= validate_batches
-
-            history_accuracy.append(validate_acc)
-
-            # Check speed rewards
-            if first_over_index is None and validate_acc >= PolicyConfig['speed_reward_threshold']:
-                first_over_index = epoch
-
-            if model_name == CIFARModel:
-                if (epoch + 1) in (41, 61):
-                    model.update_learning_rate()
-
-            # add immediate reward
-            if PolicyConfig['immediate_reward']:
-                x_validate_small, y_validate_small = get_part_data(
-                    x_validate, y_validate, PolicyConfig['immediate_reward_sample_size'])
-                _, validate_acc, validate_batches = model.validate_or_test(x_validate_small, y_validate_small)
-                validate_acc /= validate_batches
-                policy.reward_buffer.append(validate_acc)
-
-            epoch_message(model, x_train, y_train, x_validate, y_validate, x_test, y_test,
-                          history_accuracy, history_train_loss,
-                          epoch, start_time, train_batches, total_accepted_cases)
-
-        model.test(x_test, y_test)
-
-        validate_loss, validate_acc, validate_batches = model.validate_or_test(x_validate, y_validate)
-        validate_acc /= validate_batches
-
-        # Updating policy
-        if PolicyConfig['speed_reward']:
-            if first_over_index is None:
-                first_over_index = ParamConfig['epoch_per_episode']
-            terminal_reward = floatX(first_over_index) / ParamConfig['epoch_per_episode']
-            policy.update(-np.log(terminal_reward))
-        else:
-            policy.update(validate_acc)
-
-        if PolicyConfig['policy_save_freq'] > 0 and episode % PolicyConfig['policy_save_freq'] == 0:
-            policy.save_policy(PolicyConfig['policy_model_file'].replace('.npz', '_ep{}.npz'.format(episode)))
-            policy.save_policy()
-
-
-def train_policy2_CIFAR10():
-    model_name = eval(ParamConfig['model_name'])
-    # Create neural network model
-    model = model_name()
-    # model = VaniliaCNNModel()
-
-    # Create the policy network
-    input_size = CIFARModelBase.get_policy_input_size()
-    print('Input size of policy network:', input_size)
-    policy_model_name = eval(PolicyConfig['policy_model_name'])
-    policy = policy_model_name(input_size=input_size)
-    # policy = LRPolicyNetwork(input_size=input_size)
-    policy.message_parameters()
-
-    # Load the dataset
     x_train, y_train, x_validate, y_validate, x_test, y_test, \
         train_size, validate_size, test_size = pre_process_CIFAR10_data()
 
@@ -304,13 +194,16 @@ def train_policy2_CIFAR10():
         # Some variables
         history_accuracy = []
 
-        # Speed reward
-        first_over_cases = None
-
         # get small training data
         x_train_small, y_train_small = get_part_data(x_train, y_train, ParamConfig['train_small_size'])
         train_small_size = len(x_train_small)
         message('Training small size:', train_small_size)
+
+        # Speed reward
+        speed_reward_checker = SpeedRewardChecker(
+            PolicyConfig['speed_reward_config'],
+            ParamConfig['epoch_per_episode'] * train_small_size,
+        )
 
         updater = TrainPolicyUpdater(model, [x_train_small, y_train_small], policy, prepare_data=prepare_CIFAR10_data)
 
@@ -341,8 +234,7 @@ def train_policy2_CIFAR10():
                 test_score = test_acc
 
             # Check speed rewards
-            if first_over_cases is None and validate_acc >= PolicyConfig['speed_reward_threshold']:
-                first_over_cases = updater.total_accepted_cases
+            speed_reward_checker.check(validate_acc, updater)
 
             if model_name == CIFARModel:
                 if (epoch + 1) in (41, 61):
@@ -360,15 +252,8 @@ def train_policy2_CIFAR10():
 
         # Updating policy
         if PolicyConfig['speed_reward']:
-            expected_total_cases = ParamConfig['epoch_per_episode'] * train_small_size
-            if first_over_cases is None:
-                first_over_cases = expected_total_cases
-            terminal_reward = float(first_over_cases) / expected_total_cases
-            policy.update(-np.log(terminal_reward))
-
-            message('First over cases:', first_over_cases)
-            message('Total cases:', expected_total_cases)
-            message('Terminal reward:', terminal_reward)
+            terminal_reward = speed_reward_checker.get_reward()
+            policy.update(terminal_reward)
         else:
             validate_acc = model.get_test_acc(x_validate, y_validate)
             policy.update(validate_acc)
@@ -614,7 +499,7 @@ def main(args=None):
         elif Config['train_type'] == 'self_paced':
             train_SPL_CIFAR10()
         elif Config['train_type'] == 'policy':
-            train_policy2_CIFAR10()
+            train_policy_CIFAR10()
         elif Config['train_type'] == 'actor_critic':
             train_actor_critic_CIFAR10()
         elif Config['train_type'] == 'deterministic':

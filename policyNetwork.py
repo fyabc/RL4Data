@@ -208,7 +208,7 @@ class LRPolicyNetwork(PolicyNetworkBase):
         super(LRPolicyNetwork, self).__init__(input_size, optimizer, rb_update_rate, learning_rate, gamma)
 
         # Parameters to be learned
-        self.W = theano.shared(name='W', value=init_norm(input_size))
+        self.W = theano.shared(name='W', value=init_norm(input_size, normalize=PolicyConfig['W_normalize']))
 
         if start_b is None:
             start_b = PolicyConfig['b_init']
@@ -237,9 +237,10 @@ class MLPPolicyNetwork(PolicyNetworkBase):
 
         self.hidden_size = hidden_size or PolicyConfig['hidden_size']
 
-        self.W0 = theano.shared(name='W0', value=init_norm(self.input_size, self.hidden_size))
+        self.W0 = theano.shared(name='W0', value=init_norm(self.input_size, self.hidden_size,
+                                                           normalize=PolicyConfig['W_normalize']))
         self.b0 = theano.shared(name='b0', value=np.zeros((self.hidden_size,), dtype=fX))
-        self.W1 = theano.shared(name='W1', value=init_norm(self.hidden_size))
+        self.W1 = theano.shared(name='W1', value=init_norm(self.hidden_size, normalize=PolicyConfig['W_normalize']))
 
         if start_b is None:
             start_b = PolicyConfig['b_init']

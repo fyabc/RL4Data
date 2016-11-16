@@ -8,6 +8,7 @@ import random
 import sys
 import time
 from functools import wraps
+from itertools import izip
 
 import numpy as np
 
@@ -76,9 +77,11 @@ def floatX(value):
     return np.asarray(value, dtype=fX)
 
 
-def init_norm(*dims):
+def init_norm(*dims, **kwargs):
+    normalize = kwargs.pop('normalize', True)
     result = floatX(np.random.randn(*dims))
-    result /= np.sqrt(result.size)
+    if normalize:
+        result /= np.sqrt(result.size)
     return result
 
 
@@ -124,6 +127,55 @@ def shuffle_data(x_train, y_train):
     shuffled_indices = np.arange(y_train.shape[0])
     np.random.shuffle(shuffled_indices)
     return x_train[shuffled_indices], y_train[shuffled_indices]
+
+
+####################################
+# Speed reward REINFORCE utilities #
+####################################
+
+class SpeedRewardChecker(object):
+    def __init__(self, check_point_list, expected_total_cases):
+        """
+
+        Parameters
+        ----------
+        check_point_list : list of 2-element tuples
+            format: [(threshold1, weight1), (threshold2, weight2), ...]
+        """
+
+        self._check_point_list = check_point_list
+        self.thresholds = [check_point[0] for check_point in check_point_list]
+        self.weights = [check_point[1] for check_point in check_point_list]
+        self.first_over_cases = [None for _ in range(len(check_point_list))]
+        self.expected_total_cases = expected_total_cases
+
+    @property
+    def num_checker(self):
+        return len(self.thresholds)
+
+    def check(self, validate_acc, updater):
+        for i, threshold in enumerate(self.thresholds):
+            if self.first_over_cases[i] is None and validate_acc >= threshold:
+                self.first_over_cases[i] = updater.total_accepted_cases
+
+    def get_reward(self, echo=True):
+        for i in range(len(self.first_over_cases)):
+            if self.first_over_cases[i] is None:
+                self.first_over_cases[i] = self.expected_total_cases
+
+        terminal_rewards = [-np.log(float(first_over_cases) / self.expected_total_cases)
+                            for first_over_cases in self.first_over_cases]
+        result = sum(weight * terminal_reward for weight, terminal_reward in zip(self.weights, terminal_rewards))
+
+        if echo:
+            message('Reward Point:\nFirst over cases:')
+            for threshold, first_over_cases, terminal_reward in zip(
+                    self.thresholds, self.first_over_cases, terminal_rewards):
+                message('{} {} {}'.format(threshold, first_over_cases, terminal_reward))
+            message('Total cases:', self.expected_total_cases)
+            message('Terminal reward:', result)
+
+        return result
 
 
 ########################################

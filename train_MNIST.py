@@ -186,13 +186,16 @@ def train_policy_MNIST():
         # To prevent the double validate point
         last_validate_point = -1
 
-        # Speed reward
-        first_over_cases = None
-
         # get small training data
         x_train_small, y_train_small = get_part_data(x_train, y_train, ParamConfig['train_small_size'])
         train_small_size = len(x_train_small)
         message('Training small size:', train_small_size)
+
+        # Speed reward
+        speed_reward_checker = SpeedRewardChecker(
+            PolicyConfig['speed_reward_config'],
+            ParamConfig['epoch_per_episode'] * train_small_size,
+        )
 
         updater = TrainPolicyUpdater(model, [x_train_small, y_train_small], policy)
 
@@ -230,8 +233,7 @@ def train_policy_MNIST():
                         test_score = test_acc
 
                     # Check speed rewards
-                    if first_over_cases is None and validate_acc >= PolicyConfig['speed_reward_threshold']:
-                        first_over_cases = updater.total_accepted_cases
+                    speed_reward_checker.check(validate_acc, updater)
 
                 if updater.total_train_batches >= patience:
                     break
@@ -251,15 +253,8 @@ def train_policy_MNIST():
 
         # Updating policy
         if PolicyConfig['speed_reward']:
-            expected_total_cases = ParamConfig['epoch_per_episode'] * train_small_size
-            if first_over_cases is None:
-                first_over_cases = expected_total_cases
-            terminal_reward = float(first_over_cases) / expected_total_cases
-            policy.update(-np.log(terminal_reward))
-
-            message('First over cases:', first_over_cases)
-            message('Total cases:', expected_total_cases)
-            message('Terminal reward:', terminal_reward)
+            terminal_reward = speed_reward_checker.get_reward()
+            policy.update(terminal_reward)
         else:
             validate_acc = model.get_test_acc(x_validate, y_validate)
             policy.update(validate_acc)
