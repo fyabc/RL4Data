@@ -59,7 +59,7 @@ class PolicyNetworkBase(object):
         # parameters, to be filled by subclasses
         self.parameters = None
 
-    def make_output(self, input_):
+    def make_output(self, input_=None):
         pass
 
     def build_output_function(self):
@@ -85,7 +85,8 @@ class PolicyNetworkBase(object):
         batch_action = T.ivector('actions')
         batch_reward = T.vector('rewards', dtype=fX)
 
-        cost = -T.mean(batch_reward * (batch_action * T.log(self.batch_output) +
+        sign = 1 if PolicyConfig['reward_sign'] else -1
+        cost = sign * T.mean(batch_reward * (batch_action * T.log(self.batch_output) +
                                        (1.0 - batch_action) * T.log(1.0 - self.batch_output)))
 
         grads = T.grad(

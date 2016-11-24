@@ -70,6 +70,9 @@
             [0.98, 0.1666667]
         ],
 
+        /// Negative reward?
+        "reward_sign": true,
+
         "policy_optimizer": "adam",
         "policy_learning_rate": 0.02,
         "policy_learning_rate_discount": 0.7,
@@ -194,7 +197,7 @@
 
         "random_drop_number_file": "./data/mnist/drop_num.txt",
 
-        "valid_freq": 2500,
+        "valid_freq": 1000,
         "train_loss_freq": 0,
         "display_freq": 100,
 
