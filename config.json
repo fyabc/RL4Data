@@ -65,9 +65,9 @@
         "speed_reward_threshold": 0.8,
 
         "speed_reward_config": [
-            [0.95, 0.5],
+            [0.95, 0.1666667],
             [0.97, 0.3333333],
-            [0.98, 0.1666667]
+            [0.98, 0.5]
         ],
 
         /// Negative reward?
@@ -197,7 +197,8 @@
 
         "random_drop_number_file": "./data/mnist/drop_num.txt",
 
-        "valid_freq": 1000,
+        /// Valid per ?? batches (20 * ?? data)
+        "valid_freq": 250,
         "train_loss_freq": 0,
         "display_freq": 100,
 
