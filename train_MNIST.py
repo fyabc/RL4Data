@@ -166,6 +166,10 @@ def train_policy_MNIST():
     policy_model_name = eval(PolicyConfig['policy_model_name'])
     policy = policy_model_name(input_size=input_size)
     # policy = LRPolicyNetwork(input_size=input_size)
+
+    if PolicyConfig['policy_warm_start']:
+        policy.load_policy(PolicyConfig['policy_warm_start_file'])
+
     policy.message_parameters()
 
     # Load the dataset and config

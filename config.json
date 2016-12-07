@@ -44,6 +44,9 @@
         "policy_model_file": "./data/policy_model.npz",
         "policy_save_freq": 1,
 
+        "policy_warm_start": false,
+        "policy_warm_start_file": null,
+
         "num_episodes": 1000,
 
         /// Policy input features
