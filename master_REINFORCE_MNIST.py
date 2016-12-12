@@ -43,9 +43,10 @@ def main():
     policy = policy_model_name(input_size=input_size)
     # policy = LRPolicyNetwork(input_size=input_size)
 
-    # Save the policy before the training, because all
+    # Save the policy before the training, because all episodes need it
+    policy.save_policy()
 
-    episode_number = 1000
+    episode_number = 10
 
     for episode in range(episode_number):
         ret_values = [None for _ in range(process_number)]
@@ -59,7 +60,7 @@ def main():
         pool = [
             psutil.Popen(
                 ['python', 'episode_REINFORCE_MNIST.py'] + args + [
-                    'logging_file=@./data/log_Pm_speed_par_ep{}_{}.npz@'.format(episode, i),
+                    'G.logging_file=@./data/log_Pm_speed_MLP_par_ep{}_{}.txt@'.format(episode, i),
                 ],
                 stdout=subprocess.PIPE,
                 env=envs[i],
