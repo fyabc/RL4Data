@@ -222,7 +222,7 @@ class MNISTModel(MNISTModelBase):
         self.target_var = T.vector('targets', dtype='int64')
 
         self.network = self.build_cnn()
-        print("number of parameters in model: %d" % lasagne.layers.count_params(self.network, trainable=True))
+        message("number of parameters in model: %d" % lasagne.layers.count_params(self.network, trainable=True))
 
         self.saved_init_parameters_values = get_all_param_values(self.network, trainable=True)
 
