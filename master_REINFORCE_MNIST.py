@@ -101,6 +101,10 @@ def main():
                     continue
                 ret_values[i] = process.poll()
 
+                # Both None and non-zero
+                if ret_values[i] != 0:
+                    continue
+
                 if ret_values[i] == 0:
                     results[i], _ = process.communicate()
 
