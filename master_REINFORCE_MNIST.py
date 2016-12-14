@@ -8,6 +8,8 @@ import os
 import time
 import psutil
 import subprocess
+import cPickle as pkl
+import gc
 
 from utils import process_before_train, message
 from config import MNISTConfig as ParamConfig, PolicyConfig
@@ -79,8 +81,20 @@ def main():
             if ret_values[i] == 0:
                 results[i], _ = process.communicate()
 
-        for terminal_reward in results:
-            policy.update(float(terminal_reward))
+        for temp_filename in results:
+            message('Loading and removing temp file... ', end='')
+            with open(temp_filename, 'rb') as f:
+                terminal_reward, input_buffer, action_buffer = pkl.load(f)
+            os.remove(temp_filename)
+            message('done')
+
+            gc.collect()
+
+            policy.input_buffer = input_buffer
+            policy.action_buffer = action_buffer
+            policy.update(terminal_reward)
+
+        policy.save_policy(PolicyConfig['policy_model_file'].replace('.npz', '_ep{}.npz'.format(episode)))
         policy.save_policy()
 
 

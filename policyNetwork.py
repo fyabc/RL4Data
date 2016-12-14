@@ -150,6 +150,14 @@ class PolicyNetworkBase(object):
                     cost += self.update_raw(batch_inputs, batch_actions,
                                             np.full(batch_actions.shape, temp, dtype=fX))
 
+        # print('#Input buffer size: {} * {} * {}'
+        #       .format(len(self.input_buffer), len(self.input_buffer[0]), self.input_buffer[0][0].shape))
+        # print('#Action buffer size: {} * {} * {}'
+        #       .format(len(self.action_buffer), len(self.action_buffer[0]), self.action_buffer[0][0].shape))
+        # import cPickle as pkl
+        # with open('./data/input_buffer.npz', 'wb') as f:
+        #     pkl.dump(self.input_buffer, f)
+
         # clear buffers
         self.clear_buffer()
 
