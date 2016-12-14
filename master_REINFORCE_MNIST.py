@@ -96,6 +96,8 @@ def main():
 
         # Roll polling
         while any(e is None for e in ret_values):
+            time.sleep(1.0)
+
             for i, process in enumerate(pool):
                 if ret_values[i] is not None:
                     continue
