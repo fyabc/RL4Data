@@ -122,6 +122,14 @@ def train_episode():
     print(terminal_reward)
 
 
+def just_ref():
+    """
+    This function is just refer some names to prevent them from being optimized by Pycharm.
+    """
+
+    _ = LRPolicyNetwork, MLPPolicyNetwork
+
+
 def main(args=None):
     process_before_train(args, ParamConfig)
 
