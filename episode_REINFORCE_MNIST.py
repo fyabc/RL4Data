@@ -117,9 +117,13 @@ def train_episode():
 
     episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
 
-    # Print terminal reward
     terminal_reward = speed_reward_checker.get_reward()
-    print(terminal_reward)
+
+    random_filename = './data/temp_{}.npz'.format(np.random.randint(0, 10000000))
+    with open(random_filename, 'wb') as f:
+        pkl.dump((terminal_reward, policy.input_buffer, policy.action_buffer), f)
+
+    print(random_filename, end='')
 
 
 def just_ref():

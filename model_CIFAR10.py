@@ -223,7 +223,7 @@ class CIFARModel(CIFARModelBase):
         self.target_var = T.ivector('targets')
 
         self.network = self.build_cnn(self.input_var, n)
-        print("number of parameters in model: %d" % lasagne.layers.count_params(self.network, trainable=True))
+        message("number of parameters in model: %d" % lasagne.layers.count_params(self.network, trainable=True))
 
         self.saved_init_parameters_values = get_all_param_values(self.network, trainable=True)
 
@@ -468,7 +468,7 @@ class VaniliaCNNModel(CIFARModelBase):
         self.learning_rate = theano.shared(lasagne.utils.floatX(ParamConfig['init_learning_rate']))
 
         self.network = self.build_cnn(self.input_var)
-        print("number of parameters in model: %d" % lasagne.layers.count_params(self.network, trainable=True))
+        message("number of parameters in model: %d" % lasagne.layers.count_params(self.network, trainable=True))
 
         self.saved_init_parameters_values = get_all_param_values(self.network, trainable=True)
 
