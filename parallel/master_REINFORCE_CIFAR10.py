@@ -3,9 +3,11 @@
 
 from __future__ import print_function, unicode_literals
 
+from parallel_utils import get_gpu_id
+
 
 def main():
-    pass
+    gpu_ids, remain_args = get_gpu_id()
 
 
 if __name__ == '__main__':
