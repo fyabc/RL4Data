@@ -12,7 +12,7 @@ import cPickle as pkl
 import gc
 
 from utils import process_before_train, message
-from config import MNISTConfig as ParamConfig, PolicyConfig
+from config import MNISTConfig as ParamConfig, PolicyConfig, Config
 from model_MNIST import MNISTModel
 from policyNetwork import LRPolicyNetwork, MLPPolicyNetwork
 
@@ -62,7 +62,9 @@ def main():
         pool = [
             psutil.Popen(
                 ['python', 'episode_REINFORCE_MNIST.py'] + args + [
-                    'G.logging_file=@./data/log_Pm_speed_MLP_par_ep{}_{}.txt@'.format(episode, i),
+                    'G.logging_file=@{}@'
+                    .format(Config['logging_file'])
+                    .replace('.txt', '_ep_{}_{}.txt'.format(episode, i)),
                 ],
                 stdout=subprocess.PIPE,
                 env=envs[i],
