@@ -96,3 +96,7 @@ data/
 
 # numpy saved models
 *.npz
+
+# theano config files
+.theanorc.*
+
