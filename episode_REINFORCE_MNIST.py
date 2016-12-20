@@ -119,7 +119,7 @@ def train_episode():
 
     terminal_reward = speed_reward_checker.get_reward()
 
-    random_filename = './data/temp_{}.npz'.format(np.random.randint(0, 10000000))
+    random_filename = './data/temp_Pm_speed_par_{}.npz'.format(np.random.randint(0, 10000000))
     with open(random_filename, 'wb') as f:
         pkl.dump((terminal_reward, policy.input_buffer, policy.action_buffer), f)
 

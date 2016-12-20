@@ -3,15 +3,13 @@
 
 from __future__ import print_function, unicode_literals
 
-from config import MNISTConfig as ParamConfig
-from model_MNIST import MNISTModel
+from config import CifarConfig as ParamConfig
+from model_CIFAR10 import CIFARModel
 from parallel_utils import parallel_run_async
-
-__author__ = 'fyabc'
 
 
 def main():
-    parallel_run_async(MNISTModel, ParamConfig, 'episode_REINFORCE_MNIST.py')
+    parallel_run_async(CIFARModel, ParamConfig, 'episode_REINFORCE_CIFAR10.py')
 
 
 if __name__ == '__main__':

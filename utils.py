@@ -264,6 +264,20 @@ def get_minibatches_idx(n, minibatch_size, shuffle=False):
     return list(enumerate(minibatches))
 
 
+def get_policy(model_type, policy_type, save=True):
+    """Create the policy network"""
+
+    input_size = model_type.get_policy_input_size()
+    message('Input size of policy network:', input_size)
+
+    policy = policy_type(input_size=input_size)
+
+    if save:
+        policy.save_policy()
+
+    return policy
+
+
 def validate_point_message(model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater):
     # Get training loss
     train_loss = model.get_training_loss(x_train, y_train)
