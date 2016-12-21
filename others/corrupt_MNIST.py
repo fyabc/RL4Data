@@ -13,6 +13,8 @@ flip_filename = '../data/mnist/mnist_corrupted.pkl.gz'
 part_flip_filename = '../data/mnist/mnist_corrupted_part.pkl.gz'
 gaussian_filename = '../data/mnist/mnist_gaussian.pkl.gz'
 part_gaussian_filename = '../data/mnist/mnist_gaussian_part.pkl.gz'
+gaussian_filename_1 = '../data/mnist/mnist_gaussian_std1.pkl.gz'
+part_gaussian_filename_1 = '../data/mnist/mnist_gaussian_std1_part.pkl.gz'
 
 
 def get_flip():
@@ -56,7 +58,7 @@ def get_part_flip(old_fn=flip_filename, new_fn=part_flip_filename, part_size=350
         pkl.dump((train, valid, test), new_f)
 
 
-def get_gaussian(max_std=0.4):
+def get_gaussian(g_fn=gaussian_filename, max_std=0.4):
     with gzip.open(orig_filename, 'rb') as orig_f:
         train, valid, test = pkl.load(orig_f)
 
@@ -81,15 +83,15 @@ def get_gaussian(max_std=0.4):
 
     train = train_x, train_y
 
-    with gzip.open(gaussian_filename, 'wb') as new_f:
+    with gzip.open(g_fn, 'wb') as new_f:
         pkl.dump((train, valid, test), new_f)
 
 
 def main():
     # get_flip()
 
-    get_gaussian()
-    get_part_flip(gaussian_filename, part_gaussian_filename)
+    get_gaussian(gaussian_filename_1, 1.0)
+    get_part_flip(gaussian_filename_1, part_gaussian_filename_1)
     pass
 
 
