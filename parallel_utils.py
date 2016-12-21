@@ -59,7 +59,7 @@ def parallel_run_async(model_type, param_config, slave_script_name):
                 ['python', slave_script_name] + args + [
                     'G.logging_file=@{}@'
                     .format(Config['logging_file'])
-                    .replace('.txt', '_ep{}_p{}.txt'.format(episode, i)),
+                    .replace('.txt', '_p{}.txt'.format(episode, i)),
                 ],
                 stdout=subprocess.PIPE,
                 env=envs[i],
