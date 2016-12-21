@@ -24,10 +24,14 @@ logging_file = sys.stderr
 _depth = 0
 
 
-def init_logging_file():
+def init_logging_file(append=False):
     global logging_file
 
     if Config['logging_file'] is None:
+        return
+
+    if append:
+        logging_file = open(Config['logging_file'], 'a')
         return
 
     raw_filename = Config['logging_file']
@@ -216,7 +220,7 @@ def check_config(param_config, policy_config):
         'Speed reward must be terminal reward'
 
 
-def process_before_train(args=None, param_config=CifarConfig, policy_config=PolicyConfig):
+def process_before_train(args=None, param_config=CifarConfig, policy_config=PolicyConfig, append=False):
     args = args or sys.argv
 
     import pprint
@@ -232,7 +236,7 @@ def process_before_train(args=None, param_config=CifarConfig, policy_config=Poli
 
     check_config(param_config, policy_config)
 
-    init_logging_file()
+    init_logging_file(append=append)
 
     message('The configures and hyperparameters are:')
     pprint.pprint(Config, stream=sys.stderr)

@@ -135,7 +135,7 @@ def just_ref():
 
 
 def main(args=None):
-    process_before_train(args, ParamConfig)
+    process_before_train(args, ParamConfig, append=True)
 
     try:
         train_episode()
