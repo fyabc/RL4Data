@@ -222,6 +222,9 @@
         "improvement_threshold": 0.995,
 
         // 0 means do not test at validate point
-        "test_per_point": 1
+        "test_per_point": 1,
+
+        // When train raw, get shuffled data.
+        "raw_shuffle": true
     }
 }

@@ -64,7 +64,7 @@ def train_raw_MNIST():
         updater.start_new_epoch()
         epoch_start_time = time.time()
 
-        kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
+        kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=ParamConfig['raw_shuffle'])
 
         for _, train_index in kf:
             part_train_cost = updater.add_batch(train_index, updater, history_accuracy)
