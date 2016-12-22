@@ -95,9 +95,15 @@ def train_raw_MNIST():
 
     episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
 
+    if ParamConfig['save_model']:
+        model.save_model()
+
 
 def train_SPL_MNIST():
     model = MNISTModel()
+
+    if ParamConfig['warm_start']:
+        model.load_model()
 
     # Load the dataset and config
     x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size = pre_process_MNIST_data()

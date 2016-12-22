@@ -225,6 +225,12 @@
         "test_per_point": 1,
 
         // When train raw, get shuffled data.
-        "raw_shuffle": true
+        "raw_shuffle": true,
+
+        "warm_start": false,
+        "warm_start_model_file": "./data/mnist/warm_start_model.npz",
+
+        "save_model": false,
+        "save_model_file": "./data/mnist/warm_start_model.npz"
     }
 }

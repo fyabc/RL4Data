@@ -67,12 +67,12 @@ class MNISTModelBase(object):
 
     @logging
     def save_model(self, filename=None):
-        filename = filename or Config['model_file']
+        filename = filename or ParamConfig['save_model_file']
         np.savez(filename, *get_all_param_values(self.network))
 
     @logging
     def load_model(self, filename=None):
-        filename = filename or Config['model_file']
+        filename = filename or ParamConfig['warm_start_model_file']
         with np.load(filename) as f:
             param_values = [f['arr_%d' % i] for i in range(len(f.files))]
         lasagne.layers.set_all_param_values(self.network, param_values)
