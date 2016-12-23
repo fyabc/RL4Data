@@ -13,11 +13,12 @@ __author__ = 'fyabc'
 
 
 @logging
-def load_cifar10_data(data_dir=CifarConfig['data_dir']):
+def load_cifar10_data(data_dir=CifarConfig['data_dir'], one_file=False):
     """
 
     Args:
         data_dir: directory of the CIFAR-10 data.
+        one_file: is the data in a single file?
 
     Returns:
         A dict, which contains train data and test data.
@@ -34,37 +35,44 @@ def load_cifar10_data(data_dir=CifarConfig['data_dir']):
 
     train_size = CifarConfig['train_size']
 
-    xs = []
-    ys = []
-    for j in range(5):
-        d = unpickle(data_dir + '/data_batch_%d' % (j + 1))
+    if one_file:
+        train, test = unpickle(data_dir)
+        x_train, y_train = train
+        x_test, y_test = test
+    else:
+        xs = []
+        ys = []
+        for j in range(5):
+            d = unpickle(data_dir + '/data_batch_%d' % (j + 1))
+            xs.append(d['data'])
+            ys.append(d['labels'])
+
+        d = unpickle(data_dir + '/test_batch')
         xs.append(d['data'])
         ys.append(d['labels'])
 
-    d = unpickle(data_dir + '/test_batch')
-    xs.append(d['data'])
-    ys.append(d['labels'])
+        x = np.concatenate(xs) / np.float32(255)
+        y = np.concatenate(ys)
 
-    x = np.concatenate(xs) / np.float32(255)
-    y = np.concatenate(ys)
-    x = np.dstack((x[:, :1024], x[:, 1024:2048], x[:, 2048:]))
-    x = x.reshape((x.shape[0], 32, 32, 3)).transpose(0, 3, 1, 2)
+        x = np.dstack((x[:, :1024], x[:, 1024:2048], x[:, 2048:]))
+        x = x.reshape((x.shape[0], 32, 32, 3)).transpose(0, 3, 1, 2)
 
-    # subtract per-pixel mean
-    pixel_mean = np.mean(x[0:train_size], axis=0)
-    # pickle.dump(pixel_mean, open("cifar10-pixel_mean.pkl","wb"))
-    x -= pixel_mean
+        # subtract per-pixel mean
+        pixel_mean = np.mean(x[0:train_size], axis=0)
+        # pickle.dump(pixel_mean, open("cifar10-pixel_mean.pkl","wb"))
+        x -= pixel_mean
 
-    # create mirrored images
-    x_train = x[0:train_size, :, :, :]
-    y_train = y[0:train_size]
+        # create mirrored images
+        x_train = x[0:train_size, :, :, :]
+        y_train = y[0:train_size]
+
+        x_test = x[train_size:, :, :, :]
+        y_test = y[train_size:]
+
     x_train_flip = x_train[:, :, :, ::-1]
     y_train_flip = y_train
     x_train = np.concatenate((x_train, x_train_flip), axis=0)
     y_train = np.concatenate((y_train, y_train_flip), axis=0)
-
-    x_test = x[train_size:, :, :, :]
-    y_test = y[train_size:]
 
     return {
         'x_train': floatX(x_train),

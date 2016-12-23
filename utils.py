@@ -8,7 +8,7 @@ import random
 import sys
 import time
 from functools import wraps
-from itertools import izip
+import gzip
 
 import numpy as np
 
@@ -90,7 +90,12 @@ def init_norm(*dims, **kwargs):
 
 
 def unpickle(filename):
-    with open(filename, 'rb') as f:
+    if filename.endswith('.gz'):
+        _open = gzip.open
+    else:
+        _open = open
+
+    with _open(filename, 'rb') as f:
         return pkl.load(f)
 
 
