@@ -115,6 +115,7 @@ def create_new(new_fn, x, y, func=get_flip):
     save_data(new_fn, x_t_new, y_t, x_te, y_te)
 
 
+raw_filename = '../data/cifar10/cifar10.pkl.gz'
 flip_filename = '../data/cifar10/cifar10_flip.pkl.gz'
 gaussian_std05_filename = '../data/cifar10/cifar10_gaussian_std05.pkl.gz'
 
@@ -136,7 +137,8 @@ def main():
     # ]))
 
     # create_new(flip_filename, x, y)
-    create_new(gaussian_std05_filename, x, y, func=lambda x: get_gaussian(x, max_std=1.0))
+    # create_new(gaussian_std05_filename, x, y, func=lambda x: get_gaussian(x, max_std=1.0))
+    create_new(raw_filename, x, y, func=lambda x: x)
 
 
 if __name__ == '__main__':
