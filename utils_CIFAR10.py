@@ -6,14 +6,14 @@ import os
 
 import numpy as np
 
-from config import CifarConfig
+from config import CifarConfig as ParamConfig
 from utils import logging, unpickle, floatX, message, fX
 
 __author__ = 'fyabc'
 
 
 @logging
-def load_cifar10_data(data_dir=CifarConfig['data_dir'], one_file=False):
+def load_cifar10_data(data_dir=None, one_file=None):
     """
 
     Args:
@@ -29,16 +29,34 @@ def load_cifar10_data(data_dir=CifarConfig['data_dir'], one_file=False):
             y_test:     (10000,)
     """
 
+    def process(x):
+        x = np.dstack((x[:, :1024], x[:, 1024:2048], x[:, 2048:]))
+        x = x.reshape((x.shape[0], 32, 32, 3)).transpose(0, 3, 1, 2)
+
+        # subtract per-pixel mean
+        pixel_mean = np.mean(x[0:train_size], axis=0)
+        # pickle.dump(pixel_mean, open("cifar10-pixel_mean.pkl","wb"))
+        x -= pixel_mean
+
+        return x
+
+    data_dir = data_dir or ParamConfig['data_dir']
+    one_file = one_file or ParamConfig['one_file']
+
     if not os.path.exists(data_dir):
         raise Exception("CIFAR-10 dataset can not be found. Please download the dataset from "
                         "'https://www.cs.toronto.edu/~kriz/cifar.html'.")
 
-    train_size = CifarConfig['train_size']
+    # train_size = ParamConfig['train_size']
+    train_size = 50000
 
     if one_file:
         train, test = unpickle(data_dir)
         x_train, y_train = train
         x_test, y_test = test
+
+        x_train = process(x_train)
+        x_test = process(x_test)
     else:
         xs = []
         ys = []
@@ -54,13 +72,7 @@ def load_cifar10_data(data_dir=CifarConfig['data_dir'], one_file=False):
         x = np.concatenate(xs) / np.float32(255)
         y = np.concatenate(ys)
 
-        x = np.dstack((x[:, :1024], x[:, 1024:2048], x[:, 2048:]))
-        x = x.reshape((x.shape[0], 32, 32, 3)).transpose(0, 3, 1, 2)
-
-        # subtract per-pixel mean
-        pixel_mean = np.mean(x[0:train_size], axis=0)
-        # pickle.dump(pixel_mean, open("cifar10-pixel_mean.pkl","wb"))
-        x -= pixel_mean
+        x = process(x)
 
         # create mirrored images
         x_train = x[0:train_size, :, :, :]
@@ -89,10 +101,10 @@ def split_cifar10_data(data):
     y_test = data['y_test']
 
     # One: validate is not part of train
-    x_validate = x_test[:CifarConfig['validation_size']]
-    y_validate = y_test[:CifarConfig['validation_size']]
-    x_test = x_test[-CifarConfig['test_size']:]
-    y_test = y_test[-CifarConfig['test_size']:]
+    x_validate = x_test[:ParamConfig['validation_size']]
+    y_validate = y_test[:ParamConfig['validation_size']]
+    x_test = x_test[-ParamConfig['test_size']:]
+    y_test = y_test[-ParamConfig['test_size']:]
 
     # # Another: validate is part of train
     # x_validate = x_train[:CifarConfig['validation_size']]

@@ -111,6 +111,7 @@
 
     "cifar10": {
         "data_dir": "./data/cifar-10-batches-py",
+        "one_file": false,
 
         /// Model name.
         // Candidates:
