@@ -145,10 +145,14 @@ class PolicyNetworkBase(object):
                                             np.full(batch_actions.shape, epoch_reward, dtype=fX))
         else:
             temp = final_reward - self.reward_baseline
-            for epoch_inputs, epoch_actions in zip(self.input_buffer, self.action_buffer):
+            for epoch_inputs, epoch_actions in reversed(zip(self.input_buffer, self.action_buffer)):
                 for batch_inputs, batch_actions in zip(epoch_inputs, epoch_actions):
                     cost += self.update_raw(batch_inputs, batch_actions,
                                             np.full(batch_actions.shape, temp, dtype=fX))
+
+                # Add reward discount
+                if Config['temp_job'] == 'discount_reward':
+                    temp *= self.gamma
 
         # print('#Input buffer size: {} * {} * {}'
         #       .format(len(self.input_buffer), len(self.input_buffer[0]), self.input_buffer[0][0].shape))
