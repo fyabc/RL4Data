@@ -74,7 +74,7 @@
         ],
 
         /// Negative reward?
-        "reward_sign": true,
+        "reward_sign": false,
 
         "policy_optimizer": "adam",
         "policy_learning_rate": 0.02,
