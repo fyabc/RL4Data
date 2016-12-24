@@ -9,6 +9,7 @@ import heapq
 import numpy as np
 
 from config import Config
+from utils import message
 
 
 class BatchUpdater(object):
@@ -155,6 +156,9 @@ class SPLUpdater(BatchUpdater):
 
         self.expected_total_iteration = epoch_per_episode * self.data_size // self.model.train_batch_size
 
+        if Config['temp_job'] == 'log_data':
+            self.updated_indices = [0 for _ in range(10)]
+
     def cost_threshold(self, iteration):
         return 1 + (self.model.train_batch_size - 1) * iteration // self.expected_total_iteration
 
@@ -177,6 +181,11 @@ class SPLUpdater(BatchUpdater):
                 for j in range(len(targets)):
                     if targets[j] == i and cost_list[j] <= threshold:
                         result.append(batch_index[j])
+                        if Config['temp_job'] == 'log_data':
+                            self.updated_indices[batch_index[j] // 5000] += 1
+
+        if Config['temp_job'] == 'log_data':
+            message(*self.updated_indices, sep='\t')
 
         return result
 
