@@ -10,7 +10,7 @@ import theano
 import theano.tensor as T
 
 from config import Config, MNISTConfig
-from utils import fX, message
+from utils import fX, message, get_part_data
 
 
 def load_mnist_data(data_dir=None):
@@ -64,15 +64,25 @@ def load_mnist_data(data_dir=None):
         # lets ous get around this issue
         return shared_x, T.cast(shared_y, 'int32')
 
-    # test_set_x, test_set_y = shared_dataset(test_set)
-    # valid_set_x, valid_set_y = shared_dataset(valid_set)
-    # train_set_x, train_set_y = shared_dataset(train_set)
-    test_set_x, test_set_y = test_set
-    valid_set_x, valid_set_y = valid_set
-    train_set_x, train_set_y = train_set
+    # x_test, y_test = shared_dataset(test_set)
+    # x_valid, y_valid = shared_dataset(valid_set)
+    # x_train, y_train = shared_dataset(train_set)
+    x_test, y_test = test_set
+    x_valid, y_valid = valid_set
+    x_train, y_train = train_set
 
-    rval = (train_set_x, train_set_y, valid_set_x, valid_set_y,
-            test_set_x, test_set_y)
+    if Config['filter_data'] == 'random_80':
+        # Randomly drop 20% data before train
+        train_size = len(y_train)
+        x_train, y_train = get_part_data(x_train, y_train, train_size * 8 // 10)
+    elif Config['filter_data'] == 'worst_80':
+        # Drop best 20% data before train
+        train_size = len(y_train)
+        x_train = x_train[train_size * 2 // 10:]
+        y_train = y_train[train_size * 2 // 10:]
+
+    rval = (x_train, y_train, x_valid, y_valid,
+            x_test, y_test)
     return rval
 
 

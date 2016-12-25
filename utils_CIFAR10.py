@@ -6,8 +6,8 @@ import os
 
 import numpy as np
 
-from config import CifarConfig as ParamConfig
-from utils import logging, unpickle, floatX, message, fX
+from config import CifarConfig as ParamConfig, Config
+from utils import logging, unpickle, floatX, message, fX, get_part_data
 
 __author__ = 'fyabc'
 
@@ -74,13 +74,21 @@ def load_cifar10_data(data_dir=None, one_file=None):
 
         x = process(x)
 
-        # create mirrored images
         x_train = x[0:train_size, :, :, :]
         y_train = y[0:train_size]
 
         x_test = x[train_size:, :, :, :]
         y_test = y[train_size:]
 
+    if Config['filter_data'] == 'random_80':
+        # Randomly drop 20% data before train
+        x_train, y_train = get_part_data(x_train, y_train, train_size * 8 // 10)
+    elif Config['filter_data'] == 'worst_80':
+        # Drop best 20% data before train
+        x_train = x_train[train_size * 2 // 10:]
+        y_train = y_train[train_size * 2 // 10:]
+
+    # create mirrored images
     x_train_flip = x_train[:, :, :, ::-1]
     y_train_flip = y_train
     x_train = np.concatenate((x_train, x_train_flip), axis=0)

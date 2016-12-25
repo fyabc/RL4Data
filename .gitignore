@@ -94,6 +94,9 @@ ENV/
 # data
 data/
 
+# log
+log/
+
 # numpy saved models
 *.npz
 
