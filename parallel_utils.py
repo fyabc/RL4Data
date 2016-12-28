@@ -44,6 +44,9 @@ def parallel_run_async(model_type, param_config, slave_script_name):
 
     policy = get_policy(model_type, eval(PolicyConfig['policy_model_name']), save=True)
 
+    if param_config['warm_start'] is True:
+        policy.load_policy(param_config['warm_start_model_file'])
+
     episode_number = 1000
     for episode in range(episode_number):
         ret_values = [None for _ in range(process_number)]
