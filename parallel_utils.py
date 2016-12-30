@@ -57,18 +57,23 @@ def parallel_run_async(model_type, param_config, slave_script_name):
         for i, env in enumerate(envs):
             env[str('THEANO_FLAGS')] = str('device=gpu{},floatX=float32'.format(gpu_ids[i]))
 
-        pool = [
-            psutil.Popen(
-                ['python', slave_script_name] + args + [
-                    'G.logging_file=@{}@'
-                    .format(Config['logging_file'])
-                    .replace('.txt', '_p{}.txt'.format(i)),
-                ],
-                stdout=subprocess.PIPE,
-                env=envs[i],
+        pool = []
+
+        # Add new child process after sleep some time to avoid from compile lock.
+        for i in range(process_number):
+            pool.append(
+                psutil.Popen(
+                    ['python', slave_script_name] + args + [
+                        'G.logging_file=@{}@'
+                        .format(Config['logging_file'])
+                        .replace('.txt', '_p{}.txt'.format(i)),
+                    ],
+                    stdout=subprocess.PIPE,
+                    env=envs[i],
+                )
             )
-            for i in range(process_number)
-        ]
+
+            time.sleep(100)
 
         # Roll polling
         while any(e is None for e in ret_values):
@@ -120,18 +125,23 @@ def parallel_run_sync(model_type, param_config, slave_script_name):
         for i, env in enumerate(envs):
             env[str('THEANO_FLAGS')] = str('device=gpu{},floatX=float32'.format(gpu_ids[i]))
 
-        pool = [
-            psutil.Popen(
-                ['python', slave_script_name] + args + [
-                    'G.logging_file=@{}@'
+        pool = []
+
+        # Add new child process after sleep some time to avoid from compile lock.
+        for i in range(process_number):
+            pool.append(
+                psutil.Popen(
+                    ['python', slave_script_name] + args + [
+                        'G.logging_file=@{}@'
                     .format(Config['logging_file'])
                     .replace('.txt', '_p{}.txt'.format(i)),
-                ],
-                stdout=subprocess.PIPE,
-                env=envs[i],
+                    ],
+                    stdout=subprocess.PIPE,
+                    env=envs[i],
+                )
             )
-            for i in range(process_number)
-        ]
+
+            time.sleep(100)
 
         # Roll polling
         while any(e is None for e in ret_values):
@@ -144,7 +154,7 @@ def parallel_run_sync(model_type, param_config, slave_script_name):
         avg_parameters = [
             np.zeros_like(parameter.get_value())
             for parameter in policy.parameters
-        ]
+            ]
 
         for i, process in enumerate(pool):
             results[i], _ = process.communicate()
