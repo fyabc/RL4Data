@@ -40,7 +40,7 @@ def init_logging_file(append=False):
     filename = raw_filename
 
     while os.path.exists(filename):
-        filename = raw_filename.replace('.txt', '{}.txt'.format(i))
+        filename = raw_filename.replace('.txt', '_{}.txt'.format(i))
         i += 1
 
     Config['logging_file'] = filename
@@ -225,7 +225,7 @@ def check_config(param_config, policy_config):
         'Speed reward must be terminal reward'
 
 
-def process_before_train(args=None, param_config=CifarConfig, policy_config=PolicyConfig, append=False):
+def process_before_train(args=None, param_config=CifarConfig, policy_config=PolicyConfig, append=None):
     args = args or sys.argv
 
     import pprint
@@ -240,6 +240,9 @@ def process_before_train(args=None, param_config=CifarConfig, policy_config=Poli
     policy_config.update(policy_args_dict)
 
     check_config(param_config, policy_config)
+
+    if append is None:
+        append = Config['append_logging_file']
 
     init_logging_file(append=append)
 
