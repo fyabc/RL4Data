@@ -87,7 +87,14 @@ class PolicyNetworkBase(object):
 
         sign = 1 if PolicyConfig['reward_sign'] else -1
         cost = sign * T.mean(batch_reward * (batch_action * T.log(self.batch_output) +
-            (1.0 - batch_action) * T.log(1.0 - self.batch_output)))
+                                             (1.0 - batch_action) * T.log(1.0 - self.batch_output)))
+
+        # Add L2 regularization
+        if PolicyConfig['l2_c'] > 0.:
+            l2_penalty = 0.
+            for parameter in self.parameters:
+                l2_penalty += (parameter ** 2).sum()
+            cost += l2_penalty * PolicyConfig['l2_c']
 
         grads = T.grad(
             cost,

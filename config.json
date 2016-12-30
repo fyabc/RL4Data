@@ -76,7 +76,7 @@
             [0.98, 0.5]
         ],
 
-        /// Negative reward?
+        /// Negative reward? true means positive
         "reward_sign": false,
 
         "policy_optimizer": "adam",
@@ -91,6 +91,9 @@
         "b_init": 2.0,
         // Use normalize when initializing W
         "W_normalize": true,
+
+        // L2 regular factor
+        "l2_c": 0.0005,
 
         "reward_baseline": false,
         "reward_baseline_update_rate": 0.8,

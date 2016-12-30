@@ -94,6 +94,9 @@ ENV/
 # data
 data/
 
+# model
+model/
+
 # log
 log/
 
