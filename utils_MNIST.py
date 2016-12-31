@@ -80,6 +80,11 @@ def load_mnist_data(data_dir=None):
         train_size = len(y_train)
         x_train = x_train[train_size * 2 // 10:]
         y_train = y_train[train_size * 2 // 10:]
+    elif Config['filter_data'] == 'best_80':
+        # Drop worst 20% data before train
+        train_size = len(y_train)
+        x_train = x_train[:-train_size * 2 // 10]
+        y_train = y_train[:-train_size * 2 // 10]
 
     rval = (x_train, y_train, x_valid, y_valid,
             x_test, y_test)

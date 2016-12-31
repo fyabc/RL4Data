@@ -282,6 +282,10 @@ def train_actor_critic_MNIST():
     print('Input size of policy network:', input_size)
     policy_model_name = eval(PolicyConfig['policy_model_name'])
     actor = policy_model_name(input_size=input_size)
+
+    if PolicyConfig['policy_warm_start']:
+        actor.load_policy(PolicyConfig['policy_warm_start_file'])
+
     # actor = LRPolicyNetwork(input_size=input_size)
     actor.message_parameters()
     critic = CriticNetwork(feature_size=input_size, batch_size=model.train_batch_size)

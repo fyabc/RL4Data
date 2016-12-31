@@ -49,7 +49,10 @@
         "policy_save_freq": 1,
 
         "policy_warm_start": false,
-        "policy_warm_start_file": null,
+        "policy_warm_start_file": "./data/mnist/policy_warm_start_model.npz",
+
+        "policy_save_model": false,
+        "policy_save_model_file": "./data/mnist/warm_start_model.npz",
 
         "num_episodes": 1000,
 
@@ -235,10 +238,11 @@
         // When train raw, get shuffled data.
         "raw_shuffle": true,
 
+        // Warm start model (not policy)
         "warm_start": false,
-        "warm_start_model_file": "./data/mnist/warm_start_model.npz",
+        "warm_start_model_file": null,
 
         "save_model": false,
-        "save_model_file": "./data/mnist/warm_start_model.npz"
+        "save_model_file": null
     }
 }
