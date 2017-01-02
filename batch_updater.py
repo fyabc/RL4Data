@@ -8,6 +8,7 @@ import heapq
 
 import numpy as np
 
+from extensions import PartLossChecker
 from config import Config
 from utils import message
 
@@ -49,6 +50,8 @@ class BatchUpdater(object):
         if Config['temp_job'] == 'check_selected_data_label':
             self.epoch_label_count = np.zeros((self.model.output_size,), dtype='int64')
             self.total_label_count = np.zeros((self.model.output_size,), dtype='int64')
+        elif Config['temp_job'] == 'check_part_loss':
+            self.part_loss_checker = PartLossChecker(self)
 
         # A hook: the last update batch index.
         self.last_update_batch_index = None
@@ -114,6 +117,9 @@ class BatchUpdater(object):
 
         self.total_accepted_cases += len(selected_batch_data[0])
         self.total_train_batches += 1
+
+        if Config['temp_job'] == 'check_part_loss':
+            self.part_loss_checker.check()
 
         self.epoch_history_train_loss += part_train_cost
 

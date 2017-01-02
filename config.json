@@ -17,7 +17,7 @@
     "seed": 1234,
     "floatX": "float32",
     "logging_file": "./data/log.txt",
-    "append_logging_file": "false",
+    "append_logging_file": false,
 
     /// Train types.
     /// 'raw':           train ResNet directly.
