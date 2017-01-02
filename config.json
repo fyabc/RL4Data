@@ -93,13 +93,15 @@
 
         "gamma": 0.9,
         "b_init": 2.0,
+        "W_init": null,
+
         // Use normalize when initializing W
         "W_normalize": true,
 
         // L2 regular factor
         "l2_c": 0.0005,
 
-        "reward_baseline": false,
+        "reward_baseline": true,
         "reward_baseline_update_rate": 0.8,
 
         /// Actor-Critic configurations

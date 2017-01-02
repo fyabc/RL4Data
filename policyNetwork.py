@@ -224,11 +224,16 @@ class LRPolicyNetwork(PolicyNetworkBase):
                  gamma=None,
                  rb_update_rate=None,
                  start_b=None,
+                 start_W=None,
                  ):
         super(LRPolicyNetwork, self).__init__(input_size, optimizer, rb_update_rate, learning_rate, gamma)
 
         # Parameters to be learned
-        self.W = theano.shared(name='W', value=init_norm(input_size, normalize=PolicyConfig['W_normalize']))
+        start_W = init_norm(input_size, normalize=PolicyConfig['W_normalize']) \
+            if PolicyConfig['W_init'] is None \
+            else np.array(PolicyConfig['W_init'], dtype=fX)
+
+        self.W = theano.shared(name='W', value=start_W)
 
         if start_b is None:
             start_b = PolicyConfig['b_init']
