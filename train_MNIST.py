@@ -176,8 +176,6 @@ def train_policy_MNIST():
     if PolicyConfig['policy_warm_start']:
         policy.load_policy(PolicyConfig['policy_warm_start_file'])
 
-    policy.message_parameters()
-
     # Load the dataset and config
     x_train, y_train, x_validate, y_validate, x_test, y_test,\
         train_size, validate_size, test_size = pre_process_MNIST_data()
@@ -186,6 +184,7 @@ def train_policy_MNIST():
     for episode in range(PolicyConfig['num_episodes']):
         print('[Episode {}]'.format(episode))
         message('[Episode {}]'.format(episode))
+        policy.message_parameters()
 
         model.reset_parameters()
 
@@ -287,7 +286,6 @@ def train_actor_critic_MNIST():
         actor.load_policy(PolicyConfig['policy_warm_start_file'])
 
     # actor = LRPolicyNetwork(input_size=input_size)
-    actor.message_parameters()
     critic = CriticNetwork(feature_size=input_size, batch_size=model.train_batch_size)
 
     # Load the dataset and config
@@ -298,6 +296,8 @@ def train_actor_critic_MNIST():
     for episode in range(PolicyConfig['num_episodes']):
         print('[Episode {}]'.format(episode))
         message('[Episode {}]'.format(episode))
+
+        actor.message_parameters()
 
         model.reset_parameters()
 

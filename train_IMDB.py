@@ -396,7 +396,6 @@ def train_policy_IMDB():
     policy_model_name = eval(PolicyConfig['policy_model_name'])
     policy = policy_model_name(input_size=input_size)
     # policy = LRPolicyNetwork(input_size=input_size)
-    policy.message_parameters()
 
     # Temp code.
     if Config['temp_job']:
@@ -406,6 +405,8 @@ def train_policy_IMDB():
     for episode in range(PolicyConfig['num_episodes']):
         print('[Episode {}]'.format(episode))
         message('[Episode {}]'.format(episode))
+
+        policy.message_parameters()
 
         model.reset_parameters()
 
@@ -572,7 +573,6 @@ def train_actor_critic_IMDB():
     policy_model_name = eval(PolicyConfig['policy_model_name'])
     actor = policy_model_name(input_size=input_size)
     # actor = LRPolicyNetwork(input_size=input_size)
-    actor.message_parameters()
     critic = CriticNetwork(feature_size=input_size, batch_size=model.train_batch_size)
 
     num_episodes = PolicyConfig['num_episodes']
@@ -580,6 +580,8 @@ def train_actor_critic_IMDB():
     for episode in range(num_episodes):
         print('[Episode {}]'.format(episode))
         message('[Episode {}]'.format(episode))
+
+        actor.message_parameters()
 
         model.reset_parameters()
 

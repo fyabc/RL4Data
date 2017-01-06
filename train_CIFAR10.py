@@ -173,7 +173,6 @@ def train_policy_CIFAR10():
     policy_model_name = eval(PolicyConfig['policy_model_name'])
     policy = policy_model_name(input_size=input_size)
     # policy = LRPolicyNetwork(input_size=input_size)
-    policy.message_parameters()
 
     # Load the dataset
     x_train, y_train, x_validate, y_validate, x_test, y_test, \
@@ -183,6 +182,8 @@ def train_policy_CIFAR10():
     for episode in range(PolicyConfig['num_episodes']):
         print('[Episode {}]'.format(episode))
         message('[Episode {}]'.format(episode))
+
+        policy.message_parameters()
 
         if ParamConfig['warm_start']:
             model.load_model(Config['model_file'])
@@ -275,7 +276,6 @@ def train_actor_critic_CIFAR10():
     policy_model_name = eval(PolicyConfig['policy_model_name'])
     actor = policy_model_name(input_size=input_size)
     # actor = LRPolicyNetwork(input_size=input_size)
-    actor.message_parameters()
     critic = CriticNetwork(feature_size=input_size, batch_size=model.train_batch_size)
 
     # Load the dataset
@@ -291,6 +291,8 @@ def train_actor_critic_CIFAR10():
     for episode in range(PolicyConfig['num_episodes']):
         print('[Episode {}]'.format(episode))
         message('[Episode {}]'.format(episode))
+
+        actor.message_parameters()
 
         if ParamConfig['warm_start']:
             model.load_model(Config['model_file'])

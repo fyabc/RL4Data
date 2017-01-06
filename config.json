@@ -198,7 +198,7 @@
         "train_batch_size": 16,
         "validate_batch_size": 64,
 
-        "optimizer": "adadelta",
+        "optimizer": "adam",
 
         "noise_std": 0.0,
         "reload_model": false,

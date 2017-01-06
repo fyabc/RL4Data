@@ -49,6 +49,8 @@ def parallel_run_async(model_type, param_config, slave_script_name):
 
     episode_number = 1000
     for episode in range(episode_number):
+        policy.message_parameters()
+
         ret_values = [None for _ in range(process_number)]
         results = [None for _ in range(process_number)]
 
