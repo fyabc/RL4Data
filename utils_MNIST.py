@@ -9,7 +9,7 @@ import cPickle as pickle
 import theano
 import theano.tensor as T
 
-from config import Config, MNISTConfig
+from config import Config, MNISTConfig as ParamConfig
 from utils import fX, message, get_part_data
 
 
@@ -28,7 +28,7 @@ def load_mnist_data(data_dir=None):
         y_test: (10000,), ...
     """
 
-    data_dir = data_dir or MNISTConfig['data_dir']
+    data_dir = data_dir or ParamConfig['data_dir']
 
     # Load the dataset
     with gzip.open(data_dir, 'rb') as f:
@@ -117,3 +117,21 @@ def test():
 
 if __name__ == '__main__':
     test()
+
+
+def pre_process_config(model, train_size):
+    # Some hyperparameters
+    # early-stopping parameters
+    # look as this many examples regardless
+    patience = ParamConfig['patience']
+    # wait this much longer when a new best is found
+    patience_increase = ParamConfig['patience_increase']
+    # a relative improvement of this much is considered significant
+    improvement_threshold = ParamConfig['improvement_threshold']
+
+    # go through this many minibatches before checking the network
+    # on the validation set; in this case we check every epoch
+    # validation_frequency = min(train_size // model.train_batch_size, patience // 2)
+    validation_frequency = ParamConfig['valid_freq']
+
+    return patience, patience_increase, improvement_threshold, validation_frequency

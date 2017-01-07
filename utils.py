@@ -343,7 +343,7 @@ def episode_final_message(best_validate_acc, best_iteration, test_score, start_t
     message('$  Time passed: {:.2f}s'.format(time.time() - start_time))
 
 
-def test():
+def _test_logging_file():
     global logging_file
 
     logging_file = open('./data/temp.txt', 'w')
@@ -351,5 +351,9 @@ def test():
     message('Test logging')
 
 
+def _test():
+    _test_logging_file()
+
+
 if __name__ == '__main__':
-    test()
+    _test()

@@ -9,31 +9,13 @@ from batch_updater import *
 from config import MNISTConfig as ParamConfig
 from criticNetwork import CriticNetwork
 from model_MNIST import MNISTModel
+from new_train.new_train_MNIST import new_train_MNIST
+from policyNetwork import LRPolicyNetwork, MLPPolicyNetwork
 from utils import *
 from utils import episode_final_message
-from utils_MNIST import pre_process_MNIST_data
-
-from policyNetwork import LRPolicyNetwork, MLPPolicyNetwork
+from utils_MNIST import pre_process_MNIST_data, pre_process_config
 
 __author__ = 'fyabc'
-
-
-def pre_process_config(model, train_size):
-    # Some hyperparameters
-    # early-stopping parameters
-    # look as this many examples regardless
-    patience = ParamConfig['patience']
-    # wait this much longer when a new best is found
-    patience_increase = ParamConfig['patience_increase']
-    # a relative improvement of this much is considered significant
-    improvement_threshold = ParamConfig['improvement_threshold']
-
-    # go through this many minibatches before checking the network
-    # on the validation set; in this case we check every epoch
-    # validation_frequency = min(train_size // model.train_batch_size, patience // 2)
-    validation_frequency = ParamConfig['valid_freq']
-
-    return patience, patience_increase, improvement_threshold, validation_frequency
 
 
 def train_raw_MNIST():
@@ -516,6 +498,8 @@ def main(args=None):
             test_policy_MNIST()
         elif Config['train_type'] == 'random_drop':
             test_policy_MNIST()
+        elif Config['train_type'] == 'new_train':
+            new_train_MNIST()
         else:
             raise Exception('Unknown train type {}'.format(Config['train_type']))
     except:
