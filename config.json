@@ -220,7 +220,7 @@
 
         "train_small_size": 50000,
 
-        "epoch_per_episode": 400,
+        "epoch_per_episode": 180,
 
         "hidden_size": 500,
         "learning_rate": 0.01,

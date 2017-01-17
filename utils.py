@@ -187,6 +187,11 @@ class SpeedRewardChecker(object):
         return result
 
 
+class DeltaAccuracyRewardChecker(object):
+    def __init__(self, baseline_accuracy_list, weight_linear=0.0):
+        self.baseline_accuracy_list = baseline_accuracy_list
+
+
 ########################################
 # Simple command line arguments parser #
 ########################################
