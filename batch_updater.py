@@ -268,14 +268,28 @@ class TestPolicyUpdater(BatchUpdater):
 
 class RandomDropUpdater(BatchUpdater):
     def __init__(self, model, all_data, random_drop_number_file, **kwargs):
+        self.drop_num_type = kwargs.pop('drop_num_type', 'epoch')
+        self.valid_freq = kwargs.pop('valid_freq', 0)
+
         super(RandomDropUpdater, self).__init__(model, all_data, **kwargs)
-        self.random_drop_numbers = map(lambda l: int(l.strip()), list(open(random_drop_number_file, 'r')))
+        self.random_drop_numbers = [int(l.strip()) for l in open(random_drop_number_file, 'r')]
 
     def filter_batch(self, batch_index, *args):
-        epoch = args[0]
+        if self.drop_num_type == 'epoch':
+            p = 1 - float(self.random_drop_numbers[self.epoch]) / self.data_size
+        elif self.drop_num_type == 'vp':    # Validation point
+            # Get the most nearby seen number
+            i, e = 0, 0
+            for i, e in enumerate(self.random_drop_numbers):
+                if e >= self.total_seen_cases:
+                    break
+            p = 1 - float(self.valid_freq * i) / e
+        else:
+            raise ValueError('Unknown drop number type {}'.format(self.drop_num_type))
+
         action = np.random.binomial(
             1,
-            1 - float(self.random_drop_numbers[epoch]) / self.data_size,
+            p,
             self.all_data[-1].shape
         ).astype(bool)
 

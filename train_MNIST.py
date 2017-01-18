@@ -411,7 +411,8 @@ def test_policy_MNIST():
     patience, patience_increase, improvement_threshold, validation_frequency = pre_process_config(model, train_size)
 
     if Config['train_type'] == 'random_drop':
-        updater = RandomDropUpdater(model, [x_train, y_train], ParamConfig['random_drop_number_file'])
+        updater = RandomDropUpdater(model, [x_train, y_train], ParamConfig['random_drop_number_file'],
+                                    drop_num_type='vp', valid_freq=ParamConfig['valid_freq'])
     else:
         # Build policy
         policy_model_name = eval(PolicyConfig['policy_model_name'])
