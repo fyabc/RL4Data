@@ -145,7 +145,7 @@
 
         "use_policy": true,
         "train_small_size": 40000,
-        "epoch_per_episode": 82,
+        "epoch_per_episode": 52,
 
         "warm_start": false,
 

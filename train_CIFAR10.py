@@ -280,10 +280,7 @@ def train_actor_critic_CIFAR10():
 
     # Load the dataset
     x_train, y_train, x_validate, y_validate, x_test, y_test = split_cifar10_data(load_cifar10_data())
-    train_small_size = ParamConfig['train_small_size']
-    x_train_small, y_train_small = get_part_data(x_train, y_train, train_small_size)
 
-    message('Training data size:', y_train_small.shape[0])
     message('Validation data size:', y_validate.shape[0])
     message('Test data size:', y_test.shape[0])
 
@@ -302,55 +299,55 @@ def train_actor_critic_CIFAR10():
 
         history_accuracy = []
 
-        # Iteration (number of batches)
-        iteration = 0
+        # To prevent the double validate / AC update point
+        last_validate_point = -1
+        last_AC_update_point = -1
+
+        # get small training data
+        x_train_small, y_train_small = get_part_data(x_train, y_train, ParamConfig['train_small_size'])
+        train_small_size = len(x_train_small)
+        message('Training small size:', train_small_size)
+
+        updater = ACUpdater(model, [x_train_small, y_train_small], actor, prepare_data=prepare_CIFAR10_data)
 
         for epoch in range(ParamConfig['epoch_per_episode']):
             print('[Epoch {}]'.format(epoch))
             message('[Epoch {}]'.format(epoch))
 
-            actor.start_new_epoch()
+            epoch_start_time = time.time()
 
-            total_accepted_cases = 0
-            history_train_loss = 0
-            train_batches = 0
-            start_time = time.time()
+            kf = get_minibatches_idx(train_small_size, model.train_batch_size, shuffle=True)
 
-            for batch in iterate_minibatches(x_train_small, y_train_small, model.train_batch_size,
-                                             shuffle=True, augment=True):
-                iteration += 1
+            updater.start_new_epoch()
 
-                inputs, targets = batch
+            for _, train_index in kf:
+                part_train_cost = updater.add_batch(train_index, updater, history_accuracy)
 
-                probability = model.get_policy_input(inputs, targets, epoch, history_accuracy)
-                actions = actor.take_action(probability)
+                if updater.total_train_batches > 0 and \
+                        updater.total_train_batches != last_AC_update_point and \
+                        updater.total_train_batches % PolicyConfig['AC_update_freq'] == 0:
+                    last_AC_update_point = updater.total_train_batches
 
-                # get masked inputs and targets
-                inputs_selected = inputs[actions]
-                targets_selected = targets[actions]
+                    # [NOTE]: The batch is the batch sent into updater, NOT the buffer's batch.
+                    inputs = x_train_small[train_index]
+                    targets = y_train_small[train_index]
+                    probability = updater.last_probability
+                    actions = updater.last_action
 
-                total_accepted_cases += len(inputs_selected)
-
-                # Update the CIFAR10 network with selected data
-                part_train_err = model.f_train(inputs_selected, targets_selected)
-                history_train_loss += part_train_err
-                train_batches += 1
-
-                if iteration % PolicyConfig['AC_update_freq'] == 0:
                     # Get immediate reward
-                    if PolicyConfig['cost_gap_AC_reward']:
-                        cost_old = part_train_err
-                        cost_new = model.f_cost_without_decay(inputs, targets)
-                        imm_reward = cost_old - cost_new
-                    else:
-                        valid_part_x, valid_part_y = get_part_data(
-                            np.asarray(x_validate), np.asarray(y_validate),
-                            PolicyConfig['immediate_reward_sample_size'])
-                        _, valid_err, validate_batches = model.validate_or_test(valid_part_x, valid_part_y)
-                        imm_reward = valid_err / validate_batches
+                    # [NOTE]: Cost gap reward is removed
+                    # if PolicyConfig['cost_gap_AC_reward']:
+                    #     cost_old = part_train_cost
+                    #
+                    #     cost_new = model.f_cost_without_decay(inputs, targets)
+                    #     imm_reward = cost_old - cost_new
+                    valid_part_x, valid_part_y = get_part_data(
+                        np.asarray(x_validate), np.asarray(y_validate), PolicyConfig['immediate_reward_sample_size'])
+                    _, valid_acc, validate_batches = model.validate_or_test(valid_part_x, valid_part_y)
+                    imm_reward = valid_acc / validate_batches
 
                     # Get new state, new actions, and compute new Q value
-                    probability_new = model.get_policy_input(inputs, targets, epoch, history_accuracy)
+                    probability_new = model.get_policy_input(inputs, targets, updater, history_accuracy)
                     actions_new = actor.take_action(probability_new, log_replay=False)
 
                     Q_value_new = critic.Q_function(state=probability_new, action=actions_new)
@@ -367,32 +364,27 @@ def train_actor_critic_CIFAR10():
                                                   np.full(actions.shape, label, dtype=probability.dtype))
 
                     if PolicyConfig['AC_update_freq'] >= ParamConfig['display_freq'] or \
-                                            iteration % ParamConfig['display_freq'] == 0:
-                        message('Epoch {}\tIteration {}\tCost {}\tCritic loss {}\tActor loss {}'
-                                .format(epoch, iteration, part_train_err, Q_loss, actor_loss))
+                            updater.total_train_batches % ParamConfig['display_freq'] == 0:
+                        message('Epoch {}\tTotalBatches {}\tCost {}\tCritic loss {}\tActor loss {}'
+                                .format(epoch, updater.total_train_batches, part_train_cost, Q_loss, actor_loss))
 
             if model_name == CIFARModel:
                 if (epoch + 1) in (41, 61):
                     model.update_learning_rate()
 
-            # add immediate reward
-            if PolicyConfig['immediate_reward']:
-                x_validate_small, y_validate_small = get_part_data(
-                    x_validate, y_validate, PolicyConfig['immediate_reward_sample_size'])
-                _, validate_acc, validate_batches = model.validate_or_test(x_validate_small, y_validate_small)
-                validate_acc /= validate_batches
-                actor.reward_buffer.append(validate_acc)
+            message("Epoch {} of {} took {:.3f}s".format(
+                epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
 
-            epoch_message(model, x_train, y_train, x_validate, y_validate, x_test, y_test,
-                          history_accuracy, history_train_loss,
-                          epoch, start_time, train_batches, total_accepted_cases)
+            validate_acc, test_acc = validate_point_message(
+                model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater)
+            history_accuracy.append(validate_acc)
 
         model.test(x_test, y_test)
 
-        validate_loss, validate_acc, validate_batches = model.validate_or_test(x_validate, y_validate)
-        validate_acc /= validate_batches
-
-        actor.update(validate_acc)
+        # [NOTE]: Remove update of terminal reward in AC.
+        # validate_loss, validate_acc, validate_batches = model.validate_or_test(x_validate, y_validate)
+        # validate_acc /= validate_batches
+        # actor.update(validate_acc)
 
         if PolicyConfig['policy_save_freq'] > 0 and episode % PolicyConfig['policy_save_freq'] == 0:
             actor.save_policy(PolicyConfig['policy_model_file'].replace('.npz', '_ep{}.npz'.format(episode)))
