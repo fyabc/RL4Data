@@ -43,7 +43,7 @@
         // Candidates:
         //     LRPolicyNetwork
         //     MLPPolicyNetwork
-        "policy_model_name": "LRPolicyNetwork",
+        "policy_model_name": "MLPPolicyNetwork",
 
         "policy_model_file": "./data/policy_model.npz",
         "policy_save_freq": 1,
