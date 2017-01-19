@@ -214,6 +214,10 @@ class TrainPolicyUpdater(BatchUpdater):
 
         result = [index for i, index in enumerate(batch_index) if action[i]]
 
+        if Config['temp_job'] == 'log_data':
+            for idx in result:
+                self.updated_indices[idx // 5000] += 1
+
         return result
 
 
@@ -237,6 +241,10 @@ class ACUpdater(BatchUpdater):
         action = self.policy.take_action(probability, False)
 
         result = [index for i, index in enumerate(batch_index) if action[i]]
+
+        if Config['temp_job'] == 'log_data':
+            for idx in result:
+                self.updated_indices[idx // 5000] += 1
 
         self.last_probability = probability
         self.last_action = action
