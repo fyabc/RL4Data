@@ -59,6 +59,9 @@ class BatchUpdater(object):
         # The prepare data hook
         self.prepare_data = kwargs.get('prepare_data', lambda *data: data)
 
+        if Config['temp_job'] == 'log_data':
+            self.updated_indices = [0 for _ in range(10)]
+
     @property
     def data_size(self):
         return len(self.all_data[0])
@@ -162,9 +165,6 @@ class SPLUpdater(BatchUpdater):
 
         self.expected_total_iteration = epoch_per_episode * self.data_size // self.model.train_batch_size
 
-        if Config['temp_job'] == 'log_data':
-            self.updated_indices = [0 for _ in range(10)]
-
     def cost_threshold(self, iteration):
         return 1 + (self.model.train_batch_size - 1) * iteration // self.expected_total_iteration
 
@@ -190,8 +190,8 @@ class SPLUpdater(BatchUpdater):
                         if Config['temp_job'] == 'log_data':
                             self.updated_indices[batch_index[j] // 5000] += 1
 
-        if Config['temp_job'] == 'log_data':
-            message(*self.updated_indices, sep='\t')
+        # if Config['temp_job'] == 'log_data':
+        #     message(*self.updated_indices, sep='\t')
 
         return result
 
@@ -261,6 +261,10 @@ class TestPolicyUpdater(BatchUpdater):
         action = self.policy.take_action(probability, False)
 
         result = [index for i, index in enumerate(batch_index) if action[i]]
+
+        if Config['temp_job'] == 'log_data':
+            for idx in result:
+                self.updated_indices[idx // 5000] += 1
 
         return result
 

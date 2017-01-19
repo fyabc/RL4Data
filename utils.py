@@ -336,6 +336,9 @@ Total label count: {}""".format(
             updater.epoch_label_count,
             updater.total_label_count,
         ))
+    elif Config['temp_job'] == 'log_data':
+        message('LogData', end='\t')
+        message(*updater.updated_indices, sep='\t')
 
     return validate_acc, test_acc
 
