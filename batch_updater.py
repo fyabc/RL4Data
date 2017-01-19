@@ -282,7 +282,12 @@ class RandomDropUpdater(BatchUpdater):
             for i, e in enumerate(self.random_drop_numbers):
                 if e >= self.total_seen_cases:
                     break
-            p = float(self.valid_freq * self.batch_size * (i + 1)) / e
+            if i == 0:
+                prev_e = 0
+            else:
+                prev_e = self.random_drop_numbers[i - 1]
+            # Get the ratio of this valid point
+            p = float(self.valid_freq * self.batch_size) / (e - prev_e)
         else:
             raise ValueError('Unknown drop number type {}'.format(self.drop_num_type))
 
