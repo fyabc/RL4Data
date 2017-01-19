@@ -300,7 +300,7 @@ def train_actor_critic_CIFAR10():
         history_accuracy = []
 
         # To prevent the double validate / AC update point
-        last_validate_point = -1
+        # last_validate_point = -1
         last_AC_update_point = -1
 
         # get small training data
@@ -411,8 +411,8 @@ def test_policy_CIFAR10():
         model.load_model()
 
     if Config['train_type'] == 'random_drop':
-        # Random drop configure
-        random_drop_numbers = map(lambda l: int(l.strip()), list(open(ParamConfig['random_drop_number_file'], 'r')))
+        updater = RandomDropUpdater(model, [x_train, y_train],
+                                    ParamConfig['random_drop_number_file'], prepare_data=prepare_CIFAR10_data)
     else:
         # Build policy
         policy_model_name = eval(PolicyConfig['policy_model_name'])
@@ -420,59 +420,47 @@ def test_policy_CIFAR10():
         # policy = LRPolicyNetwork(input_size=input_size)
         policy.load_policy()
         policy.message_parameters()
-
-    history_accuracy = []
+        updater = TestPolicyUpdater(model, [x_train, y_train], policy, prepare_data=prepare_CIFAR10_data)
 
     # Train the network
+    # Some variables
+    best_validate_acc = -np.inf
+    best_iteration = 0
+    test_score = 0.0
+    history_accuracy = []
+    start_time = time.time()
+
     for epoch in range(ParamConfig['epoch_per_episode']):
         print('[Epoch {}]'.format(epoch))
         message('[Epoch {}]'.format(epoch))
 
-        history_train_loss = 0
-        train_batches = 0
-        total_accepted_cases = 0
-        start_time = time.time()
+        updater.start_new_epoch()
+        epoch_start_time = time.time()
 
-        for batch in iterate_minibatches(x_train, y_train, model.train_batch_size,
-                                         shuffle=True, augment=True):
-            inputs, targets = batch
+        kf = get_minibatches_idx(updater.data_size, model.train_batch_size, shuffle=True)
 
-            probability = model.get_policy_input(inputs, targets, epoch, history_accuracy)
+        for _, train_index in kf:
+            part_train_cost = updater.add_batch(train_index, updater, history_accuracy)
 
-            if Config['train_type'] == 'deterministic':
-                alpha = np.asarray([policy.output_function(prob) for prob in probability], dtype=fX)
+        validate_acc, test_acc = validate_point_message(
+            model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater)
+        history_accuracy.append(validate_acc)
 
-                alpha /= np.sum(alpha)
-
-                history_train_loss += model.f_alpha_train(inputs, targets, alpha)
-            else:
-                if Config['train_type'] == 'stochastic':
-                    actions = policy.take_action(probability, False)
-                elif Config['train_type'] == 'random_drop':
-                    actions = np.random.binomial(
-                        1,
-                        1 - float(random_drop_numbers[epoch]) / len(y_train),
-                        targets.shape
-                    ).astype(bool)
-
-                # get masked inputs and targets
-                inputs = inputs[actions]
-                targets = targets[actions]
-
-                history_train_loss += model.f_train(inputs, targets)
-
-            total_accepted_cases += len(inputs)
-            train_batches += 1
+        if validate_acc > best_validate_acc:
+            best_validate_acc = validate_acc
+            best_iteration = updater.iteration
+            test_score = test_acc
 
         if model_name == CIFARModel:
             if (epoch + 1) in (41, 61):
                 model.update_learning_rate()
 
-        epoch_message(model, x_train, y_train, x_validate, y_validate, x_test, y_test,
-                      history_accuracy, history_train_loss,
-                      epoch, start_time, train_batches, total_accepted_cases)
+        message("Epoch {} of {} took {:.3f}s".format(
+            epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
 
-        model.test(x_test, y_test)
+    episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
+
+    model.test(x_test, y_test)
 
 
 def just_ref():
