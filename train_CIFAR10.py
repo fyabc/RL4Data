@@ -11,7 +11,7 @@ from model_CIFAR10 import CIFARModelBase, CIFARModel, VaniliaCNNModel
 from utils import *
 from utils_CIFAR10 import load_cifar10_data, split_cifar10_data, iterate_minibatches, pre_process_CIFAR10_data, \
     prepare_CIFAR10_data
-from policyNetwork import LRPolicyNetwork, MLPPolicyNetwork
+from policyNetwork import get_policy_network
 
 __author__ = 'fyabc'
 
@@ -170,8 +170,7 @@ def train_policy_CIFAR10():
     # Create the policy network
     input_size = CIFARModelBase.get_policy_input_size()
     print('Input size of policy network:', input_size)
-    policy_model_name = eval(PolicyConfig['policy_model_name'])
-    policy = policy_model_name(input_size=input_size)
+    policy = get_policy_network(PolicyConfig['policy_model_name'])(input_size=input_size)
     # policy = LRPolicyNetwork(input_size=input_size)
 
     # Load the dataset
@@ -273,8 +272,7 @@ def train_actor_critic_CIFAR10():
     # Create the actor network
     input_size = CIFARModel.get_policy_input_size()
     print('Input size of actor network:', input_size)
-    policy_model_name = eval(PolicyConfig['policy_model_name'])
-    actor = policy_model_name(input_size=input_size)
+    actor = get_policy_network(PolicyConfig['policy_model_name'])(input_size=input_size)
     # actor = LRPolicyNetwork(input_size=input_size)
     critic = CriticNetwork(feature_size=input_size, batch_size=model.train_batch_size)
 
@@ -415,8 +413,7 @@ def test_policy_CIFAR10():
                                     ParamConfig['random_drop_number_file'], prepare_data=prepare_CIFAR10_data)
     else:
         # Build policy
-        policy_model_name = eval(PolicyConfig['policy_model_name'])
-        policy = policy_model_name(input_size=input_size)
+        policy = get_policy_network(PolicyConfig['policy_model_name'])(input_size=input_size)
         # policy = LRPolicyNetwork(input_size=input_size)
         policy.load_policy()
         policy.message_parameters()
@@ -463,13 +460,16 @@ def test_policy_CIFAR10():
     model.test(x_test, y_test)
 
 
+def new_train_CIFAR10():
+    pass
+
+
 def just_ref():
     """
     This function is just refer some names to prevent them from being optimized by Pycharm.
     """
 
     _ = CIFARModelBase, CIFARModel, VaniliaCNNModel
-    _ = LRPolicyNetwork, MLPPolicyNetwork
 
 
 def main(args=None):
@@ -496,7 +496,28 @@ def main(args=None):
         message(traceback.format_exc())
     finally:
         process_after_train()
+        
+        
+def main2():
+    dataset_main({
+        'raw': train_raw_CIFAR10,
+        'self_paced': train_SPL_CIFAR10,
+
+        'policy': train_policy_CIFAR10,
+        'reinforce': train_policy_CIFAR10,
+        'speed': train_policy_CIFAR10,
+
+        'actor_critic': train_actor_critic_CIFAR10,
+        'ac': train_actor_critic_CIFAR10,
+
+        # 'test': test_policy_CIFAR10,
+        'deterministic': test_policy_CIFAR10,
+        'stochastic': test_policy_CIFAR10,
+        'random_drop': test_policy_CIFAR10,
+
+        'new_train': new_train_CIFAR10,
+    })
 
 
 if __name__ == '__main__':
-    main()
+    main2()
