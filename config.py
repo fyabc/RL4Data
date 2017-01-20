@@ -20,6 +20,13 @@ IMDBConfig = Config['imdb']
 MNISTConfig = Config['mnist']
 PolicyConfig = Config['policy']
 
+# Paths
+ProjectRootPath = os.path.dirname(os.path.abspath(__file__))
+DataPath = os.path.join(ProjectRootPath, 'data')
+LogPath = os.path.join(ProjectRootPath, 'log')
+ModelPath = os.path.join(ProjectRootPath, 'model')
+
+
 if __name__ == '__main__':
     print(Config)
     print(CifarConfig)

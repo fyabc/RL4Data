@@ -13,8 +13,8 @@
     /// [NOTE]: you must NOT have any spaces in the expression above.
 
     /// Basic configurations.
-//    "dataset": "CIFAR10",
-    "seed": 1234,
+    "dataset": "CIFAR10",
+    "seed": 123,
     "floatX": "float32",
     "logging_file": "./data/log.txt",
     "append_logging_file": false,
@@ -45,14 +45,29 @@
         //     MLPPolicyNetwork
         "policy_model_name": "MLPPolicyNetwork",
 
+        // Where to save the policy
+        // [NOTE] If this directory is "xxx/yyy", the real location is "./model/${dataset}/xxx/yyy"
+        "policy_model_directory": "",
+
+        // The policy model save name
         "policy_model_file": "./data/policy_model.npz",
+        // Save the policy per ? episodes
         "policy_save_freq": 1,
+
+        /// The train action
+        // Candidates:
+        //     "overwrite":
+        //         train from episode 0, will overwrite previous policy models.
+        //     "reload":
+        //         search the "policy_model_directory" for the newest version of the policy model file,
+        //         load it, and train from this.
+        "action": "",
 
         "policy_warm_start": false,
         "policy_warm_start_file": "./data/mnist/policy_warm_start_model.npz",
 
-        "policy_save_model": false,
-        "policy_save_model_file": "./data/mnist/warm_start_model.npz",
+//        "policy_save_model": false,
+//        "policy_save_model_file": "./data/mnist/warm_start_model.npz",
 
         "num_episodes": 1000,
 
@@ -67,20 +82,26 @@
         "add_loss_rank": true,
         "add_accepted_data_number": true,
 
-        /// Immediate reward & speed reward
+        /// Immediate reward
         "immediate_reward": false,
+        // This sample size is used in AC immediate reward
         "immediate_reward_sample_size": 10000,
 
+        // Use speed reward?
         "speed_reward": false,
-        "speed_reward_threshold": 0.8,
 
+        /// Speed reward thresholds and their weights
+        // The current value is for Uncorrupted-MNIST
+        // MNIST:       [0.95, 0.97, 0.98]
+        // C-MNIST:     [0.89, 0.92, 0.94]
+        // C-CIFAR-10:  [0.72, 0.76, 0.795]
         "speed_reward_config": [
             [0.95, 0.1666667],
             [0.97, 0.3333333],
             [0.98, 0.5]
         ],
 
-        /// Negative reward? true means positive
+        /// Negative reward? true means positive, this is common to false
         "reward_sign": false,
 
         "policy_optimizer": "adam",
@@ -91,17 +112,21 @@
         /// MLP policy parameters
         "hidden_size": 12,
 
-        "gamma": 0.9,
+        "gamma": 0.99,
+
+        // The initial value of policy network weights
         "b_init": 2.0,
         "W_init": null,
 
-        // Use normalize when initializing W
+        // Use normalize when initializing W, this is common to true
         "W_normalize": true,
 
         // L2 regular factor
         "l2_c": 0.0005,
 
+        // Use reward baseline?
         "reward_baseline": true,
+        // rb_new = (1 - rb_update_rate) * rb_old + rb_update_rate * recent_reward
         "reward_baseline_update_rate": 0.8,
 
         /// Actor-Critic configurations
@@ -115,24 +140,26 @@
         "AC_update_freq": 100,
 
         /// Self-paced learning configurations
-        "epoch_update": false,
-
+        // Start and end loss threshold
         "start_cost": 0.6,
         "end_cost": 4.60517     // -log(0.01)
     },
 
     "cifar10": {
-        "data_dir": "./data/cifar-10-batches-py",
-        "one_file": false,
+        "data_dir": "./data/cifar10/cifar10.pkl.gz",
+
+        // Data is in a single file (not directory)? Common to true.
+        "one_file": true,
 
         /// Model name.
         // Candidates:
-        //     CIFARModel
+        //     CIFARModel (ResNet)
         //     VaniliaCNNModel
         "model_name": "CIFARModel",
 
-        "model_file": "./data/cifar10/cifar10_deep_residual_model.npz",
+        // Save the model to "model_file"
         "save_model": false,
+        "model_file": "./data/cifar10/cifar10_deep_residual_model.npz",
 
         "total_size": 60000,
         "train_size": 50000,
@@ -144,22 +171,28 @@
         "random_drop_number_file": "./data/cifar10/drop_num.txt",
 
         "use_policy": true,
-        "train_small_size": 40000,
+
+        // Training small size default to the whole (mirrored) training set
+        "train_small_size": 100000,
+
+        // The original value is 82
         "epoch_per_episode": 52,
 
         "warm_start": false,
 
+        // Learning rate will discount at epoch 41 and 61.
         "init_learning_rate": 0.1,
         "learning_rate_discount": 0.1,
 
+        // Model updater is momentum SGD
         "l2_penalty_factor": 0.0001,
         "momentum": 0.9,
 
+        // These are original settings
         "train_batch_size": 128,
         "validate_batch_size": 500,
         "cnn_output_size": 10,
         "n": 5,
-        "num_epochs": 5000,
 
         "print_label_distribution": true,
 
@@ -174,39 +207,36 @@
         "dataset": "imdb",
         "data_dir": "./data/imdb/imdb.pkl",
 
+        // Training small size default to the whole training set
         "train_small_size": 10000,
 
+        "epoch_per_episode": 100,
+
+        // These are original settings
         "test_size": 5000,
         "valid_portion": 0.05,
         "n_words": 10000,
         "maxlen": null,
-
-        "epoch_per_episode": 100,
-
         "dim_proj": 128,
         "patience": 10,
         "display_freq": 10,
-
         "decay_c": 0.0,
         "learning_rate": 0.0001,
+        "train_batch_size": 16,
+        "validate_batch_size": 64,
+        "optimizer": "adam",
+        "noise_std": 0.0,
+        "reload_model": false,
+        "use_dropout": true,
 
         "save_to": false, //"./data/imdb/lstm_model.npz",
         "valid_freq": 370,
         "save_freq": 1110,
-        "train_loss_freq": 370,
-
-        "train_batch_size": 16,
-        "validate_batch_size": 64,
-
-        "optimizer": "adam",
-
-        "noise_std": 0.0,
-        "reload_model": false,
-        "use_dropout": true
+        "train_loss_freq": 370
     },
 
     "mnist": {
-        "seed": 1234,
+        "seed": 123,
 
         "dataset": "mnist",
         "data_dir": "./data/mnist/mnist.pkl.gz",
@@ -218,18 +248,19 @@
         "train_loss_freq": 0,
         "display_freq": 100,
 
+        // Training small size default to the whole training set
         "train_small_size": 50000,
 
+        // The original value is 1000
         "epoch_per_episode": 180,
 
+        // These are original settings
         "hidden_size": 500,
         "learning_rate": 0.01,
         "train_batch_size": 20,
         "validate_batch_size": 20,
-
         "l1_penalty_factor": 0.00,
         "l2_penalty_factor": 0.0001,
-
         "patience": 10000,
         "patience_increase": 2,
         "improvement_threshold": 0.995,

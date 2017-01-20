@@ -3,24 +3,56 @@
 from __future__ import print_function, unicode_literals
 
 import cPickle as pkl
+import gzip
 import os
 import random
 import sys
 import time
+from collections import namedtuple
 from functools import wraps
-import gzip
+import traceback
 
 import numpy as np
 
-from config import Config, CifarConfig, PolicyConfig
+from config import Config, PolicyConfig, CifarConfig, MNISTConfig, IMDBConfig
 
 __author__ = 'fyabc'
 
+
+DatasetAttributes = namedtuple('DatasetAttributes', ['name', 'config', 'main_entry'])
+
+# All datasets
+Datasets = {
+    'cifar10': DatasetAttributes('cifar10', CifarConfig, 'train_CIFAR10.main2'),
+    'mnist': DatasetAttributes('mnist', MNISTConfig, 'train_MNIST.main2'),
+    'imdb': DatasetAttributes('imdb', IMDBConfig, 'train_IMDB.main2'),
+}
+
+
+def get_path(base_path, dataset_name, filename=None):
+    """Get the dataset specific path.
+
+    Parameters
+    ----------
+    base_path: DataPath, LogPath, etc.
+    dataset_name: cifar10, mnist, etc.
+    filename: optional, the file name.
+
+    Returns
+    -------
+    The joined path.
+    """
+
+    if filename is None:
+        return os.path.join(base_path, dataset_name)
+    return os.path.join(base_path, dataset_name, filename)
+
+# The float type of Theano. Default to 'float32'.
 # fX = config.floatX
 fX = Config['floatX']
 
+# Logging settings
 logging_file = sys.stderr
-
 _depth = 0
 
 
@@ -225,6 +257,40 @@ def simple_parse_args(args, param_config=CifarConfig):
     return args_dict, policy_args_dict, param_args_dict
 
 
+# The escaped string double quote.
+_StringDoubleQuote = '@'
+_GlobalPrefix = 'G.'
+_PolicyPrefix = 'P.'
+_KeyValueSeparator = '='
+
+
+def simple_parse_args2(args):
+    global_args_dict = {}
+    policy_args_dict = {}
+    param_args_dict = {}
+
+    for i, arg in enumerate(args):
+        arg = arg.replace(_StringDoubleQuote, '"')
+
+        if _KeyValueSeparator in arg:
+            if arg.startswith(_GlobalPrefix):
+                arg = arg[2:]
+                the_dict = global_args_dict
+            elif arg.startswith(_PolicyPrefix):
+                arg = arg[2:]
+                the_dict = policy_args_dict
+            else:
+                the_dict = param_args_dict
+
+            key, value = arg.split(_KeyValueSeparator)
+            the_dict[key] = eval(value)
+        else:
+            if i > 0:
+                print('Warning: The argument {} is unused'.format(arg))
+
+    return global_args_dict, policy_args_dict, param_args_dict
+
+
 def check_config(param_config, policy_config):
     assert not (policy_config['immediate_reward'] and policy_config['speed_reward']),\
         'Speed reward must be terminal reward'
@@ -256,6 +322,69 @@ def process_before_train(args=None, param_config=CifarConfig, policy_config=Poli
     pprint.pprint(Config, stream=sys.stderr)
     if logging_file != sys.stderr:
         pprint.pprint(Config, stream=logging_file)
+
+
+def _strict_update(target, new_dict):
+    for k, v in new_dict.iteritems():
+        if k not in target:
+            raise KeyError('The key {} is not in the parameters.'.format(k))
+        target[k] = v
+
+
+def process_before_train2(args=None):
+    args = args or sys.argv
+
+    import pprint
+
+    if '-h' in args or '--help' in args:
+        # TODO add more help message
+        exit()
+
+    global_args_dict, policy_args_dict, param_args_dict = simple_parse_args2(args)
+
+    _strict_update(Config, global_args_dict)
+    _strict_update(PolicyConfig, policy_args_dict)
+
+    dataset_attr = Datasets[Config['dataset'].lower()]
+    ParamConfig = dataset_attr.config
+
+    _strict_update(ParamConfig, param_args_dict)
+
+    check_config(ParamConfig, PolicyConfig)
+
+    init_logging_file(append=Config['append_logging_file'])
+
+    message('Start Time: {}'.format(time.ctime()))
+
+    message('The configures and hyperparameters are:')
+    pprint.pprint(Config, stream=sys.stderr)
+    if logging_file != sys.stderr:
+        pprint.pprint(Config, stream=logging_file)
+
+    return dataset_attr
+
+
+def call_or_throw(call_dict, key, *args, **kwargs):
+    func = call_dict.get(key, None)
+
+    if func is None:
+        raise KeyError('Unknown entry name {}'.format(key))
+
+    return func(*args, **kwargs)
+
+
+def dataset_main(call_table):
+    try:
+        train_func = call_table.get(Config['train_type'].lower(), None)
+
+        if train_func is None:
+            raise KeyError('Unknown train type {}'.format(Config['train_type']))
+
+        train_func()
+    except:
+        message(traceback.format_exc())
+    finally:
+        process_after_train()
 
 
 def process_after_train():

@@ -25,6 +25,17 @@ class PolicyNetworkBase(object):
         input_size: the input size of the policy, should be the size of softmax probabilities of CNN.
     """
 
+    AllNetworks = {}
+
+    @classmethod
+    def get_policy_network_name(cls, name):
+        return cls.AllNetworks[name]
+
+    @classmethod
+    def register_policy_network_name(cls, fullname, aliases):
+        for name in aliases:
+            cls.AllNetworks[name] = fullname
+
     @logging
     def __init__(self,
                  input_size,
@@ -217,6 +228,8 @@ Real cost (Final reward for terminal): {}""".format(cost, final_reward))
 
 
 class LRPolicyNetwork(PolicyNetworkBase):
+    PolicyNetworkBase.register_policy_network_name('LRPolicyNetwork', ['lr', 'LRPolicyNetwork'.lower()])
+
     def __init__(self,
                  input_size,
                  optimizer=None,
@@ -249,6 +262,8 @@ class LRPolicyNetwork(PolicyNetworkBase):
 
 
 class MLPPolicyNetwork(PolicyNetworkBase):
+    PolicyNetworkBase.register_policy_network_name('MLPPolicyNetwork', ['mlp', 'MLPPolicyNetwork'.lower()])
+
     def __init__(self,
                  input_size,
                  hidden_size=None,
@@ -284,13 +299,19 @@ class MLPPolicyNetwork(PolicyNetworkBase):
         return T.nnet.sigmoid(T.dot(hidden_layer, self.W1) + self.b1)
 
 
+def get_policy_network(name):
+    return eval(PolicyNetworkBase.AllNetworks[name])
+
+
 def test():
-    pn = MLPPolicyNetwork(input_size=CifarConfig['cnn_output_size'])
+    # pn = MLPPolicyNetwork(input_size=CifarConfig['cnn_output_size'])
+    #
+    # input_data = np.ones(shape=(4, CifarConfig['cnn_output_size']), dtype=fX)
+    #
+    # print(pn.take_action(input_data, False))
+    # pn.message_parameters()
 
-    input_data = np.ones(shape=(4, CifarConfig['cnn_output_size']), dtype=fX)
-
-    print(pn.take_action(input_data, False))
-    pn.message_parameters()
+    print(get_policy_network('mlp'))
 
 
 if __name__ == '__main__':

@@ -3,14 +3,12 @@
 
 from __future__ import print_function, unicode_literals
 
-import traceback
-
 from batch_updater import *
 from config import MNISTConfig as ParamConfig
 from criticNetwork import CriticNetwork
 from model_MNIST import MNISTModel
 from new_train.new_train_MNIST import new_train_MNIST
-from policyNetwork import LRPolicyNetwork, MLPPolicyNetwork
+from policyNetwork import get_policy_network
 from utils import *
 from utils import episode_final_message
 from utils_MNIST import pre_process_MNIST_data, pre_process_config
@@ -151,8 +149,7 @@ def train_policy_MNIST():
     # Create the policy network
     input_size = MNISTModel.get_policy_input_size()
     print('Input size of policy network:', input_size)
-    policy_model_name = eval(PolicyConfig['policy_model_name'])
-    policy = policy_model_name(input_size=input_size)
+    policy = get_policy_network(PolicyConfig['policy_model_name'])(input_size=input_size)
     # policy = LRPolicyNetwork(input_size=input_size)
 
     if PolicyConfig['policy_warm_start']:
@@ -261,8 +258,7 @@ def train_actor_critic_MNIST():
     # Create the policy network
     input_size = MNISTModel.get_policy_input_size()
     print('Input size of policy network:', input_size)
-    policy_model_name = eval(PolicyConfig['policy_model_name'])
-    actor = policy_model_name(input_size=input_size)
+    actor = get_policy_network(PolicyConfig['policy_model_name'])(input_size=input_size)
 
     if PolicyConfig['policy_warm_start']:
         actor.load_policy(PolicyConfig['policy_warm_start_file'])
@@ -415,8 +411,7 @@ def test_policy_MNIST():
                                     drop_num_type='vp', valid_freq=ParamConfig['valid_freq'])
     else:
         # Build policy
-        policy_model_name = eval(PolicyConfig['policy_model_name'])
-        policy = policy_model_name(input_size=input_size)
+        policy = get_policy_network(PolicyConfig['policy_model_name'])(input_size=input_size)
         # policy = LRPolicyNetwork(input_size=input_size)
         policy.load_policy()
         policy.message_parameters()
@@ -473,14 +468,6 @@ def test_policy_MNIST():
     episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
 
 
-def just_ref():
-    """
-    This function is just refer some names to prevent them from being optimized by Pycharm.
-    """
-
-    _ = LRPolicyNetwork, MLPPolicyNetwork
-
-
 def main(args=None):
     process_before_train(args, ParamConfig)
 
@@ -509,5 +496,27 @@ def main(args=None):
         process_after_train()
 
 
+def main2():
+    dataset_main({
+        'raw': train_raw_MNIST,
+        'self_paced': train_SPL_MNIST,
+
+        'policy': train_policy_MNIST,
+        'reinforce': train_policy_MNIST,
+        'speed': train_policy_MNIST,
+
+        'actor_critic': train_actor_critic_MNIST,
+        'ac': train_actor_critic_MNIST,
+
+        # 'test': test_policy_MNIST,
+        'deterministic': test_policy_MNIST,
+        'stochastic': test_policy_MNIST,
+        'random_drop': test_policy_MNIST,
+
+        'new_train': new_train_MNIST,
+    })
+
+
 if __name__ == '__main__':
-    main()
+    # main()
+    main2()
