@@ -28,10 +28,6 @@ class PolicyNetworkBase(object):
     AllNetworks = {}
 
     @classmethod
-    def get_policy_network_name(cls, name):
-        return cls.AllNetworks[name]
-
-    @classmethod
     def register_policy_network_name(cls, fullname, aliases):
         for name in aliases:
             cls.AllNetworks[name] = fullname
@@ -300,7 +296,7 @@ class MLPPolicyNetwork(PolicyNetworkBase):
 
 
 def get_policy_network(name):
-    return eval(PolicyNetworkBase.AllNetworks[name])
+    return eval(PolicyNetworkBase.AllNetworks[name.lower()])
 
 
 def test():

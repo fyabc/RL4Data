@@ -34,7 +34,14 @@ class CIFARModelBase(object):
     The base class of CIFAR-10 network model.
     """
 
+    AllModels = {}
+
     output_size = ParamConfig['cnn_output_size']
+
+    @classmethod
+    def register_model_name(cls, fullname, aliases):
+        for name in aliases:
+            cls.AllModels[name] = fullname
 
     def __init__(self,
                  train_batch_size=None,
@@ -207,6 +214,8 @@ class CIFARModel(CIFARModelBase):
     """
     The CIFAR-10 neural network model (ResNet).
     """
+
+    CIFARModelBase.register_model_name('CIFARModel', ['resnet', 'CIFARModel'.lower()])
 
     def __init__(self,
                  n=None,
@@ -455,6 +464,8 @@ class VaniliaCNNModel(CIFARModelBase):
     The CIFAR-10 neural network model (Vanilia CNN).
     """
 
+    CIFARModelBase.register_model_name('VaniliaCNNModel', ['vanilia', 'VaniliaCNNModel'.lower()])
+
     def __init__(self,
                  train_batch_size=None,
                  valid_batch_size=None
@@ -571,6 +582,10 @@ class VaniliaCNNModel(CIFARModelBase):
     @logging
     def update_learning_rate(self):
         self.learning_rate.set_value(floatX(self.learning_rate.get_value() * 0.1))
+
+
+def get_model(name):
+    return eval(CIFARModelBase.AllModels[name.lower()])
 
 
 def test():

@@ -335,6 +335,7 @@ def process_before_train2(args=None):
     args = args or sys.argv
 
     import pprint
+    import platform
 
     if '-h' in args or '--help' in args:
         # TODO add more help message
@@ -354,12 +355,16 @@ def process_before_train2(args=None):
 
     init_logging_file(append=Config['append_logging_file'])
 
+    message('[Message before train]')
+    message('Running on node: {}'.format(platform.node()))
     message('Start Time: {}'.format(time.ctime()))
 
     message('The configures and hyperparameters are:')
     pprint.pprint(Config, stream=sys.stderr)
     if logging_file != sys.stderr:
         pprint.pprint(Config, stream=logging_file)
+
+    message('[Message before train done]')
 
     return dataset_attr
 
@@ -388,7 +393,9 @@ def dataset_main(call_table):
 
 
 def process_after_train():
+    message('[Message after train]')
     message('End Time: {}'.format(time.ctime()))
+    message('[Message after train done]')
     finalize_logging_file()
 
 

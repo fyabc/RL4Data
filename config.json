@@ -41,9 +41,9 @@
     "policy": {
         /// Name of policy network
         // Candidates:
-        //     LRPolicyNetwork
-        //     MLPPolicyNetwork
-        "policy_model_name": "MLPPolicyNetwork",
+        //     LRPolicyNetwork (lr)
+        //     MLPPolicyNetwork (mlp)
+        "policy_model_name": "mlp",
 
         // Where to save the policy
         // [NOTE] If this directory is "xxx/yyy", the real location is "./model/${dataset}/xxx/yyy"
@@ -153,9 +153,9 @@
 
         /// Model name.
         // Candidates:
-        //     CIFARModel (ResNet)
-        //     VaniliaCNNModel
-        "model_name": "CIFARModel",
+        //     CIFARModel (resnet)
+        //     VaniliaCNNModel (vanilia)
+        "model_name": "resnet",
 
         // Save the model to "model_file"
         "save_model": false,

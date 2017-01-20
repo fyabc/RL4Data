@@ -7,7 +7,7 @@ import traceback
 from batch_updater import *
 from config import CifarConfig as ParamConfig
 from criticNetwork import CriticNetwork
-from model_CIFAR10 import CIFARModelBase, CIFARModel, VaniliaCNNModel
+from model_CIFAR10 import CIFARModelBase, get_model
 from utils import *
 from utils_CIFAR10 import load_cifar10_data, split_cifar10_data, iterate_minibatches, pre_process_CIFAR10_data, \
     prepare_CIFAR10_data
@@ -49,9 +49,8 @@ def epoch_message(model, x_train, y_train, x_validate, y_validate, x_test, y_tes
 
 
 def train_raw_CIFAR10():
-    model_name = eval(ParamConfig['model_name'])
     # Create neural network model
-    model = model_name()
+    model = get_model(ParamConfig['model_name'])()
     # model = VaniliaCNNModel()
 
     # Load the dataset
@@ -93,7 +92,7 @@ def train_raw_CIFAR10():
             best_iteration = updater.iteration
             test_score = test_acc
 
-        if model_name == CIFARModel:
+        if model.__class__.__name__ == 'CIFARModelBase':
             if (epoch + 1) in (41, 61):
                 model.update_learning_rate()
 
@@ -107,9 +106,8 @@ def train_raw_CIFAR10():
 
 
 def train_SPL_CIFAR10():
-    model_name = eval(ParamConfig['model_name'])
     # Create neural network model
-    model = model_name()
+    model = get_model(ParamConfig['model_name'])()
     # model = VaniliaCNNModel()
 
     # Load the dataset
@@ -151,7 +149,7 @@ def train_SPL_CIFAR10():
             best_iteration = updater.iteration
             test_score = test_acc
 
-        if model_name == CIFARModel:
+        if model.__class__.__name__ == 'CIFARModel':
             if (epoch + 1) in (41, 61):
                 model.update_learning_rate()
 
@@ -162,9 +160,8 @@ def train_SPL_CIFAR10():
 
 
 def train_policy_CIFAR10():
-    model_name = eval(ParamConfig['model_name'])
     # Create neural network model
-    model = model_name()
+    model = get_model(ParamConfig['model_name'])()
     # model = VaniliaCNNModel()
 
     # Create the policy network
@@ -236,7 +233,7 @@ def train_policy_CIFAR10():
             # Check speed rewards
             speed_reward_checker.check(validate_acc, updater)
 
-            if model_name == CIFARModel:
+            if model.__class__.__name__ == 'CIFARModel':
                 if (epoch + 1) in (41, 61):
                     model.update_learning_rate()
 
@@ -264,13 +261,12 @@ def train_policy_CIFAR10():
 
 
 def train_actor_critic_CIFAR10():
-    model_name = eval(ParamConfig['model_name'])
     # Create neural network model
-    model = model_name()
+    model = get_model(ParamConfig['model_name'])()
     # model = VaniliaCNNModel()
 
     # Create the actor network
-    input_size = CIFARModel.get_policy_input_size()
+    input_size = CIFARModelBase.get_policy_input_size()
     print('Input size of actor network:', input_size)
     actor = get_policy_network(PolicyConfig['policy_model_name'])(input_size=input_size)
     # actor = LRPolicyNetwork(input_size=input_size)
@@ -366,7 +362,7 @@ def train_actor_critic_CIFAR10():
                         message('Epoch {}\tTotalBatches {}\tCost {}\tCritic loss {}\tActor loss {}'
                                 .format(epoch, updater.total_train_batches, part_train_cost, Q_loss, actor_loss))
 
-            if model_name == CIFARModel:
+            if model.__class__.__name__ == 'CIFARModel':
                 if (epoch + 1) in (41, 61):
                     model.update_learning_rate()
 
@@ -390,12 +386,11 @@ def train_actor_critic_CIFAR10():
 
 
 def test_policy_CIFAR10():
-    model_name = eval(ParamConfig['model_name'])
     # Create neural network model
-    model = model_name()
+    model = get_model(ParamConfig['model_name'])()
     # model = VaniliaCNNModel()
 
-    input_size = CIFARModel.get_policy_input_size()
+    input_size = CIFARModelBase.get_policy_input_size()
     print('Input size of policy network:', input_size)
 
     # Load the dataset and get small training data
@@ -448,7 +443,7 @@ def test_policy_CIFAR10():
             best_iteration = updater.iteration
             test_score = test_acc
 
-        if model_name == CIFARModel:
+        if model.__class__.__name__ == 'CIFARModel':
             if (epoch + 1) in (41, 61):
                 model.update_learning_rate()
 
@@ -462,14 +457,6 @@ def test_policy_CIFAR10():
 
 def new_train_CIFAR10():
     pass
-
-
-def just_ref():
-    """
-    This function is just refer some names to prevent them from being optimized by Pycharm.
-    """
-
-    _ = CIFARModelBase, CIFARModel, VaniliaCNNModel
 
 
 def main(args=None):
