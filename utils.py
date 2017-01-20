@@ -251,10 +251,16 @@ def process_before_train(args=None, param_config=CifarConfig, policy_config=Poli
 
     init_logging_file(append=append)
 
+    message('Start Time: {}'.format(time.ctime()))
     message('The configures and hyperparameters are:')
     pprint.pprint(Config, stream=sys.stderr)
     if logging_file != sys.stderr:
         pprint.pprint(Config, stream=logging_file)
+
+
+def process_after_train():
+    message('End Time: {}'.format(time.ctime()))
+    finalize_logging_file()
 
 
 def get_minibatches_idx(n, minibatch_size, shuffle=False):

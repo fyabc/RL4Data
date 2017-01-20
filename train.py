@@ -26,4 +26,10 @@ if __name__ == '__main__':
             dataset = sys.argv[1]
 
     print('Dataset: {}'.format(dataset))
-    eval('train_{}.main(sys.argv)'.format(dataset))
+
+    # Dict of all tasks.
+    {
+        'CIFAR10': train_CIFAR10.main,
+        'IMDB': train_IMDB.main,
+        'MNIST': train_MNIST.main,
+    }[dataset](sys.argv)

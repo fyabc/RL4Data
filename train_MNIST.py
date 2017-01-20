@@ -506,7 +506,7 @@ def main(args=None):
     except:
         message(traceback.format_exc())
     finally:
-        finalize_logging_file()
+        process_after_train()
 
 
 if __name__ == '__main__':

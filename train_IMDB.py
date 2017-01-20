@@ -11,7 +11,7 @@ from collections import deque
 
 from config import IMDBConfig as ParamConfig, Config, PolicyConfig
 from model_IMDB import IMDBModel
-from utils import process_before_train, floatX, message, get_part_data, finalize_logging_file, get_minibatches_idx
+from utils import process_before_train, floatX, message, get_part_data, process_after_train, get_minibatches_idx
 from utils_IMDB import load_imdb_data, preprocess_imdb_data
 from utils_IMDB import prepare_imdb_data as prepare_data
 
@@ -917,7 +917,7 @@ def main(args=None):
     except:
         message(traceback.format_exc())
     finally:
-        finalize_logging_file()
+        process_after_train()
 
 
 if __name__ == '__main__':
