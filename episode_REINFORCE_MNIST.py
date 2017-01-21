@@ -3,14 +3,13 @@
 
 from __future__ import print_function, unicode_literals
 
-import traceback
-
-from config import MNISTConfig as ParamConfig, PolicyConfig
+from batch_updater import TrainPolicyUpdater
+from config import MNISTConfig as ParamConfig
+from model_MNIST import MNISTModel
+from policy_network import LRPolicyNetwork, MLPPolicyNetwork
+from reward_checker import SpeedRewardChecker
 from utils import *
 from utils_MNIST import pre_process_MNIST_data
-from model_MNIST import MNISTModel
-from policyNetwork import LRPolicyNetwork, MLPPolicyNetwork
-from batch_updater import TrainPolicyUpdater
 
 __author__ = 'fyabc'
 

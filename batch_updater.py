@@ -40,6 +40,9 @@ class BatchUpdater(object):
         self.iteration = 0
         self.epoch = -1
 
+        # Validate point number
+        self.vp_number = 0
+
         self.epoch_train_batches = 0
         self.epoch_accepted_cases = 0
         self.epoch_history_train_loss = 0.0

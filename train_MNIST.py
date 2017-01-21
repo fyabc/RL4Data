@@ -5,10 +5,11 @@ from __future__ import print_function, unicode_literals
 
 from batch_updater import *
 from config import MNISTConfig as ParamConfig
-from criticNetwork import CriticNetwork
+from critic_network import CriticNetwork
 from model_MNIST import MNISTModel
 from new_train.new_train_MNIST import new_train_MNIST
-from policyNetwork import get_policy_network
+from policy_network import PolicyNetworkBase
+from reward_checker import SpeedRewardChecker
 from utils import *
 from utils import episode_final_message
 from utils_MNIST import pre_process_MNIST_data, pre_process_config
@@ -149,7 +150,7 @@ def train_policy_MNIST():
     # Create the policy network
     input_size = MNISTModel.get_policy_input_size()
     message('Input size of policy network:', input_size)
-    policy = get_policy_network(PolicyConfig['policy_model_name'])(input_size=input_size)
+    policy = PolicyNetworkBase.get_by_name(PolicyConfig['policy_model_name'])(input_size=input_size)
     # policy = LRPolicyNetwork(input_size=input_size)
 
     policy.check_load()
@@ -180,7 +181,7 @@ def train_policy_MNIST():
         message('Training small size:', train_small_size)
 
         # Speed reward
-        speed_reward_checker = SpeedRewardChecker(
+        reward_checker = SpeedRewardChecker(
             PolicyConfig['speed_reward_config'],
             ParamConfig['epoch_per_episode'] * train_small_size,
         )
@@ -209,7 +210,7 @@ def train_policy_MNIST():
                         updater.total_train_batches % validation_frequency == 0:
                     last_validate_point = updater.total_train_batches
                     validate_acc, test_acc = validate_point_message(
-                        model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater)
+                        model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater, reward_checker)
                     history_accuracy.append(validate_acc)
 
                     if validate_acc > best_validate_acc:
@@ -219,9 +220,6 @@ def train_policy_MNIST():
                         best_validate_acc = validate_acc
                         best_iteration = updater.iteration
                         test_score = test_acc
-
-                    # Check speed rewards
-                    speed_reward_checker.check(validate_acc, updater)
 
                 if updater.total_train_batches >= patience:
                     break
@@ -241,7 +239,7 @@ def train_policy_MNIST():
 
         # Updating policy
         if PolicyConfig['speed_reward']:
-            terminal_reward = speed_reward_checker.get_reward()
+            terminal_reward = reward_checker.get_reward()
             policy.update(terminal_reward)
         else:
             validate_acc = model.get_test_acc(x_validate, y_validate)
@@ -257,7 +255,7 @@ def train_actor_critic_MNIST():
     # Create the policy network
     input_size = MNISTModel.get_policy_input_size()
     message('Input size of policy network:', input_size)
-    actor = get_policy_network(PolicyConfig['policy_model_name'])(input_size=input_size)
+    actor = PolicyNetworkBase.get_by_name(PolicyConfig['policy_model_name'])(input_size=input_size)
 
     actor.check_load()
 
@@ -409,7 +407,7 @@ def test_policy_MNIST():
                                     drop_num_type='vp', valid_freq=ParamConfig['valid_freq'])
     else:
         # Build policy
-        policy = get_policy_network(PolicyConfig['policy_model_name'])(input_size=input_size)
+        policy = PolicyNetworkBase.get_by_name(PolicyConfig['policy_model_name'])(input_size=input_size)
         # policy = LRPolicyNetwork(input_size=input_size)
         policy.load_policy()
         policy.message_parameters()

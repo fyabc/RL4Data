@@ -15,9 +15,8 @@ from utils_IMDB import load_imdb_data, preprocess_imdb_data
 from utils_IMDB import prepare_imdb_data as prepare_data
 
 # Actor-Critic from ChangXu
-from criticNetwork import CriticNetwork
-
-from policyNetwork import get_policy_network
+from critic_network import CriticNetwork
+from policy_network import PolicyNetworkBase
 
 __author__ = 'fyabc'
 
@@ -384,7 +383,7 @@ def train_policy_IMDB():
     # Build policy
     input_size = model.get_policy_input_size()
     message('Input size of policy network:', input_size)
-    policy = get_policy_network(PolicyConfig['policy_model_name'])(input_size=input_size)
+    policy = PolicyNetworkBase.get_by_name(PolicyConfig['policy_model_name'])(input_size=input_size)
     # policy = LRPolicyNetwork(input_size=input_size)
 
     policy.check_load()
@@ -555,7 +554,7 @@ def train_actor_critic_IMDB():
     # Build Actor and Critic network
     input_size = model.get_policy_input_size()
     message('Input size of policy network:', input_size)
-    actor = get_policy_network(PolicyConfig['policy_model_name'])(input_size=input_size)
+    actor = PolicyNetworkBase.get_by_name(PolicyConfig['policy_model_name'])(input_size=input_size)
     # actor = LRPolicyNetwork(input_size=input_size)
     critic = CriticNetwork(feature_size=input_size, batch_size=model.train_batch_size)
 
@@ -741,7 +740,7 @@ def test_policy_IMDB():
         # Build policy
         input_size = model.get_policy_input_size()
         message('Input size of policy network:', input_size)
-        policy = get_policy_network(PolicyConfig['policy_model_name'])(input_size=input_size)
+        policy = PolicyNetworkBase.get_by_name(PolicyConfig['policy_model_name'])(input_size=input_size)
         # policy = LRPolicyNetwork(input_size=input_size)
         policy.load_policy()
         policy.message_parameters()

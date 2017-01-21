@@ -3,14 +3,13 @@
 
 from __future__ import print_function, unicode_literals
 
-import traceback
-
-from config import CifarConfig as ParamConfig, PolicyConfig
+from batch_updater import TrainPolicyUpdater
+from config import CifarConfig as ParamConfig
+from model_CIFAR10 import CIFARModel
+from policy_network import LRPolicyNetwork, MLPPolicyNetwork
+from reward_checker import SpeedRewardChecker
 from utils import *
 from utils_CIFAR10 import pre_process_CIFAR10_data, prepare_CIFAR10_data
-from policyNetwork import LRPolicyNetwork, MLPPolicyNetwork
-from model_CIFAR10 import CIFARModel
-from batch_updater import TrainPolicyUpdater
 
 
 def train_episode():

@@ -27,21 +27,17 @@ from lasagne.layers import LocalResponseNormalization2DLayer, MaxPool2DLayer
 from config import Config, CifarConfig as ParamConfig, PolicyConfig
 from utils import logging, fX, floatX, shuffle_data, average, message, get_rank
 from utils_CIFAR10 import iterate_minibatches
+from name_register import NameRegister
 
 
-class CIFARModelBase(object):
+class CIFARModelBase(NameRegister):
     """
     The base class of CIFAR-10 network model.
     """
 
-    AllModels = {}
+    NameTable = {}
 
     output_size = ParamConfig['cnn_output_size']
-
-    @classmethod
-    def register_model_name(cls, fullname, aliases):
-        for name in aliases:
-            cls.AllModels[name] = fullname
 
     def __init__(self,
                  train_batch_size=None,
@@ -214,8 +210,6 @@ class CIFARModel(CIFARModelBase):
     """
     The CIFAR-10 neural network model (ResNet).
     """
-
-    CIFARModelBase.register_model_name('CIFARModel', ['resnet', 'CIFARModel'.lower()])
 
     def __init__(self,
                  n=None,
@@ -459,12 +453,13 @@ class CIFARModel(CIFARModelBase):
         self.learning_rate.set_value(lasagne.utils.floatX(ParamConfig['init_learning_rate']))
 
 
+CIFARModel.register_class(['resnet'])
+
+
 class VaniliaCNNModel(CIFARModelBase):
     """
     The CIFAR-10 neural network model (Vanilia CNN).
     """
-
-    CIFARModelBase.register_model_name('VaniliaCNNModel', ['vanilia', 'VaniliaCNNModel'.lower()])
 
     def __init__(self,
                  train_batch_size=None,
@@ -583,9 +578,7 @@ class VaniliaCNNModel(CIFARModelBase):
     def update_learning_rate(self):
         self.learning_rate.set_value(floatX(self.learning_rate.get_value() * 0.1))
 
-
-def get_model(name):
-    return eval(CIFARModelBase.AllModels[name.lower()])
+VaniliaCNNModel.register_class(['vanilia'])
 
 
 def test():

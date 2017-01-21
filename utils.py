@@ -151,60 +151,6 @@ def shuffle_data(x_train, y_train):
     return x_train[shuffled_indices], y_train[shuffled_indices]
 
 
-####################################
-# Speed reward REINFORCE utilities #
-####################################
-
-class SpeedRewardChecker(object):
-    def __init__(self, check_point_list, expected_total_cases):
-        """
-
-        Parameters
-        ----------
-        check_point_list : list of 2-element tuples
-            format: [(threshold1, weight1), (threshold2, weight2), ...]
-        """
-
-        self._check_point_list = check_point_list
-        self.thresholds = [check_point[0] for check_point in check_point_list]
-        self.weights = [check_point[1] for check_point in check_point_list]
-        self.first_over_cases = [None for _ in range(len(check_point_list))]
-        self.expected_total_cases = expected_total_cases
-
-    @property
-    def num_checker(self):
-        return len(self.thresholds)
-
-    def check(self, validate_acc, updater):
-        for i, threshold in enumerate(self.thresholds):
-            if self.first_over_cases[i] is None and validate_acc >= threshold:
-                self.first_over_cases[i] = updater.total_accepted_cases
-
-    def get_reward(self, echo=True):
-        for i in range(len(self.first_over_cases)):
-            if self.first_over_cases[i] is None:
-                self.first_over_cases[i] = self.expected_total_cases
-
-        terminal_rewards = [-np.log(float(first_over_cases) / self.expected_total_cases)
-                            for first_over_cases in self.first_over_cases]
-        result = sum(weight * terminal_reward for weight, terminal_reward in zip(self.weights, terminal_rewards))
-
-        if echo:
-            message('Reward Point:\nFirst over cases:')
-            for threshold, first_over_cases, terminal_reward in zip(
-                    self.thresholds, self.first_over_cases, terminal_rewards):
-                message('{} {} {}'.format(threshold, first_over_cases, terminal_reward))
-            message('Total cases:', self.expected_total_cases)
-            message('Terminal reward:', result)
-
-        return result
-
-
-class DeltaAccuracyRewardChecker(object):
-    def __init__(self, baseline_accuracy_list, weight_linear=0.0):
-        self.baseline_accuracy_list = baseline_accuracy_list
-
-
 ########################################
 # Simple command line arguments parser #
 ########################################
@@ -424,7 +370,7 @@ def process_before_train2(args=None):
     return dataset_attr
 
 
-def call_or_throw(call_dict, key, *args, **kwargs):
+def call_or_throw(call_dict, key, *args, **kwargs):     # Unused now
     func = call_dict.get(key, None)
 
     if func is None:
@@ -492,7 +438,12 @@ def get_policy(model_type, policy_type, save=True):
     return policy
 
 
-def validate_point_message(model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater):
+def validate_point_message(
+        model,
+        x_train, y_train, x_validate, y_validate, x_test, y_test,
+        updater,
+        reward_checker=None,
+):
     # Get training loss
     train_loss = model.get_training_loss(x_train, y_train)
 
@@ -508,7 +459,7 @@ def validate_point_message(model, x_train, y_train, x_validate, y_validate, x_te
     test_acc /= test_batches
 
     message("""\
-Validate Point: Epoch {} Iteration {} Batch {} TotalBatch {}
+Validate Point {}: Epoch {} Iteration {} Batch {} TotalBatch {}
 Training Loss: {}
 History Training Loss: {}
 Validate Loss: {}
@@ -516,7 +467,7 @@ Validate Loss: {}
 Test Loss: {}
 #Test accuracy: {}
 Number of accepted cases: {} of {} total""".format(
-        updater.epoch, updater.iteration, updater.epoch_train_batches, updater.total_train_batches,
+        updater.vp_number, updater.epoch, updater.iteration, updater.epoch_train_batches, updater.total_train_batches,
         train_loss,
         updater.epoch_history_train_loss / updater.epoch_train_batches,
         validate_loss,
@@ -525,6 +476,14 @@ Number of accepted cases: {} of {} total""".format(
         test_acc,
         updater.total_accepted_cases, updater.total_seen_cases,
     ))
+
+    # Check speed rewards
+    if reward_checker is not None:
+        reward_checker.check(validate_acc, updater)
+
+    # [NOTE] Important! increment `vp_number` in validation point.
+    # `DeltaAccuracyRewardChecker` need `vp_number` to work correctly.
+    updater.vp_number += 1
 
     if Config['temp_job'] == 'check_selected_data_label':
         message("""\

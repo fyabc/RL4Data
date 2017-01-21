@@ -12,13 +12,13 @@ from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
 from config import Config, PolicyConfig
 from utils import fX, floatX, init_norm, logging, message
-from path_util import get_path
+from name_register import NameRegister
 from optimizers import adadelta, adam, sgd, rmsprop
 
 __author__ = 'fyabc'
 
 
-class PolicyNetworkBase(object):
+class PolicyNetworkBase(NameRegister):
     """The base class of the policy network.
 
     Input the softmax probabilities of output layer of NN, output the data selection result.
@@ -27,12 +27,7 @@ class PolicyNetworkBase(object):
         input_size: the input size of the policy, should be the size of softmax probabilities of CNN.
     """
 
-    AllNetworks = {}
-
-    @classmethod
-    def register_policy_network_name(cls, fullname, aliases):
-        for name in aliases:
-            cls.AllNetworks[name] = fullname
+    NameTable = {}
 
     @logging
     def __init__(self,
@@ -232,8 +227,6 @@ Real cost (Final reward for terminal): {}""".format(cost, final_reward))
 
 
 class LRPolicyNetwork(PolicyNetworkBase):
-    PolicyNetworkBase.register_policy_network_name('LRPolicyNetwork', ['lr', 'LRPolicyNetwork'.lower()])
-
     def __init__(self,
                  input_size,
                  optimizer=None,
@@ -264,10 +257,10 @@ class LRPolicyNetwork(PolicyNetworkBase):
         input_ = input_ or self.batch_input
         return T.nnet.sigmoid(T.dot(input_, self.W) + self.b)
 
+LRPolicyNetwork.register_class(['lr'])
+
 
 class MLPPolicyNetwork(PolicyNetworkBase):
-    PolicyNetworkBase.register_policy_network_name('MLPPolicyNetwork', ['mlp', 'MLPPolicyNetwork'.lower()])
-
     def __init__(self,
                  input_size,
                  hidden_size=None,
@@ -302,13 +295,11 @@ class MLPPolicyNetwork(PolicyNetworkBase):
 
         return T.nnet.sigmoid(T.dot(hidden_layer, self.W1) + self.b1)
 
-
-def get_policy_network(name):
-    return eval(PolicyNetworkBase.AllNetworks[name.lower()])
+MLPPolicyNetwork.register_class(['mlp'])
 
 
 def test():
-    print(get_policy_network('mlp'))
+    print(PolicyNetworkBase.get_by_name('mlp'))
 
 
 if __name__ == '__main__':
