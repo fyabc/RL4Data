@@ -2,6 +2,7 @@
 
 from __future__ import print_function, unicode_literals
 
+import os
 from collections import OrderedDict
 
 import numpy as np
@@ -9,8 +10,9 @@ import theano
 import theano.tensor as T
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
-from config import Config, CifarConfig, PolicyConfig
+from config import Config, PolicyConfig
 from utils import fX, floatX, init_norm, logging, message
+from path_util import get_path
 from optimizers import adadelta, adam, sgd, rmsprop
 
 __author__ = 'fyabc'
@@ -203,15 +205,15 @@ Real cost (Final reward for terminal): {}""".format(cost, final_reward))
         self.reward_baseline = (1 - self.rb_update_rate) * self.reward_baseline + self.rb_update_rate * reward
 
     @logging
-    def save_policy(self, filename=None):
-        filename = filename or PolicyConfig['policy_model_file']
-        filename = filename.replace('.npz', '_{}.npz'.format(self.input_size))
-        np.savez(filename, *[parameter.get_value() for parameter in self.parameters])
+    def save_policy(self, filename=None, episode=0):
+        filename = filename or PolicyConfig['policy_save_file']
+        # filename = filename.replace('.npz', '_{}.npz'.format(self.input_size))
+        root, ext = os.path.splitext(filename)
+        np.savez(str('{}.{}{}'.format(root, episode, ext)), *[parameter.get_value() for parameter in self.parameters])
 
     @logging
     def load_policy(self, filename=None):
-        filename = filename or PolicyConfig['policy_model_file']
-        filename = filename.replace('.npz', '_{}.npz'.format(self.input_size))
+        filename = filename or PolicyConfig['policy_load_file']
 
         with np.load(filename) as f:
             for i, parameter in enumerate(self.parameters):
@@ -221,6 +223,12 @@ Real cost (Final reward for terminal): {}""".format(cost, final_reward))
         message('Parameters:')
         for parameter in self.parameters:
             message('$    {} = {}'.format(parameter.name, parameter.get_value()))
+
+    def check_load(self):
+        train_action = Config['action'].lower()
+
+        if train_action == 'reload' and PolicyConfig['start_episode'] >= 0:
+            self.load_policy()
 
 
 class LRPolicyNetwork(PolicyNetworkBase):
@@ -300,13 +308,6 @@ def get_policy_network(name):
 
 
 def test():
-    # pn = MLPPolicyNetwork(input_size=CifarConfig['cnn_output_size'])
-    #
-    # input_data = np.ones(shape=(4, CifarConfig['cnn_output_size']), dtype=fX)
-    #
-    # print(pn.take_action(input_data, False))
-    # pn.message_parameters()
-
     print(get_policy_network('mlp'))
 
 

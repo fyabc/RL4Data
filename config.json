@@ -13,18 +13,29 @@
     /// [NOTE]: you must NOT have any spaces in the expression above.
 
     /// Basic configurations.
-    "dataset": "CIFAR10",
+    "dataset": "cifar10",
     "seed": 123,
     "floatX": "float32",
     "logging_file": "./data/log.txt",
     "append_logging_file": false,
+
+    /// The train action
+    // Candidates:
+    //     "" (with some train_types):
+    //         common train (raw/SPL/test/random_drop)
+    //     "overwrite":
+    //         train from episode 0, will overwrite previous policy models.
+    //     "reload":
+    //         search the "policy_model_directory" for the newest version of the policy model file,
+    //         load it, and train from this.
+    "action": "reload",
 
     /// Train types.
     /// 'raw':           train ResNet directly.
     /// 'policy':        train policy.
     /// 'deterministic': run deterministic policy (alpha loss)
     /// 'stochastic':    run stochastic policy (randomly drop data)
-    "train_type": "policy",
+    "train_type": "raw",
 
     /// TODO: Configuration to be moved into "cifar10"
     "model": null,
@@ -33,6 +44,10 @@
     // Temp job code must be in this flag, such as:
     //     if Config['temp_job'] == 'xxx':
     //         ......
+    // Candidates:
+    //     "log_data": log the number of selected data in each corrupt part
+    //     "check_selected_data_label": log the number of selected data in each label
+    //     "check_part_loss": check the loss and margin of different parts in corrupted data
     "temp_job": "",
 
     // Get filtered data?
@@ -49,26 +64,22 @@
         // [NOTE] If this directory is "xxx/yyy", the real location is "./model/${dataset}/xxx/yyy"
         "policy_model_directory": "",
 
-        // The policy model save name
-        "policy_model_file": "./data/policy_model.npz",
-        // Save the policy per ? episodes
+        // TODO: (only for 'reload' train action)
+        // Start at episode ?
+        "start_episode": -1,
+
+        // Save policy frequency (0 means not save)
+        // And its target
+        // [NOTE] '~' is a brief representation of './model/{G.dataset}'
         "policy_save_freq": 1,
+        "policy_save_file": "~/policy_model.npz",
 
-        /// The train action
-        // Candidates:
-        //     "overwrite":
-        //         train from episode 0, will overwrite previous policy models.
-        //     "reload":
-        //         search the "policy_model_directory" for the newest version of the policy model file,
-        //         load it, and train from this.
-        "action": "",
+        // Load policy (policy warm start)?
+        // And its target
+        "policy_load": false,
+        "policy_load_file": "~/policy_load_model.npz",
 
-        "policy_warm_start": false,
-        "policy_warm_start_file": "./data/mnist/policy_warm_start_model.npz",
-
-//        "policy_save_model": false,
-//        "policy_save_model_file": "./data/mnist/warm_start_model.npz",
-
+        // The max episode number, usually set big enough.
         "num_episodes": 1000,
 
         /// Policy input features

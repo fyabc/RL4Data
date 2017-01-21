@@ -148,19 +148,19 @@ def train_policy_MNIST():
 
     # Create the policy network
     input_size = MNISTModel.get_policy_input_size()
-    print('Input size of policy network:', input_size)
+    message('Input size of policy network:', input_size)
     policy = get_policy_network(PolicyConfig['policy_model_name'])(input_size=input_size)
     # policy = LRPolicyNetwork(input_size=input_size)
 
-    if PolicyConfig['policy_warm_start']:
-        policy.load_policy(PolicyConfig['policy_warm_start_file'])
+    policy.check_load()
 
     # Load the dataset and config
     x_train, y_train, x_validate, y_validate, x_test, y_test,\
         train_size, validate_size, test_size = pre_process_MNIST_data()
     patience, patience_increase, improvement_threshold, validation_frequency = pre_process_config(model, train_size)
 
-    for episode in range(PolicyConfig['num_episodes']):
+    start_episode = 1 + PolicyConfig['start_episode']
+    for episode in range(start_episode, start_episode + PolicyConfig['num_episodes']):
         print('[Episode {}]'.format(episode))
         message('[Episode {}]'.format(episode))
         policy.message_parameters()
@@ -248,8 +248,7 @@ def train_policy_MNIST():
             policy.update(validate_acc)
 
         if PolicyConfig['policy_save_freq'] > 0 and episode % PolicyConfig['policy_save_freq'] == 0:
-            policy.save_policy(PolicyConfig['policy_model_file'].replace('.npz', '_ep{}.npz'.format(episode)))
-            policy.save_policy()
+            policy.save_policy(PolicyConfig['policy_save_file'], episode)
 
 
 def train_actor_critic_MNIST():
@@ -257,11 +256,10 @@ def train_actor_critic_MNIST():
 
     # Create the policy network
     input_size = MNISTModel.get_policy_input_size()
-    print('Input size of policy network:', input_size)
+    message('Input size of policy network:', input_size)
     actor = get_policy_network(PolicyConfig['policy_model_name'])(input_size=input_size)
 
-    if PolicyConfig['policy_warm_start']:
-        actor.load_policy(PolicyConfig['policy_warm_start_file'])
+    actor.check_load()
 
     # actor = LRPolicyNetwork(input_size=input_size)
     critic = CriticNetwork(feature_size=input_size, batch_size=model.train_batch_size)
@@ -271,7 +269,8 @@ def train_actor_critic_MNIST():
     patience, patience_increase, improvement_threshold, validation_frequency = pre_process_config(model, train_size)
 
     # Train the network
-    for episode in range(PolicyConfig['num_episodes']):
+    start_episode = 1 + PolicyConfig['start_episode']
+    for episode in range(start_episode, start_episode + PolicyConfig['num_episodes']):
         print('[Episode {}]'.format(episode))
         message('[Episode {}]'.format(episode))
 
@@ -389,8 +388,7 @@ def train_actor_critic_MNIST():
         # actor.update(validate_acc)
 
         if PolicyConfig['policy_save_freq'] > 0 and episode % PolicyConfig['policy_save_freq'] == 0:
-            actor.save_policy(PolicyConfig['policy_model_file'].replace('.npz', '_ep{}.npz'.format(episode)))
-            actor.save_policy()
+            actor.save_policy(PolicyConfig['policy_save_file'], episode)
 
 
 def test_policy_MNIST():
@@ -400,7 +398,7 @@ def test_policy_MNIST():
     model = MNISTModel()
 
     input_size = MNISTModel.get_policy_input_size()
-    print('Input size of policy network:', input_size)
+    message('Input size of policy network:', input_size)
 
     # Load the dataset and config
     x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size = pre_process_MNIST_data()
@@ -500,6 +498,7 @@ def main2():
     dataset_main({
         'raw': train_raw_MNIST,
         'self_paced': train_SPL_MNIST,
+        'spl': train_SPL_MNIST,
 
         'policy': train_policy_MNIST,
         'reinforce': train_policy_MNIST,

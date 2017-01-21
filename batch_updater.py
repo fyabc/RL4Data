@@ -10,7 +10,7 @@ import numpy as np
 
 from extensions import PartLossChecker
 from config import Config
-from utils import message
+# from utils import message
 
 
 class BatchUpdater(object):
@@ -114,6 +114,9 @@ class BatchUpdater(object):
                 self.total_label_count[i] += count_i
 
         part_train_cost = self.model.f_train(*selected_batch_data)
+
+        if np.isinf(part_train_cost) or np.isnan(part_train_cost):
+            raise OverflowError('NaN detected at epoch {} case {}'.format(self.epoch, self.epoch_accepted_cases))
 
         self.epoch_accepted_cases += len(selected_batch_data[0])
         self.epoch_train_batches += 1

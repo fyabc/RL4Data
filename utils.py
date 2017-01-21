@@ -4,17 +4,17 @@ from __future__ import print_function, unicode_literals
 
 import cPickle as pkl
 import gzip
-import os
 import random
 import sys
 import time
+import traceback
 from collections import namedtuple
 from functools import wraps
-import traceback
 
 import numpy as np
 
-from config import Config, PolicyConfig, CifarConfig, MNISTConfig, IMDBConfig
+from config import *
+from path_util import get_path, split_policy_name, find_newest
 
 __author__ = 'fyabc'
 
@@ -27,25 +27,6 @@ Datasets = {
     'mnist': DatasetAttributes('mnist', MNISTConfig, 'train_MNIST.main2'),
     'imdb': DatasetAttributes('imdb', IMDBConfig, 'train_IMDB.main2'),
 }
-
-
-def get_path(base_path, dataset_name, filename=None):
-    """Get the dataset specific path.
-
-    Parameters
-    ----------
-    base_path: DataPath, LogPath, etc.
-    dataset_name: cifar10, mnist, etc.
-    filename: optional, the file name.
-
-    Returns
-    -------
-    The joined path.
-    """
-
-    if filename is None:
-        return os.path.join(base_path, dataset_name)
-    return os.path.join(base_path, dataset_name, filename)
 
 # The float type of Theano. Default to 'float32'.
 # fX = config.floatX
@@ -262,6 +243,7 @@ _StringDoubleQuote = '@'
 _GlobalPrefix = 'G.'
 _PolicyPrefix = 'P.'
 _KeyValueSeparator = '='
+_DefaultPathString = '~'
 
 
 def simple_parse_args2(args):
@@ -332,6 +314,17 @@ def _strict_update(target, new_dict):
 
 
 def process_before_train2(args=None):
+    """
+
+    Parameters
+    ----------
+    args
+
+    Returns
+    -------
+    A DatasetAttributes instance, indicates the dataset information.
+    """
+
     args = args or sys.argv
 
     import pprint
@@ -353,7 +346,69 @@ def process_before_train2(args=None):
 
     check_config(ParamConfig, PolicyConfig)
 
-    init_logging_file(append=Config['append_logging_file'])
+    # # Get basename of files.
+    # basename_p_save = os.path.basename(PolicyConfig['policy_save_file'])
+    # basename_p_load = os.path.basename(PolicyConfig['policy_load_file'])
+    # basename_log = os.path.basename(Config['logging_file'])
+
+    # Replace _DefaultPathString('~') with real path.
+    model_path = get_path(ModelPath, dataset_attr.name)
+    log_path = get_path(LogPath, dataset_attr.name)
+    PolicyConfig['policy_save_file'] = PolicyConfig['policy_save_file'].replace(_DefaultPathString, model_path)
+    PolicyConfig['policy_load_file'] = PolicyConfig['policy_load_file'].replace(_DefaultPathString, model_path)
+    Config['logging_file'] = Config['logging_file'].replace(_DefaultPathString, log_path)
+
+    # [NOTE] The train action.
+    train_action = Config['action'].lower()
+    train_type = Config['train_type'].lower()
+
+    if train_type in NoPolicyTypes:
+        # Job without policy, do nothing.
+        append = False
+
+    elif train_type in CommonTypes:
+        # Common mode:
+        #     Used for training without policy (raw/SPL/test/random_drop)
+        #     Options:
+        #         Create a new logging file
+        #         Load a exist model (if needed) from {P.policy_load_file}
+        #         If the episode is specified (e.g. {P.policy_load_file = '~/model.14.npz'}), just load it
+        #         else (e.g. {P.policy_load_file = '~/model.npz'}), load the newest model.
+        raw_name, episode, ext = split_policy_name(PolicyConfig['policy_load_file'])
+        if episode == '':
+            # Load the newest model
+            PolicyConfig['policy_load_file'] = find_newest(model_path, raw_name, ext)
+        append = False
+
+    elif train_action == 'overwrite':
+        # Overwrite mode:
+        #     Used for starting a new training policy, overwrite old models if exists.
+        #     Options:
+        #         Creating a new logging file
+        PolicyConfig['start_episode'] = -1
+        append = False
+
+    elif train_action == 'reload':
+        # Reload mode:
+        #     Used for reload a job.
+        #     Options:
+        #         Append to an exist logging file
+        #         Load model setting is like common mode.
+        raw_name, episode, ext = split_policy_name(PolicyConfig['policy_load_file'])
+
+        if episode == '':
+            # Load the newest model
+            PolicyConfig['policy_load_file'], PolicyConfig['start_episode'] = find_newest(
+                model_path, raw_name, ext, ret_number=True)
+        append = True
+
+    else:
+        raise KeyError('Unknown train action {}'.format(train_action))
+
+    init_logging_file(append=append)
+
+    # Set random seed.
+    np.random.seed(Config['seed'])
 
     message('[Message before train]')
     message('Running on node: {}'.format(platform.node()))
@@ -501,8 +556,13 @@ def _test_logging_file():
     message('Test logging')
 
 
+def _test_initialize():
+    process_before_train2()
+
+
 def _test():
-    _test_logging_file()
+    # _test_logging_file()
+    _test_initialize()
 
 
 if __name__ == '__main__':

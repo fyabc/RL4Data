@@ -26,6 +26,35 @@ DataPath = os.path.join(ProjectRootPath, 'data')
 LogPath = os.path.join(ProjectRootPath, 'log')
 ModelPath = os.path.join(ProjectRootPath, 'model')
 
+# All train types.
+TrainTypes = {
+    'raw',
+    'self_paced',
+    'spl',
+    'policy',
+    'reinforce',
+    'speed',
+    'actor_critic',
+    'ac',
+    'deterministic',
+    'stochastic',
+    'random_drop',
+    'new_train',
+}
+
+# Some train types sets.
+NoPolicyTypes = {
+    'raw',
+    'self_paced',
+    'spl',
+    'random_drop',
+}
+
+CommonTypes = {
+    'deterministic',
+    'stochastic',
+}
+
 
 if __name__ == '__main__':
     print(Config)

@@ -7,7 +7,7 @@ import traceback
 from batch_updater import *
 from config import CifarConfig as ParamConfig
 from criticNetwork import CriticNetwork
-from model_CIFAR10 import CIFARModelBase, get_model
+from model_CIFAR10 import CIFARModelBase, get_model, CIFARModel
 from utils import *
 from utils_CIFAR10 import load_cifar10_data, split_cifar10_data, iterate_minibatches, pre_process_CIFAR10_data, \
     prepare_CIFAR10_data
@@ -92,7 +92,7 @@ def train_raw_CIFAR10():
             best_iteration = updater.iteration
             test_score = test_acc
 
-        if model.__class__.__name__ == 'CIFARModelBase':
+        if isinstance(model, CIFARModel):
             if (epoch + 1) in (41, 61):
                 model.update_learning_rate()
 
@@ -149,7 +149,7 @@ def train_SPL_CIFAR10():
             best_iteration = updater.iteration
             test_score = test_acc
 
-        if model.__class__.__name__ == 'CIFARModel':
+        if isinstance(model, CIFARModel):
             if (epoch + 1) in (41, 61):
                 model.update_learning_rate()
 
@@ -166,16 +166,19 @@ def train_policy_CIFAR10():
 
     # Create the policy network
     input_size = CIFARModelBase.get_policy_input_size()
-    print('Input size of policy network:', input_size)
+    message('Input size of policy network:', input_size)
     policy = get_policy_network(PolicyConfig['policy_model_name'])(input_size=input_size)
     # policy = LRPolicyNetwork(input_size=input_size)
+
+    policy.check_load()
 
     # Load the dataset
     x_train, y_train, x_validate, y_validate, x_test, y_test, \
         train_size, validate_size, test_size = pre_process_CIFAR10_data()
 
     # Train the network
-    for episode in range(PolicyConfig['num_episodes']):
+    start_episode = 1 + PolicyConfig['start_episode']
+    for episode in range(start_episode, start_episode + PolicyConfig['num_episodes']):
         print('[Episode {}]'.format(episode))
         message('[Episode {}]'.format(episode))
 
@@ -233,7 +236,7 @@ def train_policy_CIFAR10():
             # Check speed rewards
             speed_reward_checker.check(validate_acc, updater)
 
-            if model.__class__.__name__ == 'CIFARModel':
+            if isinstance(model, CIFARModel):
                 if (epoch + 1) in (41, 61):
                     model.update_learning_rate()
 
@@ -256,8 +259,7 @@ def train_policy_CIFAR10():
             policy.update(validate_acc)
 
         if PolicyConfig['policy_save_freq'] > 0 and episode % PolicyConfig['policy_save_freq'] == 0:
-            policy.save_policy(PolicyConfig['policy_model_file'].replace('.npz', '_ep{}.npz'.format(episode)))
-            policy.save_policy()
+            policy.save_policy(PolicyConfig['policy_save_file'], episode)
 
 
 def train_actor_critic_CIFAR10():
@@ -272,6 +274,8 @@ def train_actor_critic_CIFAR10():
     # actor = LRPolicyNetwork(input_size=input_size)
     critic = CriticNetwork(feature_size=input_size, batch_size=model.train_batch_size)
 
+    actor.check_load()
+
     # Load the dataset
     x_train, y_train, x_validate, y_validate, x_test, y_test = split_cifar10_data(load_cifar10_data())
 
@@ -279,7 +283,8 @@ def train_actor_critic_CIFAR10():
     message('Test data size:', y_test.shape[0])
 
     # Train the network
-    for episode in range(PolicyConfig['num_episodes']):
+    start_episode = 1 + PolicyConfig['start_episode']
+    for episode in range(start_episode, start_episode + PolicyConfig['num_episodes']):
         print('[Episode {}]'.format(episode))
         message('[Episode {}]'.format(episode))
 
@@ -362,7 +367,7 @@ def train_actor_critic_CIFAR10():
                         message('Epoch {}\tTotalBatches {}\tCost {}\tCritic loss {}\tActor loss {}'
                                 .format(epoch, updater.total_train_batches, part_train_cost, Q_loss, actor_loss))
 
-            if model.__class__.__name__ == 'CIFARModel':
+            if isinstance(model, CIFARModel):
                 if (epoch + 1) in (41, 61):
                     model.update_learning_rate()
 
@@ -381,8 +386,7 @@ def train_actor_critic_CIFAR10():
         # actor.update(validate_acc)
 
         if PolicyConfig['policy_save_freq'] > 0 and episode % PolicyConfig['policy_save_freq'] == 0:
-            actor.save_policy(PolicyConfig['policy_model_file'].replace('.npz', '_ep{}.npz'.format(episode)))
-            actor.save_policy()
+            actor.save_policy(PolicyConfig['policy_save_file'], episode)
 
 
 def test_policy_CIFAR10():
@@ -391,7 +395,7 @@ def test_policy_CIFAR10():
     # model = VaniliaCNNModel()
 
     input_size = CIFARModelBase.get_policy_input_size()
-    print('Input size of policy network:', input_size)
+    message('Input size of policy network:', input_size)
 
     # Load the dataset and get small training data
     x_train, y_train, x_validate, y_validate, x_test, y_test = split_cifar10_data(load_cifar10_data())
@@ -443,7 +447,7 @@ def test_policy_CIFAR10():
             best_iteration = updater.iteration
             test_score = test_acc
 
-        if model.__class__.__name__ == 'CIFARModel':
+        if isinstance(model, CIFARModel):
             if (epoch + 1) in (41, 61):
                 model.update_learning_rate()
 
@@ -489,6 +493,7 @@ def main2():
     dataset_main({
         'raw': train_raw_CIFAR10,
         'self_paced': train_SPL_CIFAR10,
+        'spl': train_SPL_CIFAR10,
 
         'policy': train_policy_CIFAR10,
         'reinforce': train_policy_CIFAR10,

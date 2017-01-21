@@ -1,0 +1,2 @@
+@rem [NOTE]: the action may be @reload@ or @overwrite@
+python train.py G.dataset=@mnist@ G.train_type=@reinforce@ G.action=@reload@ P.policy_load_file=@~/M_speed.npz@ P.policy_save_file=@~/M_speed.npz@ valid_freq=250 epoch_per_episode=165 G.logging_file=@./log/mnist/log_M_speed.txt@

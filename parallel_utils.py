@@ -44,8 +44,8 @@ def parallel_run_async(model_type, param_config, slave_script_name):
 
     policy = get_policy(model_type, eval(PolicyConfig['policy_model_name']), save=True)
 
-    if PolicyConfig['policy_warm_start'] is True:
-        policy.load_policy(PolicyConfig['policy_warm_start_file'])
+    if PolicyConfig['policy_load'] is True:
+        policy.load_policy(PolicyConfig['policy_load_file'])
 
     episode_number = 1000
     for episode in range(episode_number):
@@ -105,7 +105,7 @@ def parallel_run_async(model_type, param_config, slave_script_name):
                 policy.action_buffer = action_buffer
                 policy.update(terminal_reward)
 
-        policy.save_policy(PolicyConfig['policy_model_file'].replace('.npz', '_ep{}.npz'.format(episode)))
+        policy.save_policy(PolicyConfig['policy_save_file'].replace('.npz', '_ep{}.npz'.format(episode)))
         policy.save_policy()
 
 
@@ -117,8 +117,8 @@ def parallel_run_sync(model_type, param_config, slave_script_name):
 
     policy = get_policy(model_type, eval(PolicyConfig['policy_model_name']), save=True)
 
-    if PolicyConfig['policy_warm_start'] is True:
-        policy.load_policy(PolicyConfig['policy_warm_start_file'])
+    if PolicyConfig['policy_load'] is True:
+        policy.load_policy(PolicyConfig['policy_load_file'])
 
     episode_number = 1000
     for episode in range(episode_number):
@@ -175,5 +175,5 @@ def parallel_run_sync(model_type, param_config, slave_script_name):
             avg_parameters[i] /= process_number
             policy.parameters[i].set_value(avg_parameters[i])
 
-        policy.save_policy(PolicyConfig['policy_model_file'].replace('.npz', '_ep{}.npz'.format(episode)))
+        policy.save_policy(PolicyConfig['policy_save_file'].replace('.npz', '_ep{}.npz'.format(episode)))
         policy.save_policy()

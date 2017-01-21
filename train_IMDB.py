@@ -3,7 +3,6 @@
 from __future__ import print_function, unicode_literals
 
 import sys
-import traceback
 import time
 import numpy as np
 import heapq
@@ -11,14 +10,14 @@ from collections import deque
 
 from config import IMDBConfig as ParamConfig, Config, PolicyConfig
 from model_IMDB import IMDBModel
-from utils import process_before_train, floatX, message, get_part_data, process_after_train, get_minibatches_idx
+from utils import *
 from utils_IMDB import load_imdb_data, preprocess_imdb_data
 from utils_IMDB import prepare_imdb_data as prepare_data
 
 # Actor-Critic from ChangXu
 from criticNetwork import CriticNetwork
 
-from policyNetwork import LRPolicyNetwork, MLPPolicyNetwork
+from policyNetwork import get_policy_network
 
 __author__ = 'fyabc'
 
@@ -27,8 +26,6 @@ __author__ = 'fyabc'
 
 
 def pre_process_data():
-    np.random.seed(ParamConfig['seed'])
-
     # Loading data
     train_data, valid_data, test_data = load_imdb_data(n_words=ParamConfig['n_words'],
                                                        valid_portion=ParamConfig['valid_portion'],
@@ -43,9 +40,9 @@ def pre_process_data():
     valid_size = len(valid_x)
     test_size = len(test_x)
 
-    message("%d train examples" % train_size)
-    message("%d valid examples" % valid_size)
-    message("%d test examples" % test_size)
+    message("{} train examples".format(train_size))
+    message("{} valid examples".format(valid_size))
+    message("{} test examples".format(test_size))
 
     return train_x, train_y, valid_x, valid_y, test_x, test_y, \
         train_size, valid_size, test_size
@@ -71,7 +68,7 @@ def pre_process_config(model, train_size, valid_size, test_size):
 
 
 def save_parameters(model, best_parameters, save_to, history_errs):
-    message('Saving...')
+    message('Saving model parameters...')
 
     if best_parameters:
         params = best_parameters
@@ -108,8 +105,6 @@ def test_and_post_process(model,
 
 
 def train_raw_IMDB():
-    np.random.seed(ParamConfig['seed'])
-
     # Loading data
     train_x, train_y, valid_x, valid_y, test_x, test_y, \
         train_size, valid_size, test_size = pre_process_data()
@@ -219,8 +214,6 @@ def train_raw_IMDB():
 
 
 def train_SPL_IMDB():
-    np.random.seed(ParamConfig['seed'])
-
     # Loading data
     train_x, train_y, valid_x, valid_y, test_x, test_y, \
         train_size, valid_size, test_size = pre_process_data()
@@ -376,8 +369,6 @@ def train_SPL_IMDB():
 
 
 def train_policy_IMDB():
-    np.random.seed(ParamConfig['seed'])
-
     # Loading data
     train_x, train_y, valid_x, valid_y, test_x, test_y, \
         train_size, valid_size, test_size = pre_process_data()
@@ -392,17 +383,14 @@ def train_policy_IMDB():
 
     # Build policy
     input_size = model.get_policy_input_size()
-    print('Input size of policy network:', input_size)
-    policy_model_name = eval(PolicyConfig['policy_model_name'])
-    policy = policy_model_name(input_size=input_size)
+    message('Input size of policy network:', input_size)
+    policy = get_policy_network(PolicyConfig['policy_model_name'])(input_size=input_size)
     # policy = LRPolicyNetwork(input_size=input_size)
 
-    # Temp code.
-    if Config['temp_job']:
-        policy.load_policy(filename='./data/imdb/Pi_terminal_policy_speed_trained.npz')
-        policy.b.set_value(floatX(-1.0))
+    policy.check_load()
 
-    for episode in range(PolicyConfig['num_episodes']):
+    start_episode = 1 + PolicyConfig['start_episode']
+    for episode in range(start_episode, start_episode + PolicyConfig['num_episodes']):
         print('[Episode {}]'.format(episode))
         message('[Episode {}]'.format(episode))
 
@@ -546,13 +534,10 @@ def train_policy_IMDB():
             policy.update(1. - valid_err)
 
         if PolicyConfig['policy_save_freq'] > 0 and episode % PolicyConfig['policy_save_freq'] == 0:
-            policy.save_policy(PolicyConfig['policy_model_file'].replace('.npz', '_ep{}.npz'.format(episode)))
-            policy.save_policy()
+            policy.save_policy(PolicyConfig['policy_save_file'], episode)
 
 
 def train_actor_critic_IMDB():
-    np.random.seed(ParamConfig['seed'])
-
     # Loading data
     train_x, train_y, valid_x, valid_y, test_x, test_y, \
         train_size, valid_size, test_size = pre_process_data()
@@ -569,15 +554,15 @@ def train_actor_critic_IMDB():
 
     # Build Actor and Critic network
     input_size = model.get_policy_input_size()
-    print('Input size of policy network:', input_size)
-    policy_model_name = eval(PolicyConfig['policy_model_name'])
-    actor = policy_model_name(input_size=input_size)
+    message('Input size of policy network:', input_size)
+    actor = get_policy_network(PolicyConfig['policy_model_name'])(input_size=input_size)
     # actor = LRPolicyNetwork(input_size=input_size)
     critic = CriticNetwork(feature_size=input_size, batch_size=model.train_batch_size)
 
-    num_episodes = PolicyConfig['num_episodes']
+    actor.check_load()
 
-    for episode in range(num_episodes):
+    start_episode = 1 + PolicyConfig['start_episode']
+    for episode in range(start_episode, start_episode + PolicyConfig['num_episodes']):
         print('[Episode {}]'.format(episode))
         message('[Episode {}]'.format(episode))
 
@@ -723,8 +708,7 @@ def train_actor_critic_IMDB():
         end_time = time.time()
 
         if PolicyConfig['policy_save_freq'] > 0 and episode % PolicyConfig['policy_save_freq'] == 0:
-            actor.save_policy(PolicyConfig['policy_model_file'].replace('.npz', '_ep{}.npz'.format(episode)))
-            actor.save_policy()
+            actor.save_policy(PolicyConfig['policy_save_file'], episode)
 
         train_err, valid_err, test_err = test_and_post_process(
             model,
@@ -737,8 +721,6 @@ def train_actor_critic_IMDB():
 
 
 def test_policy_IMDB():
-    np.random.seed(ParamConfig['seed'])
-
     # Loading data
     train_x, train_y, valid_x, valid_y, test_x, test_y, \
         train_size, valid_size, test_size = pre_process_data()
@@ -758,9 +740,8 @@ def test_policy_IMDB():
     else:
         # Build policy
         input_size = model.get_policy_input_size()
-        print('Input size of policy network:', input_size)
-        policy_model_name = eval(PolicyConfig['policy_model_name'])
-        policy = policy_model_name(input_size=input_size)
+        message('Input size of policy network:', input_size)
+        policy = get_policy_network(PolicyConfig['policy_model_name'])(input_size=input_size)
         # policy = LRPolicyNetwork(input_size=input_size)
         policy.load_policy()
         policy.message_parameters()
@@ -883,15 +864,10 @@ def test_policy_IMDB():
                           history_errs, best_parameters,
                           epoch, start_time, end_time,
                           save_to=False)
-
-
-def just_ref():
-    """
-    This function is just refer some names to prevent them from being optimized by Pycharm.
-    """
-
-    _ = sys
-    _ = LRPolicyNetwork, MLPPolicyNetwork
+    
+    
+def new_train_IMDB():
+    pass
 
 
 def main(args=None):
@@ -918,6 +894,28 @@ def main(args=None):
         message(traceback.format_exc())
     finally:
         process_after_train()
+        
+        
+def main2():
+    dataset_main({
+        'raw': train_raw_IMDB,
+        'self_paced': train_SPL_IMDB,
+        'spl': train_SPL_IMDB,
+
+        'policy': train_policy_IMDB,
+        'reinforce': train_policy_IMDB,
+        'speed': train_policy_IMDB,
+
+        'actor_critic': train_actor_critic_IMDB,
+        'ac': train_actor_critic_IMDB,
+
+        # 'test': test_policy_IMDB,
+        'deterministic': test_policy_IMDB,
+        'stochastic': test_policy_IMDB,
+        'random_drop': test_policy_IMDB,
+
+        'new_train': new_train_IMDB,
+    })
 
 
 if __name__ == '__main__':

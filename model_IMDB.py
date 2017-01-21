@@ -48,6 +48,18 @@ class IMDBModelBase(object):
         pass
 
     def f_train(self, x, mask, y):
+        """Train function interface.
+
+        Parameters
+        ----------
+        x
+        mask
+        y
+
+        Returns
+        -------
+        The training loss.
+        """
         pass
 
     def get_training_loss(self, x_train, y_train):
