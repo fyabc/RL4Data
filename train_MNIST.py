@@ -150,7 +150,7 @@ def train_policy_MNIST():
     # Create the policy network
     input_size = MNISTModel.get_policy_input_size()
     message('Input size of policy network:', input_size)
-    policy = PolicyNetworkBase.get_by_name(PolicyConfig['policy_model_name'])(input_size=input_size)
+    policy = PolicyNetworkBase.get_by_name(PolicyConfig['policy_model_type'])(input_size=input_size)
     # policy = LRPolicyNetwork(input_size=input_size)
 
     policy.check_load()
@@ -246,7 +246,7 @@ def train_actor_critic_MNIST():
     # Create the policy network
     input_size = MNISTModel.get_policy_input_size()
     message('Input size of policy network:', input_size)
-    actor = PolicyNetworkBase.get_by_name(PolicyConfig['policy_model_name'])(input_size=input_size)
+    actor = PolicyNetworkBase.get_by_name(PolicyConfig['policy_model_type'])(input_size=input_size)
 
     actor.check_load()
 
@@ -398,7 +398,7 @@ def test_policy_MNIST():
                                     drop_num_type='vp', valid_freq=ParamConfig['valid_freq'])
     else:
         # Build policy
-        policy = PolicyNetworkBase.get_by_name(PolicyConfig['policy_model_name'])(input_size=input_size)
+        policy = PolicyNetworkBase.get_by_name(PolicyConfig['policy_model_type'])(input_size=input_size)
         # policy = LRPolicyNetwork(input_size=input_size)
         policy.load_policy()
         policy.message_parameters()

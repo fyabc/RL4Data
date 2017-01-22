@@ -15,7 +15,7 @@
     /// Basic configurations.
 
     /// Job name, includes some options.
-    // "{G.dataset}-{G.train_type}-{P.policy_model_name}?-{P.reward_checker}?-{unique name}"
+    // "{G.dataset}-{G.train_type}-{P.policy_model_type}?-{P.reward_checker}?-{unique name}"
     // These options will be set by job_name.
     // {P.policy_save/load_file}, {G.logging_file} will also be set if they are null.
     // Examples:
@@ -76,7 +76,7 @@
         // Candidates:
         //     LRPolicyNetwork (lr)
         //     MLPPolicyNetwork (mlp)
-        "policy_model_name": "lr",
+        "policy_model_type": "lr",
 
         // TODO: (only for 'reload' train action)
         // Start at episode ?

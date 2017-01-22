@@ -166,7 +166,7 @@ def train_policy_CIFAR10():
     # Create the policy network
     input_size = CIFARModelBase.get_policy_input_size()
     message('Input size of policy network:', input_size)
-    policy = PolicyNetworkBase.get_by_name(PolicyConfig['policy_model_name'])(input_size=input_size)
+    policy = PolicyNetworkBase.get_by_name(PolicyConfig['policy_model_type'])(input_size=input_size)
     # policy = LRPolicyNetwork(input_size=input_size)
 
     policy.check_load()
@@ -266,7 +266,7 @@ def train_actor_critic_CIFAR10():
     # Create the actor network
     input_size = CIFARModelBase.get_policy_input_size()
     print('Input size of actor network:', input_size)
-    actor = PolicyNetworkBase.get_by_name(PolicyConfig['policy_model_name'])(input_size=input_size)
+    actor = PolicyNetworkBase.get_by_name(PolicyConfig['policy_model_type'])(input_size=input_size)
     # actor = LRPolicyNetwork(input_size=input_size)
     critic = CriticNetwork(feature_size=input_size, batch_size=model.train_batch_size)
 
@@ -408,7 +408,7 @@ def test_policy_CIFAR10():
                                     ParamConfig['random_drop_number_file'], prepare_data=prepare_CIFAR10_data)
     else:
         # Build policy
-        policy = PolicyNetworkBase.get_by_name(PolicyConfig['policy_model_name'])(input_size=input_size)
+        policy = PolicyNetworkBase.get_by_name(PolicyConfig['policy_model_type'])(input_size=input_size)
         # policy = LRPolicyNetwork(input_size=input_size)
         policy.load_policy()
         policy.message_parameters()

@@ -38,8 +38,8 @@ def train_episode():
     # Create the policy network
     input_size = MNISTModel.get_policy_input_size()
     message('Input size of policy network:', input_size)
-    policy_model_name = eval(PolicyConfig['policy_model_name'])
-    policy = policy_model_name(input_size=input_size)
+    policy_model_type = eval(PolicyConfig['policy_model_type'])
+    policy = policy_model_type(input_size=input_size)
     # policy = LRPolicyNetwork(input_size=input_size)
 
     # At the start of this episode, load the policy.

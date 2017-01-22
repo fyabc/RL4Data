@@ -1,7 +1,7 @@
 @rem Default values of some options:
 @rem [NOTE]: the action may be @reload@ or @overwrite@
 @rem P.reward_checker=@speed@
-@rem P.policy_model_name=@lr@
+@rem P.policy_model_type=@lr@
 
 python train.py G.dataset=@mnist@ G.train_type=@reinforce@ G.action=@reload@ P.reward_checker=@speed@ P.policy_load_file=@~/M_speed.npz@ P.policy_save_file=@~/M_speed.npz@ valid_freq=250 epoch_per_episode=165 G.logging_file=@~/log_M_speed.txt@
 

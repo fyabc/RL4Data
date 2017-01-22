@@ -203,6 +203,9 @@ def process_before_train2(args=None):
     job_name = Config['job_name']
     if job_name:
         words = job_name.split('-')
+        if words:
+            # Pop the last unique name.
+            words.pop(-1)
 
         lw = len(words)
 
@@ -211,13 +214,13 @@ def process_before_train2(args=None):
         if lw >= 2:
             Config['train_type'] = words[1]
         if lw >= 3 and words[1] not in NoPolicyTypes:
-            PolicyConfig['policy_model_name'] = words[2]
+            PolicyConfig['policy_model_type'] = words[2]
         if lw >= 4 and words[1] in ReinforceTypes:
             PolicyConfig['reward_checker'] = words[3]
 
-        if not Config['policy_save_file']:
+        if not PolicyConfig['policy_save_file']:
             Config['policy_save_file'] = '~/{}.npz'.format(job_name)
-        if not Config['policy_load_file']:
+        if not PolicyConfig['policy_load_file']:
             Config['policy_load_file'] = '~/{}.npz'.format(job_name)
         if not Config['logging_file']:
             Config['logging_file'] = '~/{}.txt'.format(job_name)

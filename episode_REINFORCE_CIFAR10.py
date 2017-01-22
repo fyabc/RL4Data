@@ -15,7 +15,7 @@ from utils_CIFAR10 import pre_process_CIFAR10_data, prepare_CIFAR10_data
 def train_episode():
     model = CIFARModel()
 
-    policy = get_policy(CIFARModel, eval(PolicyConfig['policy_model_name']), save=False)
+    policy = get_policy(CIFARModel, eval(PolicyConfig['policy_model_type']), save=False)
 
     # At the start of this episode, load the policy.
     policy.load_policy()

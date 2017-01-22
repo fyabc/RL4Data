@@ -43,7 +43,7 @@ def parallel_run_async(model_type, param_config, slave_script_name):
 
     process_before_train(args, param_config)
 
-    policy = get_policy(model_type, eval(PolicyConfig['policy_model_name']), save=True)
+    policy = get_policy(model_type, eval(PolicyConfig['policy_model_type']), save=True)
 
     if PolicyConfig['policy_load'] is True:
         policy.load_policy(PolicyConfig['policy_load_file'])
@@ -116,7 +116,7 @@ def parallel_run_sync(model_type, param_config, slave_script_name):
 
     process_before_train(args, param_config)
 
-    policy = get_policy(model_type, eval(PolicyConfig['policy_model_name']), save=True)
+    policy = get_policy(model_type, eval(PolicyConfig['policy_model_type']), save=True)
 
     if PolicyConfig['policy_load'] is True:
         policy.load_policy(PolicyConfig['policy_load_file'])

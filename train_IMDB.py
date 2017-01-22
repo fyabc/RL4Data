@@ -378,7 +378,7 @@ def train_policy_IMDB():
     # Build policy
     input_size = model.get_policy_input_size()
     message('Input size of policy network:', input_size)
-    policy = PolicyNetworkBase.get_by_name(PolicyConfig['policy_model_name'])(input_size=input_size)
+    policy = PolicyNetworkBase.get_by_name(PolicyConfig['policy_model_type'])(input_size=input_size)
     # policy = LRPolicyNetwork(input_size=input_size)
 
     policy.check_load()
@@ -549,7 +549,7 @@ def train_actor_critic_IMDB():
     # Build Actor and Critic network
     input_size = model.get_policy_input_size()
     message('Input size of policy network:', input_size)
-    actor = PolicyNetworkBase.get_by_name(PolicyConfig['policy_model_name'])(input_size=input_size)
+    actor = PolicyNetworkBase.get_by_name(PolicyConfig['policy_model_type'])(input_size=input_size)
     # actor = LRPolicyNetwork(input_size=input_size)
     critic = CriticNetwork(feature_size=input_size, batch_size=model.train_batch_size)
 
@@ -735,7 +735,7 @@ def test_policy_IMDB():
         # Build policy
         input_size = model.get_policy_input_size()
         message('Input size of policy network:', input_size)
-        policy = PolicyNetworkBase.get_by_name(PolicyConfig['policy_model_name'])(input_size=input_size)
+        policy = PolicyNetworkBase.get_by_name(PolicyConfig['policy_model_type'])(input_size=input_size)
         # policy = LRPolicyNetwork(input_size=input_size)
         policy.load_policy()
         policy.message_parameters()
