@@ -25,7 +25,8 @@ from lasagne.layers.helper import get_all_param_values, set_all_param_values
 from lasagne.layers import LocalResponseNormalization2DLayer, MaxPool2DLayer
 
 from config import Config, CifarConfig as ParamConfig, PolicyConfig
-from utils import logging, fX, floatX, shuffle_data, average, message, get_rank
+from utils import logging, fX, floatX, shuffle_data, average, get_rank
+from logging_utils import message, logging
 from utils_CIFAR10 import iterate_minibatches
 from name_register import NameRegister
 

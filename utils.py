@@ -9,12 +9,13 @@ import sys
 import time
 import traceback
 from collections import namedtuple
-from functools import wraps
 
 import numpy as np
 
 from config import *
+from logging_utils import init_logging_file, finalize_logging_file, message, get_logging_file
 from path_util import get_path, split_policy_name, find_newest
+from preprocess_utils import Tilde, simple_parse_args2, check_config, strict_update
 
 __author__ = 'fyabc'
 
@@ -31,63 +32,6 @@ Datasets = {
 # The float type of Theano. Default to 'float32'.
 # fX = config.floatX
 fX = Config['floatX']
-
-# Logging settings
-logging_file = sys.stderr
-_depth = 0
-
-
-def init_logging_file(append=False):
-    global logging_file
-
-    if Config['logging_file'] is None:
-        return
-
-    if append:
-        logging_file = open(Config['logging_file'], 'a')
-        return
-
-    raw_filename = Config['logging_file']
-    i = 1
-
-    filename = raw_filename
-
-    while os.path.exists(filename):
-        filename = raw_filename.replace('.txt', '_{}.txt'.format(i))
-        i += 1
-
-    Config['logging_file'] = filename
-    logging_file = open(filename, 'w')
-
-
-def finalize_logging_file():
-    if logging_file != sys.stderr:
-        logging_file.flush()
-        logging_file.close()
-
-
-def message(*args, **kwargs):
-    if logging_file != sys.stderr:
-        print(*args, file=logging_file, **kwargs)
-    print(*args, file=sys.stderr, **kwargs)
-
-
-def logging(func, file_=sys.stderr):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        global _depth
-
-        message(' ' * 2 * _depth + '[Start function %s...]' % func.__name__)
-        _depth += 1
-        start_time = time.time()
-
-        result = func(*args, **kwargs)
-
-        end_time = time.time()
-        _depth -= 1
-        message(' ' * 2 * _depth + '[Function %s done, time: %.3fs]' % (func.__name__, end_time - start_time))
-        return result
-    return wrapper
 
 
 def floatX(value):
@@ -131,6 +75,21 @@ def get_rank(a):
 ###############################
 # Data loading and processing #
 ###############################
+
+
+def load_list(filename, dtype=float):
+    if not os.path.exists(filename):
+        return []
+
+    with open(filename, 'r') as f:
+        return [dtype(l.strip()) for l in f]
+
+
+def save_list(l, filename):
+    with open(filename, 'w') as f:
+        for i in l:
+            f.write(str(i) + '\n')
+
 
 def get_part_data(x_data, y_data, part_size=None):
     if part_size is None:
@@ -184,46 +143,6 @@ def simple_parse_args(args, param_config=CifarConfig):
     return args_dict, policy_args_dict, param_args_dict
 
 
-# The escaped string double quote.
-_StringDoubleQuote = '@'
-_GlobalPrefix = 'G.'
-_PolicyPrefix = 'P.'
-_KeyValueSeparator = '='
-_DefaultPathString = '~'
-
-
-def simple_parse_args2(args):
-    global_args_dict = {}
-    policy_args_dict = {}
-    param_args_dict = {}
-
-    for i, arg in enumerate(args):
-        arg = arg.replace(_StringDoubleQuote, '"')
-
-        if _KeyValueSeparator in arg:
-            if arg.startswith(_GlobalPrefix):
-                arg = arg[2:]
-                the_dict = global_args_dict
-            elif arg.startswith(_PolicyPrefix):
-                arg = arg[2:]
-                the_dict = policy_args_dict
-            else:
-                the_dict = param_args_dict
-
-            key, value = arg.split(_KeyValueSeparator)
-            the_dict[key] = eval(value)
-        else:
-            if i > 0:
-                print('Warning: The argument {} is unused'.format(arg))
-
-    return global_args_dict, policy_args_dict, param_args_dict
-
-
-def check_config(param_config, policy_config):
-    assert not (policy_config['immediate_reward'] and policy_config['speed_reward']),\
-        'Speed reward must be terminal reward'
-
-
 def process_before_train(args=None, param_config=CifarConfig, policy_config=PolicyConfig, append=None):
     args = args or sys.argv
 
@@ -248,15 +167,10 @@ def process_before_train(args=None, param_config=CifarConfig, policy_config=Poli
     message('Start Time: {}'.format(time.ctime()))
     message('The configures and hyperparameters are:')
     pprint.pprint(Config, stream=sys.stderr)
+
+    logging_file = get_logging_file()
     if logging_file != sys.stderr:
         pprint.pprint(Config, stream=logging_file)
-
-
-def _strict_update(target, new_dict):
-    for k, v in new_dict.iteritems():
-        if k not in target:
-            raise KeyError('The key {} is not in the parameters.'.format(k))
-        target[k] = v
 
 
 def process_before_train2(args=None):
@@ -282,27 +196,49 @@ def process_before_train2(args=None):
 
     global_args_dict, policy_args_dict, param_args_dict = simple_parse_args2(args)
 
-    _strict_update(Config, global_args_dict)
-    _strict_update(PolicyConfig, policy_args_dict)
+    strict_update(Config, global_args_dict)
+    strict_update(PolicyConfig, policy_args_dict)
+
+    # Parse job name, fill some null values of options.
+    job_name = Config['job_name']
+    if job_name:
+        words = job_name.split('_')
+
+        lw = len(words)
+
+        if lw >= 1:
+            Config['dataset'] = words[0]
+        if lw >= 2:
+            Config['train_type'] = words[1]
+        if lw >= 3 and words[1] not in NoPolicyTypes:
+            PolicyConfig['policy_model_name'] = words[2]
+        if lw >= 4 and words[1] in ReinforceTypes:
+            PolicyConfig['reward_checker'] = words[3]
+
+        if not Config['policy_save_file']:
+            Config['policy_save_file'] = '~/{}.npz'.format(job_name)
+        if not Config['policy_load_file']:
+            Config['policy_load_file'] = '~/{}.npz'.format(job_name)
+        if not Config['logging_file']:
+            Config['logging_file'] = '~/{}.txt'.format(job_name)
 
     dataset_attr = Datasets[Config['dataset'].lower()]
     ParamConfig = dataset_attr.config
 
-    _strict_update(ParamConfig, param_args_dict)
+    strict_update(ParamConfig, param_args_dict)
 
     check_config(ParamConfig, PolicyConfig)
 
-    # # Get basename of files.
-    # basename_p_save = os.path.basename(PolicyConfig['policy_save_file'])
-    # basename_p_load = os.path.basename(PolicyConfig['policy_load_file'])
-    # basename_log = os.path.basename(Config['logging_file'])
-
-    # Replace _DefaultPathString('~') with real path.
+    # Replace _Tilde('~') with real path.
+    data_path = get_path(DataPath, dataset_attr.name)
     model_path = get_path(ModelPath, dataset_attr.name)
     log_path = get_path(LogPath, dataset_attr.name)
-    PolicyConfig['policy_save_file'] = PolicyConfig['policy_save_file'].replace(_DefaultPathString, model_path)
-    PolicyConfig['policy_load_file'] = PolicyConfig['policy_load_file'].replace(_DefaultPathString, model_path)
-    Config['logging_file'] = Config['logging_file'].replace(_DefaultPathString, log_path)
+    PolicyConfig['baseline_accuracy_file'] = PolicyConfig['baseline_accuracy_file'].replace(Tilde, data_path)
+    PolicyConfig['random_drop_number_file'] = PolicyConfig['random_drop_number_file'].replace(Tilde, data_path)
+    ParamConfig['data_dir'] = ParamConfig['data_dir'].replace(Tilde, data_path)
+    PolicyConfig['policy_save_file'] = PolicyConfig['policy_save_file'].replace(Tilde, model_path)
+    PolicyConfig['policy_load_file'] = PolicyConfig['policy_load_file'].replace(Tilde, model_path)
+    Config['logging_file'] = Config['logging_file'].replace(Tilde, log_path)
 
     # [NOTE] The train action.
     train_action = Config['action'].lower()
@@ -357,11 +293,14 @@ def process_before_train2(args=None):
     np.random.seed(Config['seed'])
 
     message('[Message before train]')
+    message('Job name: {}'.format(job_name))
     message('Running on node: {}'.format(platform.node()))
     message('Start Time: {}'.format(time.ctime()))
 
     message('The configures and hyperparameters are:')
     pprint.pprint(Config, stream=sys.stderr)
+
+    logging_file = get_logging_file()
     if logging_file != sys.stderr:
         pprint.pprint(Config, stream=logging_file)
 
@@ -507,20 +446,11 @@ def episode_final_message(best_validate_acc, best_iteration, test_score, start_t
     message('$  Time passed: {:.2f}s'.format(time.time() - start_time))
 
 
-def _test_logging_file():
-    global logging_file
-
-    logging_file = open('./data/temp.txt', 'w')
-
-    message('Test logging')
-
-
 def _test_initialize():
     process_before_train2()
 
 
 def _test():
-    # _test_logging_file()
     _test_initialize()
 
 

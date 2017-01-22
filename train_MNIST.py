@@ -9,7 +9,7 @@ from critic_network import CriticNetwork
 from model_MNIST import MNISTModel
 from new_train.new_train_MNIST import new_train_MNIST
 from policy_network import PolicyNetworkBase
-from reward_checker import SpeedRewardChecker
+from reward_checker import RewardChecker, get_reward_checker
 from utils import *
 from utils import episode_final_message
 from utils_MNIST import pre_process_MNIST_data, pre_process_config
@@ -160,6 +160,8 @@ def train_policy_MNIST():
         train_size, validate_size, test_size = pre_process_MNIST_data()
     patience, patience_increase, improvement_threshold, validation_frequency = pre_process_config(model, train_size)
 
+    reward_checker_type = RewardChecker.get_by_name(PolicyConfig['reward_checker'])
+
     start_episode = 1 + PolicyConfig['start_episode']
     for episode in range(start_episode, start_episode + PolicyConfig['num_episodes']):
         print('[Episode {}]'.format(episode))
@@ -181,9 +183,9 @@ def train_policy_MNIST():
         message('Training small size:', train_small_size)
 
         # Speed reward
-        reward_checker = SpeedRewardChecker(
-            PolicyConfig['speed_reward_config'],
-            ParamConfig['epoch_per_episode'] * train_small_size,
+        reward_checker = get_reward_checker(
+            reward_checker_type,
+            ParamConfig['epoch_per_episode'] * train_small_size
         )
 
         updater = TrainPolicyUpdater(model, [x_train_small, y_train_small], policy)
@@ -227,23 +229,12 @@ def train_policy_MNIST():
             message("Epoch {} of {} took {:.3f}s".format(
                 epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
 
-            # Immediate reward
-            if PolicyConfig['immediate_reward']:
-                validate_acc = model.get_test_acc(x_validate, y_validate)
-                policy.reward_buffer.append(validate_acc)
-
             if updater.iteration >= patience:
                 break
 
         episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
 
-        # Updating policy
-        if PolicyConfig['speed_reward']:
-            terminal_reward = reward_checker.get_reward()
-            policy.update(terminal_reward)
-        else:
-            validate_acc = model.get_test_acc(x_validate, y_validate)
-            policy.update(validate_acc)
+        policy.update(reward_checker)
 
         if PolicyConfig['policy_save_freq'] > 0 and episode % PolicyConfig['policy_save_freq'] == 0:
             policy.save_policy(PolicyConfig['policy_save_file'], episode)

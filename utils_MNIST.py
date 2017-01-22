@@ -10,7 +10,8 @@ import theano
 import theano.tensor as T
 
 from config import Config, MNISTConfig as ParamConfig
-from utils import fX, message, get_part_data
+from utils import fX, get_part_data
+from logging_utils import message
 
 
 def load_mnist_data(data_dir=None):

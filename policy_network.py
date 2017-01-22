@@ -11,7 +11,8 @@ import theano.tensor as T
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
 from config import Config, PolicyConfig
-from utils import fX, floatX, init_norm, logging, message
+from utils import fX, floatX, init_norm, logging
+from logging_utils import message, logging
 from name_register import NameRegister
 from optimizers import adadelta, adam, sgd, rmsprop
 
@@ -55,7 +56,6 @@ class PolicyNetworkBase(NameRegister):
         # reward_buffer is like action_buffer
         self.input_buffer = []
         self.action_buffer = []
-        self.reward_buffer = []
 
         # build cost and update functions
         self.reward_baseline = 0.0
@@ -124,14 +124,14 @@ class PolicyNetworkBase(NameRegister):
 
         return actions
 
-    def get_discounted_rewards(self):
+    def get_discounted_rewards(self, immediate_reward):
         # Shape of input buffer / action buffer is (epoch_num, batch_num)
 
         # get discounted reward
         discounted_rewards = [None] * len(self.action_buffer)
 
         temp = 0.
-        for epoch_num, epoch_reward in reversed(list(enumerate(self.reward_buffer))):
+        for epoch_num, epoch_reward in reversed(list(enumerate(immediate_reward))):
             temp = temp * self.gamma + epoch_reward
             discounted_rewards[epoch_num] = temp
 
@@ -143,11 +143,13 @@ class PolicyNetworkBase(NameRegister):
 
         return cost
 
-    def update(self, final_reward):
+    def update(self, reward_checker):
         cost = 0.0
 
-        if PolicyConfig['immediate_reward']:
-            discounted_rewards = self.get_discounted_rewards()
+        final_reward = reward_checker.get_reward(echo=True)
+
+        if reward_checker.ImmediateReward:
+            discounted_rewards = self.get_discounted_rewards(reward_checker.get_immediate_reward(echo=True))
 
             for epoch_inputs, epoch_actions, epoch_reward in \
                     zip(self.input_buffer, self.action_buffer, discounted_rewards):
@@ -193,7 +195,6 @@ Real cost (Final reward for terminal): {}""".format(cost, final_reward))
     def clear_buffer(self):
         self.input_buffer = []
         self.action_buffer = []
-        self.reward_buffer = []
 
     def update_rb(self, reward):
         """update reward baseline"""
@@ -239,8 +240,10 @@ class LRPolicyNetwork(PolicyNetworkBase):
         super(LRPolicyNetwork, self).__init__(input_size, optimizer, rb_update_rate, learning_rate, gamma)
 
         # Parameters to be learned
+        if start_W is None:
+            start_W = PolicyConfig['W_init']
         start_W = init_norm(input_size, normalize=PolicyConfig['W_normalize']) \
-            if PolicyConfig['W_init'] is None \
+            if start_W is None \
             else np.array(PolicyConfig['W_init'], dtype=fX)
 
         self.W = theano.shared(name='W', value=start_W)

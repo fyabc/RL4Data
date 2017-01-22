@@ -7,8 +7,8 @@ import cPickle as pkl
 import numpy as np
 
 from config import IMDBConfig
-from utils import fX, logging
-
+from utils import fX
+from logging_utils import logging
 
 __author__ = 'fyabc'
 

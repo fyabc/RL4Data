@@ -13,10 +13,27 @@
     /// [NOTE]: you must NOT have any spaces in the expression above.
 
     /// Basic configurations.
+
+    /// Job name, includes some options.
+    // "{G.dataset}_{G.train_type}_{P.policy_model_name}?_{P.reward_checker}?_{unique name}"
+    // These options will be set by job_name.
+    // {P.policy_save/load_file}, {G.logging_file} will also be set if they are null.
+    // Examples:
+    //     "mnist_raw_flip1"
+    //     "mnist_deterministic_mlp_1"
+    //     "cifar10_reinforce_lr_speed_gaussian2"
+    "job_name": null,
+
+    /// Dataset.
+    // Candidates:
+    //     'cifar10'
+    //     'mnist'
+    //     'imdb' (not available now)
     "dataset": "cifar10",
+
     "seed": 123,
     "floatX": "float32",
-    "logging_file": "./data/log.txt",
+    "logging_file": null,
     "append_logging_file": false,
 
     /// The train action
@@ -26,16 +43,17 @@
     //     "overwrite":
     //         train from episode 0, will overwrite previous policy models.
     //     "reload":
-    //         search the "policy_model_directory" for the newest version of the policy model file,
+    //         search the directory of policy model for the newest version of the policy model file,
     //         load it, and train from this.
     "action": "reload",
 
     /// Train types.
-    /// 'raw':           train ResNet directly.
-    /// 'policy':        train policy.
-    /// 'deterministic': run deterministic policy (alpha loss)
-    /// 'stochastic':    run stochastic policy (randomly drop data)
-    "train_type": "raw",
+    // Candidates:
+    //     'raw':           train ResNet directly.
+    //     'policy':        train policy.
+    //     'deterministic': run deterministic policy (alpha loss)
+    //     'stochastic':    run stochastic policy (randomly drop data)
+    "train_type": null,
 
     /// TODO: Configuration to be moved into "cifar10"
     "model": null,
@@ -58,26 +76,22 @@
         // Candidates:
         //     LRPolicyNetwork (lr)
         //     MLPPolicyNetwork (mlp)
-        "policy_model_name": "mlp",
-
-        // Where to save the policy
-        // [NOTE] If this directory is "xxx/yyy", the real location is "./model/${dataset}/xxx/yyy"
-        "policy_model_directory": "",
+        "policy_model_name": "lr",
 
         // TODO: (only for 'reload' train action)
         // Start at episode ?
         "start_episode": -1,
 
         // Save policy frequency (0 means not save)
-        // And its target
+        // And its target ('~/xxx.npz')
         // [NOTE] '~' is a brief representation of './model/{G.dataset}'
         "policy_save_freq": 1,
-        "policy_save_file": "~/policy_model.npz",
+        "policy_save_file": null,
 
         // Load policy (policy warm start)?
-        // And its target
+        // And its target ('~/xxx.npz')
         "policy_load": false,
-        "policy_load_file": "~/policy_load_model.npz",
+        "policy_load_file": null,
 
         // The max episode number, usually set big enough.
         "num_episodes": 1000,
@@ -93,13 +107,15 @@
         "add_loss_rank": true,
         "add_accepted_data_number": true,
 
-        /// Immediate reward
-        "immediate_reward": false,
         // This sample size is used in AC immediate reward
         "immediate_reward_sample_size": 10000,
 
-        // Use speed reward?
-        "speed_reward": false,
+        /// Reward checker type
+        // Candidates:
+        //     "acc": just validate accuracy
+        //     "speed": speed reward, thresholds are in "speed_reward_config"
+        //     "delta_acc": delta accuracy reward, baseline accuracy file is in "baseline_accuracy_file"
+        "reward_checker": "speed",
 
         /// Speed reward thresholds and their weights
         // The current value is for Uncorrupted-MNIST
@@ -111,6 +127,12 @@
             [0.97, 0.3333333],
             [0.98, 0.5]
         ],
+
+        // '~' is './data/{G.dataset}' here
+        "baseline_accuracy_file": "~/baseline_accuracy.txt",
+
+        // '~' is './data/{G.dataset}' here
+        "random_drop_number_file": "~/drop_num.txt",
 
         /// Negative reward? true means positive, this is common to false
         "reward_sign": false,
@@ -157,7 +179,8 @@
     },
 
     "cifar10": {
-        "data_dir": "./data/cifar10/cifar10.pkl.gz",
+        // '~' is './data/{G.dataset}' here
+        "data_dir": "~/cifar10.pkl.gz",
 
         // Data is in a single file (not directory)? Common to true.
         "one_file": true,
@@ -178,8 +201,6 @@
         "test_size": 10000,
 
         "curriculum": false,
-        "random_drop": false,
-        "random_drop_number_file": "./data/cifar10/drop_num.txt",
 
         "use_policy": true,
 
@@ -211,12 +232,8 @@
     },
 
     "imdb": {
-        "seed": 123,
-
-        "random_drop_number_file": "./data/imdb/drop_num.txt",
-
-        "dataset": "imdb",
-        "data_dir": "./data/imdb/imdb.pkl",
+        // '~' is './data/{G.dataset}' here
+        "data_dir": "~/imdb.pkl",
 
         // Training small size default to the whole training set
         "train_small_size": 10000,
@@ -247,12 +264,8 @@
     },
 
     "mnist": {
-        "seed": 123,
-
-        "dataset": "mnist",
-        "data_dir": "./data/mnist/mnist.pkl.gz",
-
-        "random_drop_number_file": "./data/mnist/drop_num.txt",
+        // '~' is './data/{G.dataset}' here
+        "data_dir": "~/mnist.pkl.gz",
 
         /// Valid per ?? batches (20 * ?? data)
         "valid_freq": 250,

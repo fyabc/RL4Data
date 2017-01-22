@@ -12,7 +12,8 @@ import subprocess
 import psutil
 import numpy as np
 
-from utils import process_before_train, message, get_policy
+from utils import process_before_train, get_policy
+from logging_utils import message
 from config import PolicyConfig, Config
 from policyNetwork import LRPolicyNetwork, MLPPolicyNetwork
 

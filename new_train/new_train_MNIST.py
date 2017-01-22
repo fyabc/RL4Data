@@ -12,7 +12,8 @@ from local_utils import get_project_root_path
 sys.path.append(get_project_root_path())
 
 from config import MNISTConfig as ParamConfig, PolicyConfig
-from utils import process_before_train, message, episode_final_message
+from utils import process_before_train, episode_final_message
+from logging_utils import message
 from model_MNIST import MNISTModel
 from utils_MNIST import pre_process_MNIST_data, pre_process_config
 

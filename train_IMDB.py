@@ -2,21 +2,16 @@
 
 from __future__ import print_function, unicode_literals
 
-import sys
-import time
-import numpy as np
 import heapq
 from collections import deque
 
-from config import IMDBConfig as ParamConfig, Config, PolicyConfig
+from config import IMDBConfig as ParamConfig
+from critic_network import CriticNetwork
 from model_IMDB import IMDBModel
+from policy_network import PolicyNetworkBase
 from utils import *
 from utils_IMDB import load_imdb_data, preprocess_imdb_data
 from utils_IMDB import prepare_imdb_data as prepare_data
-
-# Actor-Critic from ChangXu
-from critic_network import CriticNetwork
-from policy_network import PolicyNetworkBase
 
 __author__ = 'fyabc'
 
