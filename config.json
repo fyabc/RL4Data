@@ -204,7 +204,7 @@
         "test_size": 10000,
 
         /// Valid per ?? batches (128 * ?? data)
-        "valid_freq": 125,
+        "valid_freq": 390,
 
         "curriculum": false,
 
