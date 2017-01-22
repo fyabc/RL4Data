@@ -7,4 +7,4 @@ python train.py G.dataset=@mnist@ G.train_type=@reinforce@ G.action=@reload@ P.r
 
 @rem Equivalent call:
 @rem 'lr' & 'speed' can be omitted, will use the default value
-python train.py G.job_name=@mnist_reinforce_lr_speed_NonC1@ G.action=@reload@ valid_freq=250 epoch_per_episode=165
+python train.py G.job_name=@mnist-reinforce-lr-speed-NonC1@ G.action=@reload@ valid_freq=250 epoch_per_episode=165
