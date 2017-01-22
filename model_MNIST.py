@@ -26,7 +26,7 @@ from lasagne.layers.helper import get_all_param_values, set_all_param_values
 from lasagne.layers import LocalResponseNormalization2DLayer, MaxPool2DLayer
 
 from config import Config, MNISTConfig as ParamConfig, PolicyConfig
-from utils import logging, fX, floatX, average, get_rank, get_minibatches_idx
+from utils import fX, floatX, average, get_rank, get_minibatches_idx
 from logging_utils import message, logging
 
 

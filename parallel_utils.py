@@ -15,7 +15,7 @@ import numpy as np
 from utils import process_before_train, get_policy
 from logging_utils import message
 from config import PolicyConfig, Config
-from policyNetwork import LRPolicyNetwork, MLPPolicyNetwork
+from policy_network import LRPolicyNetwork, MLPPolicyNetwork
 
 
 def get_gpu_id():

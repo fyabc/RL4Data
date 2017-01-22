@@ -11,7 +11,7 @@ import theano.tensor as T
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
 from config import Config, PolicyConfig
-from utils import fX, floatX, init_norm, logging
+from utils import fX, floatX, init_norm
 from logging_utils import message, logging
 from name_register import NameRegister
 from optimizers import adadelta, adam, sgd, rmsprop

@@ -11,7 +11,7 @@ import theano.tensor as T
 import theano
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
-from utils import fX, floatX, logging, average, get_minibatches_idx, get_rank
+from utils import fX, floatX, average, get_minibatches_idx, get_rank
 from logging_utils import message, logging
 from utils_IMDB import prepare_imdb_data as prepare_data, pr, ortho_weight
 from optimizers import adadelta, adam, sgd, rmsprop

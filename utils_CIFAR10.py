@@ -7,7 +7,7 @@ import os
 import numpy as np
 
 from config import CifarConfig as ParamConfig, Config
-from utils import logging, unpickle, floatX, fX, get_part_data
+from utils import unpickle, floatX, fX, get_part_data
 from logging_utils import message, logging
 
 __author__ = 'fyabc'
