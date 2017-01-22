@@ -423,6 +423,9 @@ Number of accepted cases: {} of {} total""".format(
     if reward_checker is not None:
         reward_checker.check(validate_acc, updater)
 
+    # The policy start a new validation point
+    updater.policy.start_new_validation_point()
+
     # [NOTE] Important! increment `vp_number` in validation point.
     # `DeltaAccuracyRewardChecker` need `vp_number` to work correctly.
     updater.vp_number += 1

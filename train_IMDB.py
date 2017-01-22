@@ -422,7 +422,7 @@ def train_policy_IMDB():
             # Get new shuffled index for the training set.
             kf = get_minibatches_idx(train_small_size, model.train_batch_size, shuffle=True)
 
-            policy.start_new_epoch()
+            policy.start_new_validation_point()
 
             for _, train_index in kf:
                 iteration += 1

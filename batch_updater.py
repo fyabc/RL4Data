@@ -209,7 +209,7 @@ class TrainPolicyUpdater(BatchUpdater):
 
     def start_new_epoch(self):
         super(TrainPolicyUpdater, self).start_new_epoch()
-        self.policy.start_new_epoch()
+        # self.policy.start_new_validation_point()
 
     def filter_batch(self, batch_index, *args):
         selected_batch_data = [data[batch_index] for data in self.all_data]
@@ -237,7 +237,7 @@ class ACUpdater(BatchUpdater):
 
     def start_new_epoch(self):
         super(ACUpdater, self).start_new_epoch()
-        self.policy.start_new_epoch()
+        self.policy.start_new_validation_point()
 
     def filter_batch(self, batch_index, *args):
         selected_batch_data = [data[batch_index] for data in self.all_data]
@@ -265,7 +265,7 @@ class TestPolicyUpdater(BatchUpdater):
 
     def start_new_epoch(self):
         super(TestPolicyUpdater, self).start_new_epoch()
-        self.policy.start_new_epoch()
+        self.policy.start_new_validation_point()
 
     def filter_batch(self, batch_index, *args):
         selected_batch_data = [data[batch_index] for data in self.all_data]

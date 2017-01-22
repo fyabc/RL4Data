@@ -151,15 +151,15 @@ class PolicyNetworkBase(NameRegister):
         if reward_checker.ImmediateReward:
             discounted_rewards = self.get_discounted_rewards(reward_checker.get_immediate_reward(echo=True))
 
-            for epoch_inputs, epoch_actions, epoch_reward in \
+            for part_inputs, part_actions, part_reward in \
                     zip(self.input_buffer, self.action_buffer, discounted_rewards):
-                for batch_inputs, batch_actions in zip(epoch_inputs, epoch_actions):
+                for batch_inputs, batch_actions in zip(part_inputs, part_actions):
                     cost += self.update_raw(batch_inputs, batch_actions,
-                                            np.full(batch_actions.shape, epoch_reward, dtype=fX))
+                                            np.full(batch_actions.shape, part_reward, dtype=fX))
         else:
             temp = final_reward - self.reward_baseline
-            for epoch_inputs, epoch_actions in reversed(zip(self.input_buffer, self.action_buffer)):
-                for batch_inputs, batch_actions in zip(epoch_inputs, epoch_actions):
+            for part_inputs, part_actions in reversed(zip(self.input_buffer, self.action_buffer)):
+                for batch_inputs, batch_actions in zip(part_inputs, part_actions):
                     cost += self.update_raw(batch_inputs, batch_actions,
                                             np.full(batch_actions.shape, temp, dtype=fX))
 
@@ -188,9 +188,11 @@ Real cost (Final reward for terminal): {}""".format(cost, final_reward))
 
         self.message_parameters()
 
-    def start_new_epoch(self):
+    def start_new_validation_point(self):
         self.input_buffer.append([])
         self.action_buffer.append([])
+
+    start_new_epoch = start_new_validation_point
 
     def clear_buffer(self):
         self.input_buffer = []
