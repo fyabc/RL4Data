@@ -166,7 +166,7 @@ def train_policy_MNIST():
     for episode in range(start_episode, start_episode + PolicyConfig['num_episodes']):
         print('[Episode {}]'.format(episode))
         message('[Episode {}]'.format(episode))
-        policy.message_parameters()
+        policy.start_new_episode()
 
         model.reset_parameters()
 

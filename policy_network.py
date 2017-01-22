@@ -167,14 +167,6 @@ class PolicyNetworkBase(NameRegister):
                 if Config['temp_job'] == 'discount_reward':
                     temp *= self.gamma
 
-        # print('#Input buffer size: {} * {} * {}'
-        #       .format(len(self.input_buffer), len(self.input_buffer[0]), self.input_buffer[0][0].shape))
-        # print('#Action buffer size: {} * {} * {}'
-        #       .format(len(self.action_buffer), len(self.action_buffer[0]), self.action_buffer[0][0].shape))
-        # import cPickle as pkl
-        # with open('./data/input_buffer.npz', 'wb') as f:
-        #     pkl.dump(self.input_buffer, f)
-
         # clear buffers
         self.clear_buffer()
 
@@ -193,6 +185,10 @@ Real cost (Final reward for terminal): {}""".format(cost, final_reward))
         self.action_buffer.append([])
 
     start_new_epoch = start_new_validation_point
+
+    def start_new_episode(self):
+        self.message_parameters()
+        self.start_new_validation_point()
 
     def clear_buffer(self):
         self.input_buffer = []
