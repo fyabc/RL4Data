@@ -173,12 +173,12 @@ class PolicyNetworkBase(NameRegister):
                 #     temp *= self.gamma
                 temp *= self.gamma
 
+            # Reward baseline (only for terminal reward)
+            if PolicyConfig['reward_baseline']:
+                self.update_rb(final_reward)
+
         # clear buffers
         self.clear_buffer()
-
-        # This may useless?
-        if PolicyConfig['reward_baseline']:
-            self.update_rb(final_reward)
 
         message("""\
 Cost: {}
