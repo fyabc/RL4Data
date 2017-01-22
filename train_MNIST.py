@@ -39,11 +39,7 @@ def train_raw_MNIST():
     start_time = time.time()
 
     for epoch in range(ParamConfig['epoch_per_episode']):
-        print('[Epoch {}]'.format(epoch))
-        message('[Epoch {}]'.format(epoch))
-
-        updater.start_new_epoch()
-        epoch_start_time = time.time()
+        epoch_start_time = start_new_epoch(updater, epoch)
 
         kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=ParamConfig['raw_shuffle'])
 
@@ -55,7 +51,10 @@ def train_raw_MNIST():
                     updater.total_train_batches % validation_frequency == 0:
                 last_validate_point = updater.total_train_batches
                 validate_acc, test_acc = validate_point_message(
-                    model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater)
+                    model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater,
+                    # validate_size=validate_size,  # Use part validation set in baseline
+                    run_test=True,
+                )
                 history_accuracy.append(validate_acc)
 
                 if validate_acc > best_validate_acc:
@@ -105,11 +104,7 @@ def train_SPL_MNIST():
     start_time = time.time()
 
     for epoch in range(ParamConfig['epoch_per_episode']):
-        print('[Epoch {}]'.format(epoch))
-        message('[Epoch {}]'.format(epoch))
-
-        updater.start_new_epoch()
-        epoch_start_time = time.time()
+        epoch_start_time = start_new_epoch(updater, epoch)
 
         kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
 
@@ -122,7 +117,9 @@ def train_SPL_MNIST():
                 last_validate_point = updater.total_train_batches
 
                 validate_acc, test_acc = validate_point_message(
-                    model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater)
+                    model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater,
+                    run_test=False,
+                )
                 history_accuracy.append(validate_acc)
 
                 if validate_acc > best_validate_acc:
@@ -192,11 +189,7 @@ def train_policy_MNIST():
         start_time = time.time()
 
         for epoch in range(ParamConfig['epoch_per_episode']):
-            print('[Epoch {}]'.format(epoch))
-            message('[Epoch {}]'.format(epoch))
-
-            updater.start_new_epoch()
-            epoch_start_time = time.time()
+            epoch_start_time = start_new_epoch(updater, epoch)
 
             kf = get_minibatches_idx(train_small_size, model.train_batch_size, shuffle=True)
 
@@ -208,7 +201,9 @@ def train_policy_MNIST():
                         updater.total_train_batches % validation_frequency == 0:
                     last_validate_point = updater.total_train_batches
                     validate_acc, test_acc = validate_point_message(
-                        model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater, reward_checker)
+                        model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater, reward_checker,
+                        run_test=False,
+                    )
                     history_accuracy.append(validate_acc)
 
                     if validate_acc > best_validate_acc:
@@ -256,12 +251,7 @@ def train_actor_critic_MNIST():
     # Train the network
     start_episode = 1 + PolicyConfig['start_episode']
     for episode in range(start_episode, start_episode + PolicyConfig['num_episodes']):
-        print('[Episode {}]'.format(episode))
-        message('[Episode {}]'.format(episode))
-
-        actor.message_parameters()
-
-        model.reset_parameters()
+        start_new_episode(model, actor, episode)
 
         # Train the network
         # Some variables
@@ -284,14 +274,9 @@ def train_actor_critic_MNIST():
         start_time = time.time()
 
         for epoch in range(ParamConfig['epoch_per_episode']):
-            print('[Epoch {}]'.format(epoch))
-            message('[Epoch {}]'.format(epoch))
-
-            epoch_start_time = time.time()
+            epoch_start_time = start_new_epoch(updater, epoch)
 
             kf = get_minibatches_idx(train_small_size, model.train_batch_size, shuffle=True)
-
-            updater.start_new_epoch()
 
             for _, train_index in kf:
                 part_train_cost = updater.add_batch(train_index, updater, history_accuracy)
@@ -413,11 +398,7 @@ def test_policy_MNIST():
     start_time = time.time()
 
     for epoch in range(ParamConfig['epoch_per_episode']):
-        print('[Epoch {}]'.format(epoch))
-        message('[Epoch {}]'.format(epoch))
-
-        updater.start_new_epoch()
-        epoch_start_time = time.time()
+        epoch_start_time = start_new_epoch(updater, epoch)
 
         kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
 
@@ -429,7 +410,9 @@ def test_policy_MNIST():
                     updater.total_train_batches % validation_frequency == 0:
                 last_validate_point = updater.total_train_batches
                 validate_acc, test_acc = validate_point_message(
-                    model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater)
+                    model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater,
+                    run_test=True,
+                )
                 history_accuracy.append(validate_acc)
 
                 if validate_acc > best_validate_acc:
@@ -451,35 +434,7 @@ def test_policy_MNIST():
     episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
 
 
-def main(args=None):
-    process_before_train(args, ParamConfig)
-
-    try:
-        if Config['train_type'] == 'raw':
-            train_raw_MNIST()
-        elif Config['train_type'] == 'self_paced':
-            train_SPL_MNIST()
-        elif Config['train_type'] == 'policy':
-            train_policy_MNIST()
-        elif Config['train_type'] == 'actor_critic':
-            train_actor_critic_MNIST()
-        elif Config['train_type'] == 'deterministic':
-            test_policy_MNIST()
-        elif Config['train_type'] == 'stochastic':
-            test_policy_MNIST()
-        elif Config['train_type'] == 'random_drop':
-            test_policy_MNIST()
-        elif Config['train_type'] == 'new_train':
-            new_train_MNIST()
-        else:
-            raise Exception('Unknown train type {}'.format(Config['train_type']))
-    except:
-        message(traceback.format_exc())
-    finally:
-        process_after_train()
-
-
-def main2():
+def main():
     dataset_main({
         'raw': train_raw_MNIST,
         'self_paced': train_SPL_MNIST,
@@ -502,5 +457,4 @@ def main2():
 
 
 if __name__ == '__main__':
-    # main()
-    main2()
+    main()

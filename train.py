@@ -13,7 +13,7 @@ from utils import process_before_train2
 __author__ = 'fyabc'
 
 
-def main2():
+def main():
     # Set the configs (include dataset specific config), and return the dataset attributes.
     dataset_attr = process_before_train2()
 
@@ -21,28 +21,5 @@ def main2():
     eval('{}()'.format(dataset_attr.main_entry))
 
 
-def main():
-    Datasets = [
-        'CIFAR10',
-        'IMDB',
-        'MNIST',
-    ]
-
-    dataset = 'CIFAR10'
-
-    if len(sys.argv) >= 2:
-        if sys.argv[1] in Datasets:
-            dataset = sys.argv[1]
-
-    print('Dataset: {}'.format(dataset))
-
-    # Dict of all tasks.
-    {
-        'CIFAR10': train_CIFAR10.main,
-        'IMDB': train_IMDB.main,
-        'MNIST': train_MNIST.main,
-    }[dataset](sys.argv)
-
-
 if __name__ == '__main__':
-    main2()
+    main()

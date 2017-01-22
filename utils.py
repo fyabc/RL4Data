@@ -385,29 +385,42 @@ def validate_point_message(
         x_train, y_train, x_validate, y_validate, x_test, y_test,
         updater,
         reward_checker=None,
+        **kwargs
 ):
+    validate_size = kwargs.pop('validate_size', PolicyConfig['vp_sample_size'])
+    get_training_loss = kwargs.pop('get_training_loss', False)
+    run_test = kwargs.pop('run_test', False)
+
     # Get training loss
-    train_loss = model.get_training_loss(x_train, y_train)
+    if get_training_loss:
+        train_loss = model.get_training_loss(x_train, y_train)
+    else:
+        train_loss = '[Not computed]'
 
     # Get validation loss and accuracy
-    validate_loss, validate_acc, validate_batches = model.validate_or_test(x_validate, y_validate)
+    x_validate_small, y_validate_small = get_part_data(x_validate, y_validate, validate_size)
+    validate_loss, validate_acc, validate_batches = model.validate_or_test(x_validate_small, y_validate_small)
     validate_loss /= validate_batches
     validate_acc /= validate_batches
 
-    # Get test loss and accuracy
-    # [NOTE]: In this version, test at each validate point is fixed.
-    test_loss, test_acc, test_batches = model.validate_or_test(x_test, y_test)
-    test_loss /= test_batches
-    test_acc /= test_batches
+    if run_test:
+        # Get test loss and accuracy
+        # [NOTE]: In this version, test at each validate point is fixed.
+        test_loss, test_acc, test_batches = model.validate_or_test(x_test, y_test)
+        test_loss /= test_batches
+        test_acc /= test_batches
+    else:
+        test_loss = '[Not computed]'
+        test_acc = '[Not computed]'
 
     message("""\
 Validate Point {}: Epoch {} Iteration {} Batch {} TotalBatch {}
 Training Loss: {}
 History Training Loss: {}
 Validate Loss: {}
-#Validate accuracy: {}
+Validate accuracy: {}
 Test Loss: {}
-#Test accuracy: {}
+Test accuracy: {}
 Number of accepted cases: {} of {} total""".format(
         updater.vp_number, updater.epoch, updater.iteration, updater.epoch_train_batches, updater.total_train_batches,
         train_loss,
@@ -450,6 +463,14 @@ def start_new_episode(model, policy, episode):
 
     policy.start_new_episode()
     model.reset_parameters()
+
+
+def start_new_epoch(updater, epoch):
+    print('[Epoch {}]'.format(epoch))
+    message('[Epoch {}]'.format(epoch))
+
+    updater.start_new_epoch()
+    return time.time()
 
 
 def episode_final_message(best_validate_acc, best_iteration, test_score, start_time):

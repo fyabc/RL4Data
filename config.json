@@ -110,6 +110,9 @@
         // This sample size is used in AC immediate reward
         "immediate_reward_sample_size": 10000,
 
+        // Sample size of validation set in validation point
+        "vp_sample_size": 5000,
+
         /// Reward checker type
         // Candidates:
         //     "acc": just validate accuracy
@@ -268,7 +271,7 @@
         "data_dir": "~/mnist.pkl.gz",
 
         /// Valid per ?? batches (20 * ?? data)
-        "valid_freq": 250,
+        "valid_freq": 125,
         "train_loss_freq": 0,
         "display_freq": 100,
 
