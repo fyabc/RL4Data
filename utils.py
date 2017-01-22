@@ -24,9 +24,9 @@ DatasetAttributes = namedtuple('DatasetAttributes', ['name', 'config', 'main_ent
 
 # All datasets
 Datasets = {
-    'cifar10': DatasetAttributes('cifar10', CifarConfig, 'train_CIFAR10.main2'),
-    'mnist': DatasetAttributes('mnist', MNISTConfig, 'train_MNIST.main2'),
-    'imdb': DatasetAttributes('imdb', IMDBConfig, 'train_IMDB.main2'),
+    'cifar10': DatasetAttributes('cifar10', CifarConfig, 'train_CIFAR10.main'),
+    'mnist': DatasetAttributes('mnist', MNISTConfig, 'train_MNIST.main'),
+    'imdb': DatasetAttributes('imdb', IMDBConfig, 'train_IMDB.main'),
 }
 
 # The float type of Theano. Default to 'float32'.
