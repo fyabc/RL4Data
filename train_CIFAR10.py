@@ -86,7 +86,7 @@ def train_raw_CIFAR10():
 
             if updater.total_train_batches > 0 and \
                     updater.total_train_batches != last_validate_point and \
-                    updater.total_train_batches % PolicyConfig['valid_freq'] == 0:
+                    updater.total_train_batches % Paramonfig['valid_freq'] == 0:
                 last_validate_point = updater.total_train_batches
                 validate_acc, test_acc = validate_point_message(
                     model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater,
