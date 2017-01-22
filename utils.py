@@ -202,7 +202,7 @@ def process_before_train2(args=None):
     # Parse job name, fill some null values of options.
     job_name = Config['job_name']
     if job_name:
-        words = job_name.split('_')
+        words = job_name.split('-')
 
         lw = len(words)
 

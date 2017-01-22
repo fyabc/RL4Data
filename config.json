@@ -15,13 +15,13 @@
     /// Basic configurations.
 
     /// Job name, includes some options.
-    // "{G.dataset}_{G.train_type}_{P.policy_model_name}?_{P.reward_checker}?_{unique name}"
+    // "{G.dataset}-{G.train_type}-{P.policy_model_name}?-{P.reward_checker}?-{unique name}"
     // These options will be set by job_name.
     // {P.policy_save/load_file}, {G.logging_file} will also be set if they are null.
     // Examples:
-    //     "mnist_raw_flip1"
-    //     "mnist_deterministic_mlp_1"
-    //     "cifar10_reinforce_lr_speed_gaussian2"
+    //     "mnist-raw-flip1"
+    //     "mnist-deterministic-mlp-1"
+    //     "cifar10-reinforce-lr-speed-gaussian2"
     "job_name": null,
 
     /// Dataset.
