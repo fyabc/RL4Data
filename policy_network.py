@@ -125,16 +125,37 @@ class PolicyNetworkBase(NameRegister):
         return actions
 
     def get_discounted_rewards(self, immediate_reward):
-        # Shape of input buffer / action buffer is (epoch_num, batch_num)
-        print(immediate_reward)
+        # Shape of input buffer / action buffer is (validation_point_num, batch_num)
+
+        # [NOTE] Important! insert rewards into validation points
+        # How to:
+        #     the immediate reward of one validation part (M = 125 batches) is [r].
+        #     for each batch in this part [i], get a random [r'_i] from uniform(-r, r).
+        #     for each [i] in [1 ~ M-1], get [r_i] = [r'_i] - [r'_(i-1)] ([r_1] = [r'_1])
+        #     so the sum of [r_i] is [r], we get the immediate reward for each batch.
+
+        # Return value: [R_t] = [r_t] + [gamma]^1 * [r_(t+1)] + [gamma]^2 * [r_(t+2)] + ... +
+        #                       [gamma]^(T-t) * [r_T]
+        # Calculate return value: [R_t] = [R_(t+1)] * [gamma] + [r_t]
 
         # get discounted reward
         discounted_rewards = [None] * len(self.action_buffer)
 
+        for i, reward in enumerate(immediate_reward):
+            part_size = len(self.action_buffer[i])
+            discounted_rewards[i] = np.random.uniform(-abs(reward), abs(reward), (part_size,)).astype(fX)
+
+            dri = discounted_rewards[i]
+            dri[-1] = reward
+
+            for j in range(part_size - 1, 0, -1):
+                dri[j] -= dri[j - 1]
+
         temp = 0.
-        for epoch_num, epoch_reward in reversed(list(enumerate(immediate_reward))):
-            temp = temp * self.gamma + epoch_reward
-            discounted_rewards[epoch_num] = temp
+        for discounted_reward in reversed(discounted_rewards):
+            for i in range(len(discounted_reward) - 1, -1, -1):
+                temp = temp * self.gamma + discounted_reward[i]
+                discounted_reward[i] = floatX(temp)
 
         return discounted_rewards
 
@@ -154,9 +175,8 @@ class PolicyNetworkBase(NameRegister):
 
             for part_inputs, part_actions, part_reward in \
                     zip(self.input_buffer, self.action_buffer, discounted_rewards):
-                for batch_inputs, batch_actions in zip(part_inputs, part_actions):
-                    cost += self.update_raw(batch_inputs, batch_actions,
-                                            np.full(batch_actions.shape, part_reward, dtype=fX))
+                for batch_inputs, batch_actions, batch_reward in zip(part_inputs, part_actions, part_reward):
+                    cost += self.update_raw(batch_inputs, batch_actions, batch_reward)
                 if np.isnan(cost) or np.isinf(cost):
                     raise OverflowError('NaN detected at policy update')
         else:
@@ -168,10 +188,9 @@ class PolicyNetworkBase(NameRegister):
                 if np.isnan(cost) or np.isinf(cost):
                     raise OverflowError('NaN detected at policy update')
 
-                # # Add reward discount
-                # if Config['temp_job'] == 'discount_reward':
-                #     temp *= self.gamma
-                temp *= self.gamma
+                # Add reward discount
+                if Config['temp_job'] == 'discount_reward':
+                    temp *= self.gamma
 
             # Reward baseline (only for terminal reward)
             if PolicyConfig['reward_baseline']:

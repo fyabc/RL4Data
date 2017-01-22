@@ -5,3 +5,6 @@ python train.py G.dataset=@cifar10@ G.train_type=@raw@ epoch_per_episode=60 G.lo
 
 @rem cifar10 uncorrupted raw:
 python train.py G.job_name=@cifar10-raw-NonC1@ epoch_per_episode=82 valid_freq=390
+
+@rem cifar10 corrupted raw:
+python train.py G.job_name=@cifar10-raw-Flip1@ epoch_per_episode=82 valid_freq=390 data_dir=@~/cifar10_flip.pkl.gz@
