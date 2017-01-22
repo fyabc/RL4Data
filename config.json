@@ -203,6 +203,9 @@
         "validation_size": 10000,
         "test_size": 10000,
 
+        /// Valid per ?? batches (128 * ?? data)
+        "valid_freq": 125,
+
         "curriculum": false,
 
         "use_policy": true,

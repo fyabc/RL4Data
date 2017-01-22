@@ -65,35 +65,48 @@ def train_raw_CIFAR10():
     # Some variables
     history_accuracy = []
 
+    # Learning rate discount
+    lr_discount_41, lr_discount_61 = False, False
+
+    # To prevent the double validate point
+    last_validate_point = -1
+
     best_validate_acc = -np.inf
     best_iteration = 0
     test_score = 0.0
     start_time = time.time()
 
     for epoch in range(ParamConfig['epoch_per_episode']):
-        print('[Epoch {}]'.format(epoch))
-        message('[Epoch {}]'.format(epoch))
-
-        updater.start_new_epoch()
-        epoch_start_time = time.time()
+        epoch_start_time = start_new_epoch(updater, epoch)
 
         kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
 
         for _, train_index in kf:
             part_train_cost = updater.add_batch(train_index, updater, history_accuracy)
 
-        validate_acc, test_acc = validate_point_message(
-            model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater)
-        history_accuracy.append(validate_acc)
+            if updater.total_train_batches > 0 and \
+                    updater.total_train_batches != last_validate_point and \
+                    updater.total_train_batches % PolicyConfig['valid_freq'] == 0:
+                last_validate_point = updater.total_train_batches
+                validate_acc, test_acc = validate_point_message(
+                    model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater,
+                    # validate_size=validate_size,  # Use part validation set in baseline
+                    run_test=True,
+                )
+                history_accuracy.append(validate_acc)
 
-        if validate_acc > best_validate_acc:
-            best_validate_acc = validate_acc
-            best_iteration = updater.iteration
-            test_score = test_acc
+                if validate_acc > best_validate_acc:
+                    best_validate_acc = validate_acc
+                    best_iteration = updater.iteration
+                    test_score = test_acc
 
-        if isinstance(model, CIFARModel):
-            if (epoch + 1) in (41, 61):
-                model.update_learning_rate()
+            if isinstance(model, CIFARModel):
+                if not lr_discount_41 and updater.total_accepted_cases >= 41 * train_size:
+                        lr_discount_41 = True
+                        model.update_learning_rate()
+                if not lr_discount_61 and updater.total_accepted_cases > 61 * train_size:
+                        lr_discount_61 = True
+                        model.update_learning_rate()
 
         message("Epoch {} of {} took {:.3f}s".format(
             epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
@@ -128,11 +141,7 @@ def train_SPL_CIFAR10():
     start_time = time.time()
 
     for epoch in range(ParamConfig['epoch_per_episode']):
-        print('[Epoch {}]'.format(epoch))
-        message('[Epoch {}]'.format(epoch))
-
-        updater.start_new_epoch()
-        epoch_start_time = time.time()
+        epoch_start_time = start_new_epoch(updater, epoch)
 
         kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
 
@@ -212,11 +221,7 @@ def train_policy_CIFAR10():
         start_time = time.time()
 
         for epoch in range(ParamConfig['epoch_per_episode']):
-            print('[Epoch {}]'.format(epoch))
-            message('[Epoch {}]'.format(epoch))
-
-            updater.start_new_epoch()
-            epoch_start_time = time.time()
+            epoch_start_time = start_new_epoch(updater, epoch)
 
             kf = get_minibatches_idx(train_small_size, model.train_batch_size, shuffle=True)
 
@@ -306,14 +311,9 @@ def train_actor_critic_CIFAR10():
         updater = ACUpdater(model, [x_train_small, y_train_small], actor, prepare_data=prepare_CIFAR10_data)
 
         for epoch in range(ParamConfig['epoch_per_episode']):
-            print('[Epoch {}]'.format(epoch))
-            message('[Epoch {}]'.format(epoch))
-
-            epoch_start_time = time.time()
+            epoch_start_time = start_new_epoch(updater, epoch)
 
             kf = get_minibatches_idx(train_small_size, model.train_batch_size, shuffle=True)
-
-            updater.start_new_epoch()
 
             for _, train_index in kf:
                 part_train_cost = updater.add_batch(train_index, updater, history_accuracy)
@@ -423,11 +423,7 @@ def test_policy_CIFAR10():
     start_time = time.time()
 
     for epoch in range(ParamConfig['epoch_per_episode']):
-        print('[Epoch {}]'.format(epoch))
-        message('[Epoch {}]'.format(epoch))
-
-        updater.start_new_epoch()
-        epoch_start_time = time.time()
+        epoch_start_time = start_new_epoch(updater, epoch)
 
         kf = get_minibatches_idx(updater.data_size, model.train_batch_size, shuffle=True)
 
@@ -457,35 +453,9 @@ def test_policy_CIFAR10():
 
 def new_train_CIFAR10():
     pass
-
-
-def main(args=None):
-    process_before_train(args, ParamConfig)
-
-    try:
-        if Config['train_type'] == 'raw':
-            train_raw_CIFAR10()
-        elif Config['train_type'] == 'self_paced':
-            train_SPL_CIFAR10()
-        elif Config['train_type'] == 'policy':
-            train_policy_CIFAR10()
-        elif Config['train_type'] == 'actor_critic':
-            train_actor_critic_CIFAR10()
-        elif Config['train_type'] == 'deterministic':
-            test_policy_CIFAR10()
-        elif Config['train_type'] == 'stochastic':
-            test_policy_CIFAR10()
-        elif Config['train_type'] == 'random_drop':
-            test_policy_CIFAR10()
-        else:
-            raise Exception('Unknown train type {}'.format(Config['train_type']))
-    except:
-        message(traceback.format_exc())
-    finally:
-        process_after_train()
         
         
-def main2():
+def main():
     dataset_main({
         'raw': train_raw_CIFAR10,
         'self_paced': train_SPL_CIFAR10,
@@ -508,4 +478,4 @@ def main2():
 
 
 if __name__ == '__main__':
-    main2()
+    main()
