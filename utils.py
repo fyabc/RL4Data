@@ -444,6 +444,14 @@ Total label count: {}""".format(
     return validate_acc, test_acc
 
 
+def start_new_episode(model, policy, episode):
+    print('[Episode {}]'.format(episode))
+    message('[Episode {}]'.format(episode))
+
+    policy.start_new_episode()
+    model.reset_parameters()
+
+
 def episode_final_message(best_validate_acc, best_iteration, test_score, start_time):
     message('$Final results:')
     message('$  best test accuracy:\t\t{} %'.format((test_score * 100.0) if test_score is not None else None))

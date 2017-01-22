@@ -162,6 +162,8 @@ class PolicyNetworkBase(NameRegister):
                 for batch_inputs, batch_actions in zip(part_inputs, part_actions):
                     cost += self.update_raw(batch_inputs, batch_actions,
                                             np.full(batch_actions.shape, temp, dtype=fX))
+                if np.isnan(cost) or np.isinf(cost):
+                    raise OverflowError('NaN detected at policy update')
 
                 # Add reward discount
                 if Config['temp_job'] == 'discount_reward':
