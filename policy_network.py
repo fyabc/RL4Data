@@ -126,6 +126,7 @@ class PolicyNetworkBase(NameRegister):
 
     def get_discounted_rewards(self, immediate_reward):
         # Shape of input buffer / action buffer is (epoch_num, batch_num)
+        print(immediate_reward)
 
         # get discounted reward
         discounted_rewards = [None] * len(self.action_buffer)
@@ -167,9 +168,10 @@ class PolicyNetworkBase(NameRegister):
                 if np.isnan(cost) or np.isinf(cost):
                     raise OverflowError('NaN detected at policy update')
 
-                # Add reward discount
-                if Config['temp_job'] == 'discount_reward':
-                    temp *= self.gamma
+                # # Add reward discount
+                # if Config['temp_job'] == 'discount_reward':
+                #     temp *= self.gamma
+                temp *= self.gamma
 
         # clear buffers
         self.clear_buffer()
@@ -182,7 +184,7 @@ class PolicyNetworkBase(NameRegister):
 Cost: {}
 Real cost (Final reward for terminal): {}""".format(cost, final_reward))
 
-        self.message_parameters()
+        # self.message_parameters()
 
     def start_new_validation_point(self):
         self.input_buffer.append([])
