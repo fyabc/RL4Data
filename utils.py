@@ -219,11 +219,11 @@ def process_before_train2(args=None):
             PolicyConfig['reward_checker'] = words[3]
 
         if not PolicyConfig['policy_save_file']:
-            Config['policy_save_file'] = '~/{}.npz'.format(job_name)
+            PolicyConfig['policy_save_file'] = '~/{}.npz'.format(job_name)
         if not PolicyConfig['policy_load_file']:
-            Config['policy_load_file'] = '~/{}.npz'.format(job_name)
+            PolicyConfig['policy_load_file'] = '~/{}.npz'.format(job_name)
         if not Config['logging_file']:
-            Config['logging_file'] = '~/{}.txt'.format(job_name)
+            Config['logging_file'] = '~/log-{}.txt'.format(job_name)
 
     dataset_attr = Datasets[Config['dataset'].lower()]
     ParamConfig = dataset_attr.config
