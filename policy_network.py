@@ -139,13 +139,13 @@ class PolicyNetworkBase(NameRegister):
         # Calculate return value: [R_t] = [R_(t+1)] * [gamma] + [r_t]
 
         # get discounted reward
-        discounted_rewards = [None] * len(self.action_buffer)
+        discounted_rewards = []
 
         for i, reward in enumerate(immediate_reward):
             part_size = len(self.action_buffer[i])
-            discounted_rewards[i] = np.random.uniform(-abs(reward), abs(reward), (part_size,)).astype(fX)
+            discounted_rewards.append(np.random.uniform(-abs(reward), abs(reward), (part_size,)).astype(fX))
 
-            dri = discounted_rewards[i]
+            dri = discounted_rewards[-1]
             dri[-1] = reward
 
             for j in range(part_size - 1, 0, -1):
@@ -165,6 +165,7 @@ class PolicyNetworkBase(NameRegister):
 
         return cost
 
+    @logging
     def update(self, reward_checker):
         cost = 0.0
 
@@ -179,6 +180,11 @@ class PolicyNetworkBase(NameRegister):
                     cost += self.update_raw(batch_inputs, batch_actions, batch_reward)
                 if np.isnan(cost) or np.isinf(cost):
                     raise OverflowError('NaN detected at policy update')
+
+            message('''\
+ActionPartSize {} ImmediateRewardSize {}'''.format(
+                len(self.action_buffer), len(discounted_rewards)
+            ))
         else:
             temp = final_reward - self.reward_baseline
             for part_inputs, part_actions in reversed(zip(self.input_buffer, self.action_buffer)):
@@ -196,12 +202,14 @@ class PolicyNetworkBase(NameRegister):
             if PolicyConfig['reward_baseline']:
                 self.update_rb(final_reward)
 
-        # clear buffers
-        self.clear_buffer()
-
         message("""\
 Cost: {}
-Real cost (Final reward for terminal): {}""".format(cost, final_reward))
+Real cost (Final reward for terminal): {}""".format(
+            cost, final_reward
+        ))
+
+        # clear buffers
+        self.clear_buffer()
 
         # self.message_parameters()
 
