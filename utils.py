@@ -395,7 +395,7 @@ def validate_point_message(
     if get_training_loss:
         train_loss = model.get_training_loss(x_train, y_train)
     else:
-        train_loss = '[Not computed]'
+        train_loss = None
 
     # Get validation loss and accuracy
     x_validate_small, y_validate_small = get_part_data(x_validate, y_validate, validate_size)
@@ -410,8 +410,8 @@ def validate_point_message(
         test_loss /= test_batches
         test_acc /= test_batches
     else:
-        test_loss = '[Not computed]'
-        test_acc = '[Not computed]'
+        test_loss = None
+        test_acc = None
 
     message("""\
 Validate Point {}: Epoch {} Iteration {} Batch {} TotalBatch {}
@@ -423,12 +423,12 @@ Test Loss: {}
 Test accuracy: {}
 Number of accepted cases: {} of {} total""".format(
         updater.vp_number, updater.epoch, updater.iteration, updater.epoch_train_batches, updater.total_train_batches,
-        train_loss,
+        '[NotComputed]' if train_loss is None else train_loss,
         updater.epoch_history_train_loss / updater.epoch_train_batches,
         validate_loss,
         validate_acc,
-        test_loss,
-        test_acc,
+        '[NotComputed]' if test_loss is None else test_loss,
+        '[NotComputed]' if test_acc is None else test_acc,
         updater.total_accepted_cases, updater.total_seen_cases,
     ))
 
