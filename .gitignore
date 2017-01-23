@@ -106,3 +106,14 @@ log/
 # theano config files
 .theanorc.*
 
+# Images
+result_analysis/curve/
+*.jpg
+*.png
+*.bmp
+
+# Data in result analysis
+result_analysis/data/
+result_analysis/drop_num/
+result_analysis/dumped/
+result_analysis/model/
