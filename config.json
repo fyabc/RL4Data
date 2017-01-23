@@ -133,7 +133,7 @@
         ],
 
         // '~' is './reserved_data' (NOT contains dataset name) here
-        "baseline_accuracy_file": null,
+        "baseline_accuracy_file": "",
 
         // '~' is './data/{G.dataset}' here
         "random_drop_number_file": "~/drop_num.txt",
