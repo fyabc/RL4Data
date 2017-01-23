@@ -177,7 +177,8 @@ class PolicyNetworkBase(NameRegister):
             for part_inputs, part_actions, part_reward in \
                     zip(self.input_buffer, self.action_buffer, discounted_rewards):
                 for batch_inputs, batch_actions, batch_reward in zip(part_inputs, part_actions, part_reward):
-                    cost += self.update_raw(batch_inputs, batch_actions, batch_reward)
+                    cost += self.update_raw(batch_inputs, batch_actions,
+                                            np.full(batch_actions.shape, batch_reward, dtype=fX))
                 if np.isnan(cost) or np.isinf(cost):
                     raise OverflowError('NaN detected at policy update')
 
