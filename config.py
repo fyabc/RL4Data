@@ -25,6 +25,7 @@ ProjectRootPath = os.path.dirname(os.path.abspath(__file__))
 DataPath = os.path.join(ProjectRootPath, 'data')
 LogPath = os.path.join(ProjectRootPath, 'log')
 ModelPath = os.path.join(ProjectRootPath, 'model')
+ReservedDataPath = os.path.join(ProjectRootPath, 'reserved_data')
 
 # All train types.
 TrainTypes = {
