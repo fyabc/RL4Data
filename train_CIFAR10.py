@@ -7,7 +7,7 @@ from config import CifarConfig as ParamConfig
 from critic_network import CriticNetwork
 from model_CIFAR10 import CIFARModelBase, CIFARModel
 from policy_network import PolicyNetworkBase
-from reward_checker import SpeedRewardChecker
+from reward_checker import RewardChecker, get_reward_checker
 from utils import *
 from utils_CIFAR10 import load_cifar10_data, split_cifar10_data, pre_process_CIFAR10_data, \
     prepare_CIFAR10_data
@@ -184,23 +184,23 @@ def train_policy_CIFAR10():
     x_train, y_train, x_validate, y_validate, x_test, y_test, \
         train_size, validate_size, test_size = pre_process_CIFAR10_data()
 
+    reward_checker_type = RewardChecker.get_by_name(PolicyConfig['reward_checker'])
+
     # Train the network
     start_episode = 1 + PolicyConfig['start_episode']
     for episode in range(start_episode, start_episode + PolicyConfig['num_episodes']):
-        print('[Episode {}]'.format(episode))
-        message('[Episode {}]'.format(episode))
-
-        policy.message_parameters()
-
-        if ParamConfig['warm_start']:
-            model.load_model(Config['model_file'])
-        else:
-            model.reset_parameters()
+        start_new_episode(model, policy, episode)
         model.reset_learning_rate()
 
         # Train the network
         # Some variables
         history_accuracy = []
+
+        # Learning rate discount
+        lr_discount_41, lr_discount_61 = False, False
+
+        # To prevent the double validate point
+        last_validate_point = -1
 
         # get small training data
         x_train_small, y_train_small = get_part_data(x_train, y_train, ParamConfig['train_small_size'])
@@ -208,9 +208,9 @@ def train_policy_CIFAR10():
         message('Training small size:', train_small_size)
 
         # Speed reward
-        reward_checker = SpeedRewardChecker(
-            PolicyConfig['speed_reward_config'],
-            ParamConfig['epoch_per_episode'] * train_small_size,
+        reward_checker = get_reward_checker(
+            reward_checker_type,
+            ParamConfig['epoch_per_episode'] * train_small_size
         )
 
         updater = TrainPolicyUpdater(model, [x_train_small, y_train_small], policy, prepare_data=prepare_CIFAR10_data)
@@ -228,36 +228,35 @@ def train_policy_CIFAR10():
             for _, train_index in kf:
                 part_train_cost = updater.add_batch(train_index, updater, history_accuracy)
 
-            validate_acc, test_acc = validate_point_message(
-                model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater, reward_checker)
-            history_accuracy.append(validate_acc)
+                if updater.total_train_batches > 0 and \
+                        updater.total_train_batches != last_validate_point and \
+                        updater.total_train_batches % ParamConfig['valid_freq'] == 0:
+                    last_validate_point = updater.total_train_batches
+                    validate_acc, test_acc = validate_point_message(
+                        model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater, reward_checker,
+                        run_test=False,
+                    )
+                    history_accuracy.append(validate_acc)
 
-            if validate_acc > best_validate_acc:
-                best_validate_acc = validate_acc
-                best_iteration = updater.iteration
-                test_score = test_acc
+                    if validate_acc > best_validate_acc:
+                        best_validate_acc = validate_acc
+                        best_iteration = updater.iteration
+                        test_score = test_acc
 
             if isinstance(model, CIFARModel):
-                if (epoch + 1) in (41, 61):
-                    model.update_learning_rate()
+                if not lr_discount_41 and updater.total_accepted_cases >= 41 * train_size:
+                        lr_discount_41 = True
+                        model.update_learning_rate()
+                if not lr_discount_61 and updater.total_accepted_cases > 61 * train_size:
+                        lr_discount_61 = True
+                        model.update_learning_rate()
 
             message("Epoch {} of {} took {:.3f}s".format(
                 epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
 
-            # Immediate reward
-            if PolicyConfig['immediate_reward']:
-                validate_acc = model.get_test_acc(x_validate, y_validate)
-                policy.reward_buffer.append(validate_acc)
-
         episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
 
-        # Updating policy
-        if PolicyConfig['speed_reward']:
-            terminal_reward = reward_checker.get_reward()
-            policy.update(terminal_reward)
-        else:
-            validate_acc = model.get_test_acc(x_validate, y_validate)
-            policy.update(validate_acc)
+        policy.update(reward_checker)
 
         if PolicyConfig['policy_save_freq'] > 0 and episode % PolicyConfig['policy_save_freq'] == 0:
             policy.save_policy(PolicyConfig['policy_save_file'], episode)

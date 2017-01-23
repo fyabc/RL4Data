@@ -124,6 +124,7 @@
         // The current value is for Uncorrupted-MNIST
         // MNIST:       [0.95, 0.97, 0.98]
         // C-MNIST:     [0.89, 0.92, 0.94]
+        // CIFAR-10:    [,,]
         // C-CIFAR-10:  [0.72, 0.76, 0.795]
         "speed_reward_config": [
             [0.95, 0.1666667],
@@ -204,6 +205,7 @@
         "test_size": 10000,
 
         /// Valid per ?? batches (128 * ?? data)
+        // 100000 // 128 = 781 batch per epoch, 390 is half epoch.
         "valid_freq": 390,
 
         "curriculum": false,
@@ -214,7 +216,7 @@
         "train_small_size": 100000,
 
         // The original value is 82
-        "epoch_per_episode": 52,
+        "epoch_per_episode": 62,
 
         "warm_start": false,
 
