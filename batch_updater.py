@@ -66,6 +66,9 @@ class BatchUpdater(object):
             self.part_updated_indices = [0 for _ in range(10)]
             self.updated_indices = [0 for _ in range(10)]
 
+            self.part_avg_loss = [0.0 for _ in range(10)]
+            self.avg_loss = [0.0 for _ in range(10)]
+
     @property
     def data_size(self):
         return len(self.all_data[0])
@@ -107,6 +110,7 @@ class BatchUpdater(object):
     def train_batch_buffer(self):
         self.last_update_batch_index = [self.buffer.popleft() for _ in range(self.batch_size)]
 
+        # Get x[], mask[], y[], ..., then prepare them
         selected_batch_data = [data[self.last_update_batch_index] for data in self.all_data]
         selected_batch_data = self.prepare_data(*selected_batch_data)
 
@@ -149,8 +153,13 @@ class BatchUpdater(object):
 
     # Only for temp_job:"log_data"
     def add_index(self, index, loss=0.0):
-        self.part_updated_indices[index // 5000] += 1
-        self.updated_indices[index // 5000] += 1
+        clazz = index // 5000
+
+        self.part_updated_indices[clazz] += 1
+        self.updated_indices[clazz] += 1
+
+        self.part_avg_loss[clazz] += loss
+        self.avg_loss[clazz] += loss
 
     # Only for temp_job:"log_data"
     def message_at_vp(self, reset=True):
@@ -164,10 +173,14 @@ class BatchUpdater(object):
         message('Whole (total {:>8}): {}'.format(
             total_indices,
             '\t'.join(format(n / float(total_indices), '.3f') for n in self.updated_indices)))
+        message('Part Avg Loss         :', '\t'.join(
+            format(l / num, '.3f') for l, num in zip(self.part_avg_loss, self.part_updated_indices)))
+        message('Avg Loss              :', '\t'.join(
+            format(l / num, '.3f') for l, num in zip(self.avg_loss, self.updated_indices)))
 
         if reset:
-            for i in range(len(self.part_updated_indices)):
-                self.part_updated_indices[i] = 0
+            self.part_updated_indices = [0 for _ in range(10)]
+            self.part_avg_loss = [0.0 for _ in range(10)]
 
 
 class RawUpdater(BatchUpdater):
@@ -217,7 +230,7 @@ class SPLUpdater(BatchUpdater):
                     if targets[j] == i and cost_list[j] <= threshold:
                         result.append(batch_index[j])
                         if Config['temp_job'] == 'log_data':
-                            self.add_index(batch_index[j])
+                            self.add_index(batch_index[j], cost_list[j])
 
         # if Config['temp_job'] == 'log_data':
         #     message(*self.updated_indices, sep='\t')
@@ -244,8 +257,11 @@ class TrainPolicyUpdater(BatchUpdater):
         result = [index for i, index in enumerate(batch_index) if action[i]]
 
         if Config['temp_job'] == 'log_data':
-            for idx in result:
-                self.add_index(idx)
+            selected_batch_data = [data[result] for data in self.all_data]
+            selected_batch_data = self.prepare_data(*selected_batch_data)
+            cost_list = self.model.f_cost_list_without_decay(*selected_batch_data)
+            for idx, loss in zip(result, cost_list):
+                self.add_index(idx, loss)
 
         return result
 
