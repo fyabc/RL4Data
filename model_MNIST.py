@@ -200,7 +200,7 @@ class MNISTModelBase(object):
         if PolicyConfig['add_accepted_data_number']:
             accepted_data_number_inputs = np.full(
                 (batch_size, 1),
-                updater.total_accepted_cases / (updater.data_size * ParamConfig['epoch_per_episode']),
+                float(updater.total_accepted_cases) / (updater.data_size * ParamConfig['epoch_per_episode']),
                 dtype=fX)
 
             to_be_stacked.append(accepted_data_number_inputs)

@@ -10,7 +10,7 @@ import numpy as np
 
 from extensions import PartLossChecker
 from config import Config
-# from utils import message
+from utils import message
 
 
 class BatchUpdater(object):
@@ -63,6 +63,7 @@ class BatchUpdater(object):
         self.prepare_data = kwargs.get('prepare_data', lambda *data: data)
 
         if Config['temp_job'] == 'log_data':
+            self.part_updated_indices = [0 for _ in range(10)]
             self.updated_indices = [0 for _ in range(10)]
 
     @property
@@ -146,6 +147,28 @@ class BatchUpdater(object):
         else:
             return None
 
+    # Only for temp_job:"log_data"
+    def add_index(self, index, loss=0.0):
+        self.part_updated_indices[index // 5000] += 1
+        self.updated_indices[index // 5000] += 1
+
+    # Only for temp_job:"log_data"
+    def message_at_vp(self, reset=True):
+        total_indices = sum(self.updated_indices)
+        part_total_indices = sum(self.part_updated_indices)
+
+        message('[Log Data]')
+        message('Part  (total {:>8}): {}'.format(
+            part_total_indices,
+            '\t'.join(format(n / float(part_total_indices), '.3f') for n in self.part_updated_indices)))
+        message('Whole (total {:>8}): {}'.format(
+            total_indices,
+            '\t'.join(format(n / float(total_indices), '.3f') for n in self.updated_indices)))
+
+        if reset:
+            for i in range(len(self.part_updated_indices)):
+                self.part_updated_indices[i] = 0
+
 
 class RawUpdater(BatchUpdater):
     def __init__(self, model, all_data, **kwargs):
@@ -194,7 +217,7 @@ class SPLUpdater(BatchUpdater):
                     if targets[j] == i and cost_list[j] <= threshold:
                         result.append(batch_index[j])
                         if Config['temp_job'] == 'log_data':
-                            self.updated_indices[batch_index[j] // 5000] += 1
+                            self.add_index(batch_index[j])
 
         # if Config['temp_job'] == 'log_data':
         #     message(*self.updated_indices, sep='\t')
@@ -222,7 +245,7 @@ class TrainPolicyUpdater(BatchUpdater):
 
         if Config['temp_job'] == 'log_data':
             for idx in result:
-                self.updated_indices[idx // 5000] += 1
+                self.add_index(idx)
 
         return result
 
@@ -250,7 +273,7 @@ class ACUpdater(BatchUpdater):
 
         if Config['temp_job'] == 'log_data':
             for idx in result:
-                self.updated_indices[idx // 5000] += 1
+                self.add_index(idx)
 
         self.last_probability = probability
         self.last_action = action
@@ -278,7 +301,7 @@ class TestPolicyUpdater(BatchUpdater):
 
         if Config['temp_job'] == 'log_data':
             for idx in result:
-                self.updated_indices[idx // 5000] += 1
+                self.add_index(idx)
 
         return result
 
