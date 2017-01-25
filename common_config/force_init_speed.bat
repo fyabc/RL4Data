@@ -13,7 +13,7 @@
 @rem b_init: 2.0
 
 @rem c-mnist force init speed:
-python train.py G.job_name=@mnist-reinforce-lr-speed-ForceFlip1@ G.action=@reload@ valid_freq=125 epoch_per_episode=165 P.W_init=[0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,100,0.,0.5,0.] P.b_init=2.0 G.temp_job=@log_data@ data_dir=@~/mnist_corrupted.pkl.gz@  P.speed_reward_config=[[0.89,0.166667],[0.92,0.333333],[0.94,0.5]]
+python train.py G.job_name=@mnist-reinforce-lr-speed-ForceFlip1@ G.action=@reload@ valid_freq=125 epoch_per_episode=165 P.W_init=[0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,100,0.,0.5,0.] P.b_init=2.0 G.temp_job=@log_data@ data_dir=@~/mnist_corrupted.pkl.gz@ P.speed_reward_config=[[0.89,0.166667],[0.92,0.333333],[0.94,0.5]]
 
 
 @rem A result shortcut of c-mnist SPL baseline:
@@ -37,4 +37,7 @@ python train.py G.job_name=@mnist-spl-ForceFlip1@ valid_freq=125 epoch_per_episo
 
 
 @rem c-cifar10 force init speed:
-python train.py G.job_name=@cifar10-reinforce-lr-speed-ForceFlip1@ G.action=@reload@ valid_freq=125
+python train.py G.job_name=@cifar10-reinforce-lr-speed-ForceFlip1@ G.action=@reload@ epoch_per_episode=62 P.speed_reward_config=[[0.72,0.166667],[0.76,0.333333],[0.795,0.5]] P.W_init=[0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,100,0.,0.5,0.] P.b_init=2.0 G.temp_job=@log_data@ data_dir=@~/cifar10_flip.pkl.gz@
+
+@rem c-cifar10 SPL baseline:
+python train.py G.job_name=@cifar10-spl-ForceFlip1@ epoch_per_episode=62*2 G.temp_job=@log_data@ data_dir=@~/cifar10_flip.pkl.gz@

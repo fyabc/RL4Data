@@ -12,6 +12,12 @@ from extensions import PartLossChecker
 from config import Config
 from utils import message
 
+# Some Magic Numbers.
+
+# Number of classes and size of each class.
+ClassSize = 5000
+ClassNumber = 10
+TotalSize = ClassSize * ClassNumber
 
 # Compute loss when needed in "log_data" (all updaters except SPL).
 # [NOTE] It will cause computation of loss on each data, and will slow down the training process.
@@ -68,11 +74,11 @@ class BatchUpdater(object):
         self.prepare_data = kwargs.get('prepare_data', lambda *data: data)
 
         if Config['temp_job'] == 'log_data':
-            # self.part_updated_indices = [0 for _ in range(10)]
-            # self.updated_indices = [0 for _ in range(10)]
+            # self.part_updated_indices = [0 for _ in range(ClassNumber)]
+            # self.updated_indices = [0 for _ in range(ClassNumber)]
 
-            self.part_avg_loss = [[] for _ in range(10)]
-            self.avg_loss = [[] for _ in range(10)]
+            self.part_avg_loss = [[] for _ in range(ClassNumber)]
+            self.avg_loss = [[] for _ in range(ClassNumber)]
 
     @property
     def data_size(self):
@@ -158,7 +164,8 @@ class BatchUpdater(object):
 
     # Only for temp_job:"log_data"
     def add_index(self, index, loss=0.0):
-        clazz = index // 5000
+        # [NOTE] cifar10 have mirrored data, so mod TotalSize.
+        clazz = (index % TotalSize) // ClassSize
 
         # self.part_updated_indices[clazz] += 1
         # self.updated_indices[clazz] += 1
@@ -187,8 +194,8 @@ class BatchUpdater(object):
         message('Total Loss Std        :', '\t'.join(format(np.std(l_list), '.3f') for l_list in self.avg_loss))
 
         if reset:
-            # self.part_updated_indices = [0 for _ in range(10)]
-            self.part_avg_loss = [[] for _ in range(10)]
+            # self.part_updated_indices = [0 for _ in range(ClassNumber)]
+            self.part_avg_loss = [[] for _ in range(ClassNumber)]
 
 
 class RawUpdater(BatchUpdater):
@@ -239,9 +246,6 @@ class SPLUpdater(BatchUpdater):
                         result.append(batch_index[j])
                         if Config['temp_job'] == 'log_data':
                             self.add_index(batch_index[j], cost_list[j])
-
-        # if Config['temp_job'] == 'log_data':
-        #     message(*self.updated_indices, sep='\t')
 
         return result
 
