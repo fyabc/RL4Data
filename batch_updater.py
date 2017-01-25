@@ -13,6 +13,11 @@ from config import Config
 from utils import message
 
 
+# Compute loss when needed in "log_data" (all updaters except SPL).
+# [NOTE] It will cause computation of loss on each data, and will slow down the training process.
+ComputeLoss = True
+
+
 class BatchUpdater(object):
     def __init__(self, model, all_data, **kwargs):
         """
@@ -63,11 +68,11 @@ class BatchUpdater(object):
         self.prepare_data = kwargs.get('prepare_data', lambda *data: data)
 
         if Config['temp_job'] == 'log_data':
-            self.part_updated_indices = [0 for _ in range(10)]
-            self.updated_indices = [0 for _ in range(10)]
+            # self.part_updated_indices = [0 for _ in range(10)]
+            # self.updated_indices = [0 for _ in range(10)]
 
-            self.part_avg_loss = [0.0 for _ in range(10)]
-            self.avg_loss = [0.0 for _ in range(10)]
+            self.part_avg_loss = [[] for _ in range(10)]
+            self.avg_loss = [[] for _ in range(10)]
 
     @property
     def data_size(self):
@@ -86,8 +91,8 @@ class BatchUpdater(object):
             a batch of indices in all_data.
         args: a list of some args
             other arguments required by policy or SPL.
-            args[0]: int
-                epoch
+            args[0]: updater
+                the updater itself. (just for code compatibility)
             args[1]: list of float
                 history_accuracy
 
@@ -155,32 +160,35 @@ class BatchUpdater(object):
     def add_index(self, index, loss=0.0):
         clazz = index // 5000
 
-        self.part_updated_indices[clazz] += 1
-        self.updated_indices[clazz] += 1
+        # self.part_updated_indices[clazz] += 1
+        # self.updated_indices[clazz] += 1
 
-        self.part_avg_loss[clazz] += loss
-        self.avg_loss[clazz] += loss
+        self.part_avg_loss[clazz].append(loss)
+        self.avg_loss[clazz].append(loss)
 
     # Only for temp_job:"log_data"
     def message_at_vp(self, reset=True):
-        total_indices = sum(self.updated_indices)
-        part_total_indices = sum(self.part_updated_indices)
+        updated_indices = [len(loss_list) for loss_list in self.avg_loss]
+        part_updated_indices = [len(loss_list) for loss_list in self.part_avg_loss]
+
+        total_indices = sum(updated_indices)
+        part_total_indices = sum(part_updated_indices)
 
         message('[Log Data]')
         message('Part  (total {:>8}): {}'.format(
             part_total_indices,
-            '\t'.join(format(n / float(part_total_indices), '.3f') for n in self.part_updated_indices)))
+            '\t'.join(format(n / float(part_total_indices), '.3f') for n in part_updated_indices)))
         message('Whole (total {:>8}): {}'.format(
             total_indices,
-            '\t'.join(format(n / float(total_indices), '.3f') for n in self.updated_indices)))
-        message('Part Avg Loss         :', '\t'.join(
-            format(l / num, '.3f') for l, num in zip(self.part_avg_loss, self.part_updated_indices)))
-        message('Avg Loss              :', '\t'.join(
-            format(l / num, '.3f') for l, num in zip(self.avg_loss, self.updated_indices)))
+            '\t'.join(format(n / float(total_indices), '.3f') for n in updated_indices)))
+        message('Part Avg Loss         :', '\t'.join(format(np.mean(l_list), '.3f') for l_list in self.part_avg_loss))
+        message('Part Loss Std         :', '\t'.join(format(np.std(l_list), '.3f') for l_list in self.part_avg_loss))
+        message('Total Avg Loss        :', '\t'.join(format(np.mean(l_list), '.3f') for l_list in self.avg_loss))
+        message('Total Loss Std        :', '\t'.join(format(np.std(l_list), '.3f') for l_list in self.avg_loss))
 
         if reset:
-            self.part_updated_indices = [0 for _ in range(10)]
-            self.part_avg_loss = [0.0 for _ in range(10)]
+            # self.part_updated_indices = [0 for _ in range(10)]
+            self.part_avg_loss = [[] for _ in range(10)]
 
 
 class RawUpdater(BatchUpdater):
@@ -257,9 +265,12 @@ class TrainPolicyUpdater(BatchUpdater):
         result = [index for i, index in enumerate(batch_index) if action[i]]
 
         if Config['temp_job'] == 'log_data':
-            selected_batch_data = [data[result] for data in self.all_data]
-            selected_batch_data = self.prepare_data(*selected_batch_data)
-            cost_list = self.model.f_cost_list_without_decay(*selected_batch_data)
+            if ComputeLoss:
+                selected_batch_data = [data[result] for data in self.all_data]
+                selected_batch_data = self.prepare_data(*selected_batch_data)
+                cost_list = self.model.f_cost_list_without_decay(*selected_batch_data)
+            else:
+                cost_list = [0.0 for _ in result]
             for idx, loss in zip(result, cost_list):
                 self.add_index(idx, loss)
 
@@ -288,8 +299,14 @@ class ACUpdater(BatchUpdater):
         result = [index for i, index in enumerate(batch_index) if action[i]]
 
         if Config['temp_job'] == 'log_data':
-            for idx in result:
-                self.add_index(idx)
+            if ComputeLoss:
+                selected_batch_data = [data[result] for data in self.all_data]
+                selected_batch_data = self.prepare_data(*selected_batch_data)
+                cost_list = self.model.f_cost_list_without_decay(*selected_batch_data)
+            else:
+                cost_list = [0.0 for _ in result]
+            for idx, loss in zip(result, cost_list):
+                self.add_index(idx, loss)
 
         self.last_probability = probability
         self.last_action = action
@@ -316,8 +333,14 @@ class TestPolicyUpdater(BatchUpdater):
         result = [index for i, index in enumerate(batch_index) if action[i]]
 
         if Config['temp_job'] == 'log_data':
-            for idx in result:
-                self.add_index(idx)
+            if ComputeLoss:
+                selected_batch_data = [data[result] for data in self.all_data]
+                selected_batch_data = self.prepare_data(*selected_batch_data)
+                cost_list = self.model.f_cost_list_without_decay(*selected_batch_data)
+            else:
+                cost_list = [0.0 for _ in result]
+            for idx, loss in zip(result, cost_list):
+                self.add_index(idx, loss)
 
         return result
 

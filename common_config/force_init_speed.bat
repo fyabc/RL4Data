@@ -34,3 +34,7 @@ python train.py G.job_name=@mnist-reinforce-lr-speed-ForceFlip1@ G.action=@reloa
 
 @rem c-mnist SPL baseline:
 python train.py G.job_name=@mnist-spl-ForceFlip1@ valid_freq=125 epoch_per_episode=165*2 G.temp_job=@log_data@ data_dir=@~/mnist_corrupted.pkl.gz@
+
+
+@rem c-cifar10 force init speed:
+python train.py G.job_name=@cifar10-reinforce-lr-speed-ForceFlip1@ G.action=@reload@ valid_freq=125
