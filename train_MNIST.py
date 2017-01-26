@@ -144,6 +144,9 @@ def train_SPL_MNIST():
 def train_policy_MNIST():
     model = MNISTModel()
 
+    if ParamConfig['warm_start']:
+        model.load_model()
+
     # Create the policy network
     input_size = MNISTModel.get_policy_input_size()
     message('Input size of policy network:', input_size)
@@ -171,7 +174,10 @@ def train_policy_MNIST():
         last_validate_point = -1
 
         # get small training data
-        x_train_small, y_train_small = get_part_data(x_train, y_train, ParamConfig['train_small_size'])
+        # x_train_small, y_train_small = get_part_data(x_train, y_train, ParamConfig['train_small_size'])
+        # [WARNING] Do NOT shuffle here!!!
+        x_train_small, y_train_small = x_train, y_train
+
         train_small_size = len(x_train_small)
         message('Training small size:', train_small_size)
 
@@ -262,7 +268,9 @@ def train_actor_critic_MNIST():
         last_AC_update_point = -1
 
         # get small training data
-        x_train_small, y_train_small = get_part_data(x_train, y_train, ParamConfig['train_small_size'])
+        # x_train_small, y_train_small = get_part_data(x_train, y_train, ParamConfig['train_small_size'])
+        # [WARNING] Do NOT shuffle here!!!
+        x_train_small, y_train_small = x_train, y_train
         train_small_size = len(x_train_small)
         message('Training small size:', train_small_size)
 

@@ -203,7 +203,9 @@ def train_policy_CIFAR10():
         last_validate_point = -1
 
         # get small training data
-        x_train_small, y_train_small = get_part_data(x_train, y_train, ParamConfig['train_small_size'])
+        # x_train_small, y_train_small = get_part_data(x_train, y_train, ParamConfig['train_small_size'])
+        # [WARNING] Do NOT shuffle here!!!
+        x_train_small, y_train_small = x_train, y_train
         train_small_size = len(x_train_small)
         message('Training small size:', train_small_size)
 
@@ -303,7 +305,9 @@ def train_actor_critic_CIFAR10():
         last_AC_update_point = -1
 
         # get small training data
-        x_train_small, y_train_small = get_part_data(x_train, y_train, ParamConfig['train_small_size'])
+        # x_train_small, y_train_small = get_part_data(x_train, y_train, ParamConfig['train_small_size'])
+        # [WARNING] Do NOT shuffle here!!!
+        x_train_small, y_train_small = x_train, y_train
         train_small_size = len(x_train_small)
         message('Training small size:', train_small_size)
 

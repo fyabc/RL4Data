@@ -153,6 +153,7 @@ class MNISTModelBase(object):
             for i in range(batch_size):
                 # assert probability[i, targets[i]] > 0, 'Probability <= 0!!!'
                 label_inputs[i, 0] = np.log(max(probability[i, targets[i]], 1e-9))
+                # label_inputs[i, 0] = probability[i, targets[i]]
             to_be_stacked.append(label_inputs)
 
         if PolicyConfig['add_label']:
@@ -205,7 +206,12 @@ class MNISTModelBase(object):
 
             to_be_stacked.append(accepted_data_number_inputs)
 
-        return np.hstack(to_be_stacked)
+        result = np.hstack(to_be_stacked)
+
+        # for i in range(5):
+        #     print(targets[i], result[i])
+
+        return result
 
 
 class MNISTModel(MNISTModelBase):

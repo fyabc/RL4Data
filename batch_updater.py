@@ -174,6 +174,18 @@ class BatchUpdater(object):
         self.avg_loss[clazz].append(loss)
 
     # Only for temp_job:"log_data"
+    def add_index_list(self, indices):
+        if Config['temp_job'] == 'log_data':
+            if ComputeLoss:
+                selected_batch_data = [data[indices] for data in self.all_data]
+                selected_batch_data = self.prepare_data(*selected_batch_data)
+                cost_list = self.model.f_cost_list_without_decay(*selected_batch_data)
+            else:
+                cost_list = [0.0 for _ in indices]
+            for idx, loss in zip(indices, cost_list):
+                self.add_index(idx, loss)
+
+    # Only for temp_job:"log_data"
     def message_at_vp(self, reset=True):
         updated_indices = [len(loss_list) for loss_list in self.avg_loss]
         part_updated_indices = [len(loss_list) for loss_list in self.part_avg_loss]
@@ -203,6 +215,7 @@ class RawUpdater(BatchUpdater):
         super(RawUpdater, self).__init__(model, all_data, **kwargs)
 
     def filter_batch(self, batch_index, *args):
+        self.add_index_list(batch_index)
         return list(batch_index)
 
 
@@ -268,15 +281,7 @@ class TrainPolicyUpdater(BatchUpdater):
 
         result = [index for i, index in enumerate(batch_index) if action[i]]
 
-        if Config['temp_job'] == 'log_data':
-            if ComputeLoss:
-                selected_batch_data = [data[result] for data in self.all_data]
-                selected_batch_data = self.prepare_data(*selected_batch_data)
-                cost_list = self.model.f_cost_list_without_decay(*selected_batch_data)
-            else:
-                cost_list = [0.0 for _ in result]
-            for idx, loss in zip(result, cost_list):
-                self.add_index(idx, loss)
+        self.add_index_list(result)
 
         return result
 
@@ -302,15 +307,7 @@ class ACUpdater(BatchUpdater):
 
         result = [index for i, index in enumerate(batch_index) if action[i]]
 
-        if Config['temp_job'] == 'log_data':
-            if ComputeLoss:
-                selected_batch_data = [data[result] for data in self.all_data]
-                selected_batch_data = self.prepare_data(*selected_batch_data)
-                cost_list = self.model.f_cost_list_without_decay(*selected_batch_data)
-            else:
-                cost_list = [0.0 for _ in result]
-            for idx, loss in zip(result, cost_list):
-                self.add_index(idx, loss)
+        self.add_index_list(result)
 
         self.last_probability = probability
         self.last_action = action
@@ -336,15 +333,7 @@ class TestPolicyUpdater(BatchUpdater):
 
         result = [index for i, index in enumerate(batch_index) if action[i]]
 
-        if Config['temp_job'] == 'log_data':
-            if ComputeLoss:
-                selected_batch_data = [data[result] for data in self.all_data]
-                selected_batch_data = self.prepare_data(*selected_batch_data)
-                cost_list = self.model.f_cost_list_without_decay(*selected_batch_data)
-            else:
-                cost_list = [0.0 for _ in result]
-            for idx, loss in zip(result, cost_list):
-                self.add_index(idx, loss)
+        self.add_index_list(result)
 
         return result
 

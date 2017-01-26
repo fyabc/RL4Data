@@ -305,9 +305,9 @@
 
         // Warm start model (not policy)
         "warm_start": false,
-        "warm_start_model_file": null,
+        "warm_start_model_file": "~/warm_start_model.npz",
 
         "save_model": false,
-        "save_model_file": null
+        "save_model_file": "~/warm_start_model.npz"
     }
 }
