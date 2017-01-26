@@ -23,6 +23,14 @@ TotalSize = ClassSize * ClassNumber
 # [NOTE] It will cause computation of loss on each data, and will slow down the training process.
 ComputeLoss = True
 
+# The target distribution of each corrupt levels.
+# [NOTE] This can be changed.
+TargetDistribution = np.array([0.20, 0.16, 0.12, 0.08, 0.04, 0.00, 0.04, 0.08, 0.12, 0.16])
+
+
+def _score(distribution):
+    return np.sum((TargetDistribution - distribution) ** 2)
+
 
 class BatchUpdater(object):
     def __init__(self, model, all_data, **kwargs):
@@ -193,13 +201,20 @@ class BatchUpdater(object):
         total_indices = sum(updated_indices)
         part_total_indices = sum(part_updated_indices)
 
+        part_ratios = [n / float(part_total_indices) for n in part_updated_indices]
+        total_ratios = [n / float(total_indices) for n in updated_indices]
+
         message('[Log Data]')
         message('Part  (total {:>8}): {}'.format(
             part_total_indices,
-            '\t'.join(format(n / float(part_total_indices), '.3f') for n in part_updated_indices)))
+            '\t'.join(format(val, '.3f') for val in part_ratios)))
         message('Whole (total {:>8}): {}'.format(
             total_indices,
-            '\t'.join(format(n / float(total_indices), '.3f') for n in updated_indices)))
+            '\t'.join(format(val, '.3f') for val in total_ratios)))
+        message('Score                 :',
+                'Part =', format(_score(part_ratios), '.6f'),
+                'Total = ', format(_score(total_ratios), '.6f'))
+
         message('Part Avg Loss         :', '\t'.join(format(np.mean(l_list), '.3f') for l_list in self.part_avg_loss))
         message('Part Loss Std         :', '\t'.join(format(np.std(l_list), '.3f') for l_list in self.part_avg_loss))
         message('Total Avg Loss        :', '\t'.join(format(np.mean(l_list), '.3f') for l_list in self.avg_loss))
