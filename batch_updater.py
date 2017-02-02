@@ -354,7 +354,7 @@ class ACUpdater(BatchUpdater):
         selected_batch_data = [data[batch_index] for data in self.all_data]
         selected_batch_data = self.prepare_data(*selected_batch_data)
 
-        probability = self.model.get_policy_input(*(selected_batch_data + [self, self.history_accuracy] + args))
+        probability = self.model.get_policy_input(*(selected_batch_data + (self, self.history_accuracy) + args))
         action = self.policy.take_action(probability, False)
 
         result = [index for i, index in enumerate(batch_index) if action[i]]
@@ -380,7 +380,7 @@ class TestPolicyUpdater(BatchUpdater):
         selected_batch_data = [data[batch_index] for data in self.all_data]
         selected_batch_data = self.prepare_data(*selected_batch_data)
 
-        probability = self.model.get_policy_input(*(selected_batch_data + [self, self.history_accuracy] + args))
+        probability = self.model.get_policy_input(*(selected_batch_data + (self, self.history_accuracy) + args))
         action = self.policy.take_action(probability, False)
 
         result = [index for i, index in enumerate(batch_index) if action[i]]
