@@ -15,13 +15,9 @@ from utils_CIFAR10 import load_cifar10_data, split_cifar10_data, pre_process_CIF
 __author__ = 'fyabc'
 
 
-# TODO: Change code into updaters
-# Done: raw, REINFORCE
-
-
 # [NOTE]: In CIFAR10, validate point at end of each epoch.
 def epoch_message(model, x_train, y_train, x_validate, y_validate, x_test, y_test,
-                  history_accuracy, history_train_loss,
+                  updater, history_train_loss,
                   epoch, start_time, train_batches, total_accepted_cases):
     # Get training loss
     train_loss = model.get_training_loss(x_train, y_train)
@@ -30,7 +26,7 @@ def epoch_message(model, x_train, y_train, x_validate, y_validate, x_test, y_tes
     validate_loss, validate_acc, validate_batches = model.validate_or_test(x_validate, y_validate)
     validate_loss /= validate_batches
     validate_acc /= validate_batches
-    history_accuracy.append(validate_acc)
+    updater.history_accuracy.append(validate_acc)
 
     # Get test loss and accuracy
     test_loss, test_acc, test_batches = model.validate_or_test(x_test, y_test)
@@ -63,7 +59,6 @@ def train_raw_CIFAR10():
 
     # Train the network
     # Some variables
-    history_accuracy = []
 
     # Learning rate discount
     lr_discount_41, lr_discount_61 = False, False
@@ -82,7 +77,7 @@ def train_raw_CIFAR10():
         kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
 
         for _, train_index in kf:
-            part_train_cost = updater.add_batch(train_index, updater, history_accuracy)
+            part_train_cost = updater.add_batch(train_index)
 
             if updater.total_train_batches > 0 and \
                     updater.total_train_batches != last_validate_point and \
@@ -93,7 +88,6 @@ def train_raw_CIFAR10():
                     # validate_size=validate_size,  # Use part validation set in baseline
                     run_test=True,
                 )
-                history_accuracy.append(validate_acc)
 
                 if validate_acc > best_validate_acc:
                     best_validate_acc = validate_acc
@@ -133,7 +127,6 @@ def train_SPL_CIFAR10():
 
     # Train the network
     # Some variables
-    history_accuracy = []
 
     best_validate_acc = -np.inf
     best_iteration = 0
@@ -146,11 +139,10 @@ def train_SPL_CIFAR10():
         kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
 
         for _, train_index in kf:
-            part_train_cost = updater.add_batch(train_index, updater, history_accuracy)
+            part_train_cost = updater.add_batch(train_index)
 
         validate_acc, test_acc = validate_point_message(
             model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater)
-        history_accuracy.append(validate_acc)
 
         if validate_acc > best_validate_acc:
             best_validate_acc = validate_acc
@@ -194,7 +186,6 @@ def train_policy_CIFAR10():
 
         # Train the network
         # Some variables
-        history_accuracy = []
 
         # Learning rate discount
         lr_discount_41, lr_discount_61 = False, False
@@ -228,7 +219,7 @@ def train_policy_CIFAR10():
             kf = get_minibatches_idx(train_small_size, model.train_batch_size, shuffle=True)
 
             for _, train_index in kf:
-                part_train_cost = updater.add_batch(train_index, updater, history_accuracy)
+                part_train_cost = updater.add_batch(train_index)
 
                 if updater.total_train_batches > 0 and \
                         updater.total_train_batches != last_validate_point and \
@@ -238,7 +229,6 @@ def train_policy_CIFAR10():
                         model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater, reward_checker,
                         run_test=False,
                     )
-                    history_accuracy.append(validate_acc)
 
                     if validate_acc > best_validate_acc:
                         best_validate_acc = validate_acc
@@ -298,8 +288,6 @@ def train_actor_critic_CIFAR10():
             model.reset_parameters()
         model.reset_learning_rate()
 
-        history_accuracy = []
-
         # To prevent the double validate / AC update point
         # last_validate_point = -1
         last_AC_update_point = -1
@@ -319,7 +307,7 @@ def train_actor_critic_CIFAR10():
             kf = get_minibatches_idx(train_small_size, model.train_batch_size, shuffle=True)
 
             for _, train_index in kf:
-                part_train_cost = updater.add_batch(train_index, updater, history_accuracy)
+                part_train_cost = updater.add_batch(train_index)
 
                 if updater.total_train_batches > 0 and \
                         updater.total_train_batches != last_AC_update_point and \
@@ -345,7 +333,7 @@ def train_actor_critic_CIFAR10():
                     imm_reward = valid_acc / validate_batches
 
                     # Get new state, new actions, and compute new Q value
-                    probability_new = model.get_policy_input(inputs, targets, updater, history_accuracy)
+                    probability_new = model.get_policy_input(inputs, targets, updater, updater.history_accuracy)
                     actions_new = actor.take_action(probability_new, log_replay=False)
 
                     Q_value_new = critic.Q_function(state=probability_new, action=actions_new)
@@ -375,7 +363,6 @@ def train_actor_critic_CIFAR10():
 
             validate_acc, test_acc = validate_point_message(
                 model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater)
-            history_accuracy.append(validate_acc)
 
         model.test(x_test, y_test)
 
@@ -422,7 +409,6 @@ def test_policy_CIFAR10():
     best_validate_acc = -np.inf
     best_iteration = 0
     test_score = 0.0
-    history_accuracy = []
     start_time = time.time()
 
     for epoch in range(ParamConfig['epoch_per_episode']):
@@ -431,11 +417,10 @@ def test_policy_CIFAR10():
         kf = get_minibatches_idx(updater.data_size, model.train_batch_size, shuffle=True)
 
         for _, train_index in kf:
-            part_train_cost = updater.add_batch(train_index, updater, history_accuracy)
+            part_train_cost = updater.add_batch(train_index)
 
         validate_acc, test_acc = validate_point_message(
             model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater)
-        history_accuracy.append(validate_acc)
 
         if validate_acc > best_validate_acc:
             best_validate_acc = validate_acc

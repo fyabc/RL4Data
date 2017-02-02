@@ -457,6 +457,9 @@ Total label count: {}""".format(
     elif Config['temp_job'] == 'log_data':
         updater.message_at_vp(reset=True)
 
+    # Update the history accuracy.
+    updater.history_accuracy.append(validate_acc)
+
     return validate_acc, test_acc
 
 

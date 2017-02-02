@@ -41,7 +41,8 @@ class BatchUpdater(object):
         model
         all_data
         kwargs :
-            prepare_data:
+            prepare_data: function, optional
+                The prepare data function.
         """
 
         self.batch_size = model.train_batch_size
@@ -81,6 +82,8 @@ class BatchUpdater(object):
         # The prepare data hook
         self.prepare_data = kwargs.get('prepare_data', lambda *data: data)
 
+        self.history_accuracy = []
+
         if Config['temp_job'] == 'log_data':
             # self.part_updated_indices = [0 for _ in range(ClassNumber)]
             # self.updated_indices = [0 for _ in range(ClassNumber)]
@@ -105,10 +108,10 @@ class BatchUpdater(object):
             a batch of indices in all_data.
         args: a list of some args
             other arguments required by policy or SPL.
-            args[0]: updater
-                the updater itself. (just for code compatibility)
-            args[1]: list of float
-                history_accuracy
+                (Unused now)
+                It will be append to the data list.
+            The arguments for get_policy_input:
+                *data_list, updater, history_accuracy, *args
 
         Returns
         -------
@@ -194,7 +197,7 @@ class BatchUpdater(object):
                 self.add_index(idx, loss)
 
     # Only for temp_job:"log_data"
-    def message_at_vp(self, reset=True):
+    def message_at_vp(self, reset=True, test_margin=True):
         updated_indices = [len(loss_list) for loss_list in self.avg_loss]
         part_updated_indices = [len(loss_list) for loss_list in self.part_avg_loss]
 
@@ -219,6 +222,40 @@ class BatchUpdater(object):
         message('Part Loss Std         :', '\t'.join(format(np.std(l_list), '.3f') for l_list in self.part_avg_loss))
         message('Total Avg Loss        :', '\t'.join(format(np.mean(l_list), '.3f') for l_list in self.avg_loss))
         message('Total Loss Std        :', '\t'.join(format(np.std(l_list), '.3f') for l_list in self.avg_loss))
+
+        if test_margin:
+            # Test to get the (average) margin and loss rank.
+            # Get 10 batches in each corrupt level.
+            SampleBatchNumber = 100
+
+            message('Test the margin for all {} corrupt levels:'.format(ClassNumber))
+
+            mean_feature_list = []
+            std_feature_list = []
+
+            for level in range(ClassNumber):
+                class_range = np.arange(level * ClassSize, (level + 1) * ClassSize)
+
+                to_be_stacked = []
+
+                for _ in range(SampleBatchNumber):
+                    sample_batch_idx = np.random.choice(class_range, self.batch_size)
+                    sample_batch_data = [data[sample_batch_idx] for data in self.all_data]
+                    sample_batch_data = self.prepare_data(*sample_batch_data)
+
+                    features = self.model.get_policy_input(*(sample_batch_data + (self, self.history_accuracy)))
+                    to_be_stacked.append(features)
+
+                all_features = np.hstack(to_be_stacked)
+
+                mean_features = all_features.mean(axis=0)
+                std_features = all_features.std(axis=0)
+
+                mean_feature_list.append(mean_features)
+                std_feature_list.append(std_features)
+
+            message('Margin Avg            :', '\t'.join(format(mf[-4], '.3f') for mf in mean_feature_list))
+            message('Margin Std            :', '\t'.join(format(sf[-4], '.3f') for sf in std_feature_list))
 
         if reset:
             # self.part_updated_indices = [0 for _ in range(ClassNumber)]
@@ -291,7 +328,7 @@ class TrainPolicyUpdater(BatchUpdater):
         selected_batch_data = [data[batch_index] for data in self.all_data]
         selected_batch_data = self.prepare_data(*selected_batch_data)
 
-        probability = self.model.get_policy_input(*(selected_batch_data + args))
+        probability = self.model.get_policy_input(*(selected_batch_data + (self, self.history_accuracy) + args))
         action = self.policy.take_action(probability, True)
 
         result = [index for i, index in enumerate(batch_index) if action[i]]
@@ -317,7 +354,7 @@ class ACUpdater(BatchUpdater):
         selected_batch_data = [data[batch_index] for data in self.all_data]
         selected_batch_data = self.prepare_data(*selected_batch_data)
 
-        probability = self.model.get_policy_input(*(selected_batch_data + args))
+        probability = self.model.get_policy_input(*(selected_batch_data + [self, self.history_accuracy] + args))
         action = self.policy.take_action(probability, False)
 
         result = [index for i, index in enumerate(batch_index) if action[i]]
@@ -343,7 +380,7 @@ class TestPolicyUpdater(BatchUpdater):
         selected_batch_data = [data[batch_index] for data in self.all_data]
         selected_batch_data = self.prepare_data(*selected_batch_data)
 
-        probability = self.model.get_policy_input(*(selected_batch_data + args))
+        probability = self.model.get_policy_input(*(selected_batch_data + [self, self.history_accuracy] + args))
         action = self.policy.take_action(probability, False)
 
         result = [index for i, index in enumerate(batch_index) if action[i]]

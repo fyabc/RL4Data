@@ -28,7 +28,6 @@ def train_raw_MNIST():
 
     # Train the network
     # Some variables
-    history_accuracy = []
 
     # To prevent the double validate point
     last_validate_point = -1
@@ -44,7 +43,7 @@ def train_raw_MNIST():
         kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=ParamConfig['raw_shuffle'])
 
         for _, train_index in kf:
-            part_train_cost = updater.add_batch(train_index, updater, history_accuracy)
+            part_train_cost = updater.add_batch(train_index)
 
             if updater.total_train_batches > 0 and \
                     updater.total_train_batches != last_validate_point and \
@@ -55,8 +54,7 @@ def train_raw_MNIST():
                     # validate_size=validate_size,  # Use part validation set in baseline
                     run_test=True,
                 )
-                history_accuracy.append(validate_acc)
-
+                
                 if validate_acc > best_validate_acc:
                     # improve patience if loss improvement is good enough
                     if (1. - validate_acc) < (1. - best_validate_acc) * improvement_threshold:
@@ -93,7 +91,6 @@ def train_SPL_MNIST():
 
     # Train the network
     # Some variables
-    history_accuracy = []
 
     # To prevent the double validate point
     last_validate_point = -1
@@ -109,7 +106,7 @@ def train_SPL_MNIST():
         kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
 
         for _, train_index in kf:
-            part_train_cost = updater.add_batch(train_index, updater, history_accuracy)
+            part_train_cost = updater.add_batch(train_index)
 
             if updater.total_train_batches > 0 and \
                     updater.total_train_batches != last_validate_point and \
@@ -120,8 +117,7 @@ def train_SPL_MNIST():
                     model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater,
                     run_test=False,
                 )
-                history_accuracy.append(validate_acc)
-
+                
                 if validate_acc > best_validate_acc:
                     # improve patience if loss improvement is good enough
                     if (1. - validate_acc) < (1. - best_validate_acc) * improvement_threshold:
@@ -168,7 +164,6 @@ def train_policy_MNIST():
 
         # Train the network
         # Some variables
-        history_accuracy = []
 
         # To prevent the double validate point
         last_validate_point = -1
@@ -200,7 +195,7 @@ def train_policy_MNIST():
             kf = get_minibatches_idx(train_small_size, model.train_batch_size, shuffle=True)
 
             for _, train_index in kf:
-                part_train_cost = updater.add_batch(train_index, updater, history_accuracy)
+                part_train_cost = updater.add_batch(train_index)
 
                 if updater.total_train_batches > 0 and \
                         updater.total_train_batches != last_validate_point and \
@@ -210,8 +205,7 @@ def train_policy_MNIST():
                         model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater, reward_checker,
                         run_test=False,
                     )
-                    history_accuracy.append(validate_acc)
-
+                    
                     if validate_acc > best_validate_acc:
                         # improve patience if loss improvement is good enough
                         if (1. - validate_acc) < (1. - best_validate_acc) * improvement_threshold:
@@ -261,7 +255,6 @@ def train_actor_critic_MNIST():
 
         # Train the network
         # Some variables
-        history_accuracy = []
 
         # To prevent the double validate / AC update point
         last_validate_point = -1
@@ -287,7 +280,7 @@ def train_actor_critic_MNIST():
             kf = get_minibatches_idx(train_small_size, model.train_batch_size, shuffle=True)
 
             for _, train_index in kf:
-                part_train_cost = updater.add_batch(train_index, updater, history_accuracy)
+                part_train_cost = updater.add_batch(train_index)
 
                 if updater.total_train_batches > 0 and \
                         updater.total_train_batches != last_AC_update_point and \
@@ -313,7 +306,7 @@ def train_actor_critic_MNIST():
                     imm_reward = valid_acc / validate_batches
 
                     # Get new state, new actions, and compute new Q value
-                    probability_new = model.get_policy_input(inputs, targets, updater, history_accuracy)
+                    probability_new = model.get_policy_input(inputs, targets, updater, updater.history_accuracy)
                     actions_new = actor.take_action(probability_new, log_replay=False)
 
                     Q_value_new = critic.Q_function(state=probability_new, action=actions_new)
@@ -341,8 +334,7 @@ def train_actor_critic_MNIST():
 
                     validate_acc, test_acc = validate_point_message(
                         model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater)
-                    history_accuracy.append(validate_acc)
-
+                    
                     if validate_acc > best_validate_acc:
                         # improve patience if loss improvement is good enough
                         if (1. - validate_acc) < (1. - best_validate_acc) * improvement_threshold:
@@ -395,7 +387,6 @@ def test_policy_MNIST():
 
     # Train the network
     # Some variables
-    history_accuracy = []
 
     # To prevent the double validate point
     last_validate_point = -1
@@ -411,7 +402,7 @@ def test_policy_MNIST():
         kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
 
         for _, train_index in kf:
-            part_train_cost = updater.add_batch(train_index, updater, history_accuracy)
+            part_train_cost = updater.add_batch(train_index)
 
             if updater.total_train_batches > 0 and \
                     updater.total_train_batches != last_validate_point and \
@@ -421,8 +412,7 @@ def test_policy_MNIST():
                     model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater,
                     run_test=True,
                 )
-                history_accuracy.append(validate_acc)
-
+                
                 if validate_acc > best_validate_acc:
                     # improve patience if loss improvement is good enough
                     if (1. - validate_acc) < (1. - best_validate_acc) * improvement_threshold:
