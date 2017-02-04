@@ -86,10 +86,15 @@ def load_mnist_data(data_dir=None):
         train_size = len(y_train)
         x_train = x_train[:-train_size * 2 // 10]
         y_train = y_train[:-train_size * 2 // 10]
+    elif Config['filter_data'] == 'flip_best_80':
+        # Drop medium 20% data (worst 20% in flip) before train
+        train_size = len(y_train)
+        indices = list(range(train_size * 4 // 10)) + list(range(train_size * 6 // 10, train_size))
+        x_train = x_train[indices]
+        y_train = y_train[indices]
 
-    rval = (x_train, y_train, x_valid, y_valid,
-            x_test, y_test)
-    return rval
+    result = x_train, y_train, x_valid, y_valid, x_test, y_test
+    return result
 
 
 def pre_process_MNIST_data():

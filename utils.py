@@ -287,6 +287,8 @@ def process_before_train2(args=None):
             # Load the newest model
             PolicyConfig['policy_load_file'], PolicyConfig['start_episode'] = find_newest(
                 model_path, raw_name, ext, ret_number=True)
+        else:
+            PolicyConfig['start_episode'] = int(episode)
         append = True
 
     else:
