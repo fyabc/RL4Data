@@ -32,7 +32,7 @@ def make_lr_force_init_model(margin, rank, bias):
 
 
 def main():
-    make_lr_force_init_model(-2, 2, 2)
+    make_lr_force_init_model(-3, 3, 2)
 
 
 if __name__ == '__main__':
