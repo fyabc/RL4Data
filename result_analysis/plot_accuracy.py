@@ -15,7 +15,7 @@ from config import LogPath
 __author__ = 'fyabc'
 
 
-Interval = 3
+Interval = 4
 
 
 def get_test_acc_list(filename, dataset='mnist', interval=Interval):
@@ -42,22 +42,28 @@ def plot():
     m2r_2b2 = get_test_acc_list('log-mnist-stochastic-lr-ForceFlip1.txt')
     m_2r2b2 = get_test_acc_list('log-mnist-stochastic-lr-m_2r2b2.txt')
     m_3r3b2 = get_test_acc_list('log-mnist-stochastic-lr-m_3r3b2.txt')
+    m_4r4b2 = get_test_acc_list('log-mnist-stochastic-lr-m_4r4b2.txt')
 
     speed = get_test_acc_list('log-mnist-stochastic-lr-Flip2.txt')
+    speed_best = get_test_acc_list('log-mnist-stochastic-lr-speed-Flip2Best.txt')
+    delta_acc = get_test_acc_list('log-mnist-stochastic-lr-delta_acc-Flip2.txt')
 
     plt.plot(raw, label='raw')
     plt.plot(best80, label='best 80%')
     plt.plot(spl, label='spl')
 
     plt.plot(speed, label='speed')
+    plt.plot(speed_best, label='speed best')
+    plt.plot(delta_acc, label='delta acc')
 
-    plt.plot(m0r0b2, '--', label='m0r0b2')
-    plt.plot(m2r_2b2, '--', label='m2r-2b2')
+    # plt.plot(m0r0b2, '--', label='m0r0b2')
+    # plt.plot(m2r_2b2, '--', label='m2r-2b2')
     plt.plot(m_2r2b2, '--', label='m-2r2b2')
     plt.plot(m_3r3b2, '--', label='m-3r3b2')
+    plt.plot(m_4r4b2, '--', label='m-4r4b2')
 
-    plt.ylim(ymin=0.86, ymax=0.96)
-    plt.xlim(xmax=1500 // Interval)
+    plt.ylim(ymin=0.87, ymax=0.96)
+    plt.xlim(xmax=1200 // Interval)
 
     plt.legend(loc='lower right')
 
