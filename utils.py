@@ -242,8 +242,9 @@ def process_before_train2(args=None):
 
     if 'warm_start_model_file' in ParamConfig:
         ParamConfig['warm_start_model_file'] = ParamConfig['warm_start_model_file'].replace(Tilde, model_path)
+    if 'save_model_file' in ParamConfig:
+        ParamConfig['save_model_file'] = ParamConfig['save_model_file'].replace(Tilde, model_path)
 
-    ParamConfig['save_model_file'] = ParamConfig['save_model_file'].replace(Tilde, model_path)
     PolicyConfig['policy_save_file'] = PolicyConfig['policy_save_file'].replace(Tilde, model_path)
     PolicyConfig['policy_load_file'] = PolicyConfig['policy_load_file'].replace(Tilde, model_path)
     Config['logging_file'] = Config['logging_file'].replace(Tilde, log_path)
