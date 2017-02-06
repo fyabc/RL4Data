@@ -239,7 +239,10 @@ def process_before_train2(args=None):
     PolicyConfig['baseline_accuracy_file'] = PolicyConfig['baseline_accuracy_file'].replace(Tilde, ReservedDataPath)
     PolicyConfig['random_drop_number_file'] = PolicyConfig['random_drop_number_file'].replace(Tilde, data_path)
     ParamConfig['data_dir'] = ParamConfig['data_dir'].replace(Tilde, data_path)
-    ParamConfig['warm_start_model_file'] = ParamConfig['warm_start_model_file'].replace(Tilde, model_path)
+
+    if 'warm_start_model_file' in ParamConfig:
+        ParamConfig['warm_start_model_file'] = ParamConfig['warm_start_model_file'].replace(Tilde, model_path)
+
     ParamConfig['save_model_file'] = ParamConfig['save_model_file'].replace(Tilde, model_path)
     PolicyConfig['policy_save_file'] = PolicyConfig['policy_save_file'].replace(Tilde, model_path)
     PolicyConfig['policy_load_file'] = PolicyConfig['policy_load_file'].replace(Tilde, model_path)
