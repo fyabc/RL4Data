@@ -1,0 +1,313 @@
+{
+    /// How to set configures in command line
+    /// When set global configures:
+    ///  G.key=exp
+    /// When set policy configures:
+    ///  P.key=exp
+    /// When set configures in current model ("cifar10" in CIFAR-10, "imdb" in IMDB):
+    ///  key=exp
+    ///
+    /// key is the name of the parameter, exp is the value.
+    /// [NOTE]: exp must be a legal Python expression, the value of the key is eval(exp).
+    /// [NOTE]: in exp, use @ to represent double quotes " (used in string values)
+    /// [NOTE]: you must NOT have any spaces in the expression above.
+
+    /// Basic configurations.
+
+    /// Job name, includes some options.
+    // "{G.dataset}-{G.train_type}-{P.policy_model_type}?-{P.reward_checker}?-{unique name}"
+    // These options will be set by job_name.
+    // {P.policy_save/load_file}, {G.logging_file} will also be set if they are null.
+    // Examples:
+    //     "mnist-raw-flip1"
+    //     "mnist-deterministic-mlp-1"
+    //     "cifar10-reinforce-lr-speed-gaussian2"
+    "job_name": null,
+
+    /// Dataset.
+    // Candidates:
+    //     'cifar10'
+    //     'mnist'
+    //     'imdb' (not available now)
+    "dataset": "cifar10",
+
+    "seed": 123,
+    "floatX": "float32",
+    "logging_file": null,
+    "append_logging_file": false,
+
+    /// The train action
+    // Candidates:
+    //     "" (with some train_types):
+    //         common train (raw/SPL/test/random_drop)
+    //     "overwrite":
+    //         train from episode 0, will overwrite previous policy models.
+    //     "reload":
+    //         search the directory of policy model for the newest version of the policy model file,
+    //         load it, and train from this.
+    "action": "reload",
+
+    /// Train types.
+    // Candidates:
+    //     'raw':           train ResNet directly.
+    //     'policy':        train policy.
+    //     'deterministic': run deterministic policy (alpha loss)
+    //     'stochastic':    run stochastic policy (randomly drop data)
+    "train_type": null,
+
+    /// TODO: Configuration to be moved into "cifar10"
+    "model": null,
+
+    /// Set this flag to some string to run some temp jobs.
+    // Temp job code must be in this flag, such as:
+    //     if Config['temp_job'] == 'xxx':
+    //         ......
+    // Candidates:
+    //     "log_data": log the number of selected data in each corrupt part
+    //     "check_selected_data_label": log the number of selected data in each label
+    //     "check_part_loss": check the loss and margin of different parts in corrupted data
+    "temp_job": "",
+
+    // Get filtered data?
+    "filter_data": false,
+
+    "policy": {
+        /// Name of policy network
+        // Candidates:
+        //     LRPolicyNetwork (lr)
+        //     MLPPolicyNetwork (mlp)
+        "policy_model_type": "lr",
+
+        // TODO: (only for 'reload' train action)
+        // Start at episode ?
+        "start_episode": -1,
+
+        // Save policy frequency (0 means not save)
+        // And its target ('~/xxx.npz')
+        // [NOTE] '~' is a brief representation of './model/{G.dataset}'
+        "policy_save_freq": 1,
+        "policy_save_file": null,
+
+        // Load policy (policy warm start)?
+        // And its target ('~/xxx.npz')
+        "policy_load": false,
+        "policy_load_file": null,
+
+        // The max episode number, usually set big enough.
+        "num_episodes": 5000,
+
+        /// Policy input features
+        "add_label_input": true,
+        "add_label": false,
+        "use_first_layer_output": false,
+        "add_margin": true,
+        "add_average_accuracy": true,
+        "add_epoch_number": false,
+        "add_learning_rate": false,
+        "add_loss_rank": true,
+        "add_accepted_data_number": true,
+
+        // This sample size is used in AC immediate reward
+        "immediate_reward_sample_size": 10000,
+
+        // Sample size of validation set in validation point
+        "vp_sample_size": 5000,
+
+        /// Reward checker type
+        // Candidates:
+        //     "acc": just validate accuracy
+        //     "speed": speed reward, thresholds are in "speed_reward_config"
+        //     "delta_acc": delta accuracy reward, baseline accuracy file is in "baseline_accuracy_file"
+        "reward_checker": "speed",
+
+        /// Speed reward thresholds and their weights
+        // The current value is for Uncorrupted-MNIST
+        // MNIST:       [0.95, 0.97, 0.98]
+        // C-MNIST:     [0.89, 0.92, 0.94]
+        // CIFAR-10:    [,,]
+        // C-CIFAR-10:  [0.72, 0.76, 0.795]
+        "speed_reward_config": [
+            [0.95, 0.1666667],
+            [0.97, 0.3333333],
+            [0.98, 0.5]
+        ],
+
+        // '~' is './reserved_data' (NOT contains dataset name) here
+        "baseline_accuracy_file": "",
+
+        // '~' is './data/{G.dataset}' here
+        "random_drop_number_file": "~/drop_num.txt",
+
+        /// Negative reward? true means positive, this is common to false
+        "reward_sign": false,
+
+        "policy_optimizer": "adam",
+        "policy_learning_rate": 0.02,
+        "policy_learning_rate_discount": 0.7,
+        "policy_learning_rate_discount_freq": 50,
+
+        /// MLP policy parameters
+        "hidden_size": 12,
+
+        "gamma": 0.99,
+
+        // The initial value of policy network weights
+        "b_init": 2.0,
+        "W_init": null,
+
+        // Use normalize when initializing W, this is common to true
+        "W_normalize": true,
+
+        // L2 regular factor
+        "l2_c": 0.0005,
+
+        // Use reward baseline?
+        "reward_baseline": true,
+        // rb_new = (1 - rb_update_rate) * rb_old + rb_update_rate * recent_reward
+        "reward_baseline_update_rate": 0.8,
+
+        /// Actor-Critic configurations
+        "actor_gamma": 1.0,
+
+        // Use cost gap before and after update as immediate reward
+        // Another immediate reward is the accuracy of sampled validation set
+        "cost_gap_AC_reward": false,
+
+        // Update actor and critic frequency
+        "AC_update_freq": 100,
+
+        /// Self-paced learning configurations
+        // Start and end loss threshold
+        "start_cost": 0.6,
+        "end_cost": 4.60517     // -log(0.01)
+    },
+
+    "cifar10": {
+        // '~' is './data/{G.dataset}' here
+        "data_dir": "~/cifar10.pkl.gz",
+
+        // Data is in a single file (not directory)? Common to true.
+        "one_file": true,
+
+        /// Model name.
+        // Candidates:
+        //     CIFARModel (resnet)
+        //     VaniliaCNNModel (vanilia)
+        "model_name": "resnet",
+
+        // Save the model to "model_file"
+        "save_model": false,
+        "model_file": "./data/cifar10/cifar10_deep_residual_model.npz",
+
+        "total_size": 60000,
+        "train_size": 50000,
+        "validation_size": 10000,
+        "test_size": 10000,
+
+        /// Valid per ?? batches (128 * ?? data)
+        // 100000 // 128 = 781 batch per epoch, 390 is half epoch.
+        "valid_freq": 390,
+
+        "curriculum": false,
+
+        "use_policy": true,
+
+        // Training small size default to the whole (mirrored) training set
+        "train_small_size": 100000,
+
+        // The original value is 82
+        "epoch_per_episode": 62,
+
+        "warm_start": false,
+
+        // Learning rate will discount at epoch 41 and 61.
+        "init_learning_rate": 0.1,
+        "learning_rate_discount": 0.1,
+
+        // Model updater is momentum SGD
+        "l2_penalty_factor": 0.0001,
+        "momentum": 0.9,
+
+        // These are original settings
+        "train_batch_size": 128,
+        "validate_batch_size": 500,
+        "cnn_output_size": 10,
+        "n": 5,
+
+        "print_label_distribution": true,
+
+        "display_freq": 20
+    },
+
+    "imdb": {
+        // '~' is './data/{G.dataset}' here
+        "data_dir": "~/imdb.pkl",
+
+        // Training small size default to the whole training set
+        "train_small_size": 10000,
+
+        "epoch_per_episode": 100,
+
+        // These are original settings
+        "test_size": 5000,
+        "valid_portion": 0.05,
+        "n_words": 10000,
+        "maxlen": null,
+        "dim_proj": 128,
+        "patience": 10,
+        "display_freq": 10,
+        "decay_c": 0.0,
+        "learning_rate": 0.0001,
+        "train_batch_size": 16,
+        "validate_batch_size": 64,
+        "optimizer": "adam",
+        "noise_std": 0.0,
+        "reload_model": false,
+        "use_dropout": true,
+
+        "save_to": false, //"./data/imdb/lstm_model.npz",
+        "valid_freq": 370,
+        "save_freq": 1110,
+        "train_loss_freq": 370
+    },
+
+    "mnist": {
+        // '~' is './data/{G.dataset}' here
+        "data_dir": "~/mnist.pkl.gz",
+
+        /// Valid per ?? batches (20 * ?? data)
+        "valid_freq": 125,
+        "train_loss_freq": 0,
+        "display_freq": 100,
+
+        // Training small size default to the whole training set
+        "train_small_size": 50000,
+
+        // The original value is 1000
+        "epoch_per_episode": 180,
+
+        // These are original settings
+        "hidden_size": 500,
+        "learning_rate": 0.01,
+        "train_batch_size": 20,
+        "validate_batch_size": 20,
+        "l1_penalty_factor": 0.00,
+        "l2_penalty_factor": 0.0001,
+        "patience": 10000,
+        "patience_increase": 2,
+        "improvement_threshold": 0.995,
+
+        // 0 means do not test at validate point
+        "test_per_point": 1,
+
+        // When train raw, get shuffled data.
+        "raw_shuffle": true,
+
+        // Warm start model (not policy)
+        "warm_start": false,
+        "warm_start_model_file": "~/warm_start_model.npz",
+
+        "save_model": false,
+        "save_model_file": "~/warm_start_model.npz"
+    }
+}
