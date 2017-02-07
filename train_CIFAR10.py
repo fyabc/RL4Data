@@ -395,7 +395,8 @@ def test_policy_CIFAR10():
 
     if Config['train_type'] == 'random_drop':
         updater = RandomDropUpdater(model, [x_train, y_train],
-                                    ParamConfig['random_drop_number_file'], prepare_data=prepare_CIFAR10_data)
+                                    PolicyConfig['random_drop_number_file'], prepare_data=prepare_CIFAR10_data,
+                                    drop_num_type='vp', valid_freq=ParamConfig['valid_freq'])
     else:
         # Build policy
         policy = PolicyNetworkBase.get_by_name(PolicyConfig['policy_model_type'])(input_size=input_size)
