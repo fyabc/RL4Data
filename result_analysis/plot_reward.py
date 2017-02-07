@@ -58,6 +58,10 @@ def main():
     parser.add_argument('-Y', '--ymax', action='store', dest='ymax', type=float, default=None,
                         help='The y max value (default is None)')
 
+    options = parser.parse_args()
+
+    plot_by_args(options)
+
 
 if __name__ == '__main__':
     main()
