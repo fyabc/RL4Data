@@ -33,7 +33,10 @@ def get_drop_number(filename, dataset='mnist'):
 def plot_by_args(options):
     drop_number = get_drop_number(options.filename, options.dataset)
 
-    save_list(drop_number, os.path.join(DataPath, options.dataset, 'drop_num_{}'.format(options.filename)))
+    if options.save_filename is None:
+        options.save_filename = 'drop_num_{}'.format(options.filename)
+
+    save_list(drop_number, os.path.join(DataPath, options.dataset, options.save_filename))
 
 
 def main():
@@ -42,6 +45,8 @@ def main():
     parser.add_argument('filename', help='The log filename')
     parser.add_argument('-d', '--dataset', action='store', dest='dataset', default='mnist',
                         help='The dataset (default is "mnist")')
+    parser.add_argument('-o', action='store', dest='save_filename', default=None,
+                        help='The save filename (default is "drop_num_$(filename)")')
 
     options = parser.parse_args()
 
