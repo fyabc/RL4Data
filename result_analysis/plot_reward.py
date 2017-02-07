@@ -41,6 +41,7 @@ def plot_by_args(options):
     # Print the max and argmax.
     arg_max = np.argmax(reward_list)
 
+    print('Total: {} episodes'.format(len(reward_list)))
     print('Max: {} at episode {}'.format(reward_list[arg_max], arg_max))
 
     plt.plot(reward_list, label='terminal reward')
