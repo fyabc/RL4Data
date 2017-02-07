@@ -171,6 +171,8 @@ class PolicyNetworkBase(NameRegister):
 
         final_reward = reward_checker.get_reward(echo=True)
 
+        old_parameters = [param.get_value() for param in self.parameters]
+
         if reward_checker.ImmediateReward:
             discounted_rewards = self.get_discounted_rewards(reward_checker.get_immediate_reward(echo=True))
 
@@ -202,6 +204,13 @@ ActionPartSize {} ImmediateRewardSize {}'''.format(
             # Reward baseline (only for terminal reward)
             if PolicyConfig['reward_baseline']:
                 self.update_rb(final_reward)
+
+        # If it is speed reward, use smooth update to reduce the speed of policy update.
+        # [NOTE] ONLY for speed reward!
+        if PolicyConfig['reward_checker'] == 'speed':
+            smooth = PolicyConfig['smooth_update']
+            for i, param in enumerate(self.parameters):
+                param.set_value(smooth * old_parameters[i] + (1 - smooth) * param.get_value())
 
         message("""\
 Cost: {}
