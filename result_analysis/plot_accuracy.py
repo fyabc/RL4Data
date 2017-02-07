@@ -4,6 +4,7 @@ from __future__ import print_function, unicode_literals
 
 import sys
 import os
+import argparse
 
 ProjectRootPath = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(ProjectRootPath)
@@ -95,7 +96,42 @@ def plot_c_mnist():
     plt.show()
 
 
+def plot_by_args(options):
+    for filename in options.filenames:
+        data = get_test_acc_list(filename, options.dataset, options.interval)
+        plt.plot(data, label=os.path.splitext(filename)[0])
+
+    plt.xlim(xmax=options.xmax / options.interval)
+    plt.ylim(ymin=options.ymin, ymax=options.ymax)
+
+    plt.legend(loc='lower right')
+
+    plt.show()
+
+
+def main():
+    parser = argparse.ArgumentParser(description='The test accuracy plotter')
+
+    parser.add_argument('filename', nargs='+', dest='filenames')
+    parser.add_argument('-d', '--dataset', action='store', dest='dataset', default='mnist',
+                        help='The dataset (default is "mnist")')
+    parser.add_argument('-i', '--interval', action='store', dest='interval', type=int, default=Interval,
+                        help='The interval of validation point (default is $(Interval))')
+    parser.add_argument('-y', '--ymin', action='store', dest='ymin', type=float, default=0.88,
+                        help='The y min value (default is 0.88)')
+    parser.add_argument('-Y', '--ymax', action='store', dest='ymax', type=float, default=0.98,
+                        help='The y max value (default is 0.98)')
+    parser.add_argument('-X', '--xmax', action='store', dest='xmax', type=int, default=1200,
+                        help='The x max value before divided by interval (default is 1200)')
+
+    options = parser.parse_args()
+
+    plot_by_args(options)
+
+
 if __name__ == '__main__':
     # plot_c_mnist()
-    plot_mnist()
+    # plot_mnist()
+
+    main()
     pass
