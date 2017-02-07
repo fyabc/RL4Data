@@ -97,7 +97,7 @@ def plot_c_mnist():
 
 
 def plot_by_args(options):
-    for filename in options.filenames:
+    for filename in options.filename:
         data = get_test_acc_list(filename, options.dataset, options.interval)
         plt.plot(data, label=os.path.splitext(filename)[0])
 
@@ -112,7 +112,7 @@ def plot_by_args(options):
 def main():
     parser = argparse.ArgumentParser(description='The test accuracy plotter')
 
-    parser.add_argument('filename', nargs='+', dest='filenames')
+    parser.add_argument('filename', nargs='+')
     parser.add_argument('-d', '--dataset', action='store', dest='dataset', default='mnist',
                         help='The dataset (default is "mnist")')
     parser.add_argument('-i', '--interval', action='store', dest='interval', type=int, default=Interval,
