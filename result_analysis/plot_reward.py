@@ -5,11 +5,13 @@ from __future__ import print_function, unicode_literals
 
 import sys
 import os
-import argparse
 
 ProjectRootPath = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(ProjectRootPath)
 
+import argparse
+
+import numpy as np
 import matplotlib.pyplot as plt
 
 from config import LogPath
@@ -35,6 +37,11 @@ def plot_by_args(options):
 
     if options.ignore_zero:
         reward_list = [e if abs(e) > 1e-6 else None for e in reward_list]
+
+    # Print the max and argmax.
+    arg_max = np.argmax(reward_list)
+
+    print('Max: {} at episode {}'.format(reward_list[arg_max], arg_max))
 
     plt.plot(reward_list, label='terminal reward')
 
