@@ -210,7 +210,7 @@ ActionPartSize {} ImmediateRewardSize {}'''.format(
         if PolicyConfig['reward_checker'] == 'speed':
             smooth = floatX(PolicyConfig['smooth_update'])
             for i, param in enumerate(self.parameters):
-                param.set_value(smooth * old_parameters[i] + (1 - smooth) * param.get_value())
+                param.set_value(floatX(smooth * old_parameters[i] + (1 - smooth) * param.get_value()))
 
         message("""\
 Cost: {}

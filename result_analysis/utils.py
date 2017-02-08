@@ -6,6 +6,7 @@ from __future__ import print_function, unicode_literals
 import cPickle as pkl
 import os
 from collections import namedtuple
+from itertools import izip_longest
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -38,6 +39,19 @@ def save_list(l, filename):
     with open(filename, 'w') as f:
         for i in l:
             f.write(str(i) + '\n')
+
+
+def average_without_none(l):
+    no_none = [e for e in l if e is not None]
+
+    return sum(no_none) / len(no_none)
+
+
+def average_list(*lists):
+    return [
+        average_without_none(elements)
+        for elements in izip_longest(*lists)
+    ]
 
 
 def get_data(data_field, dataset=DataSet):

@@ -9,9 +9,14 @@ import argparse
 ProjectRootPath = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(ProjectRootPath)
 
+from itertools import count
+
+import numpy as np
+from scipy.interpolate import spline
 import matplotlib.pyplot as plt
 
 from config import LogPath
+from utils import Curves, legend, average_list
 
 __author__ = 'fyabc'
 
@@ -22,16 +27,40 @@ Interval = 4
 def get_test_acc_list(filename, dataset='mnist', interval=Interval):
     abs_filename = os.path.join(LogPath, dataset, filename)
 
-    with open(abs_filename, 'r') as f:
-        result = [
-            float(line.split()[-1])
-            for line in f
-            if line.startswith('Test accuracy:')
-        ]
+    filenames = [abs_filename]
+
+    root, ext = os.path.splitext(abs_filename)
+
+    for i in count(1):
+        new_filename = '{}_{}{}'.format(root, i, ext)
+
+        if os.path.exists(new_filename):
+            filenames.append(new_filename)
+        else:
+            break
+
+    results = []
+
+    for filename in filenames:
+        with open(filename, 'r') as f:
+            results.append([
+                float(line.split()[-1])
+                for line in f
+                if line.startswith('Test accuracy:')
+            ])
+
+    result = average_list(*results)
 
     result = [e for i, e in enumerate(result) if i % interval == 0]
 
     return result
+
+
+def get_test_acc_lists(*filenames, **kwargs):
+    dataset = kwargs.pop('dataset', 'mnist')
+    interval = kwargs.pop('interval', Interval)
+
+    return [get_test_acc_list(filename, dataset, interval) for filename in filenames]
 
 
 def plot_mnist():
@@ -60,27 +89,29 @@ def plot_mnist():
 
 
 def plot_c_mnist():
-    raw = get_test_acc_list('log-mnist-raw-Flip1.txt')
-    best80 = get_test_acc_list('log-mnist-raw-FlipBest80.txt')
-    spl = get_test_acc_list('log-mnist-spl-ForceFlip1.txt')
+    raw, best80, spl = get_test_acc_lists(
+        'log-mnist-raw-Flip1.txt',
+        'log-mnist-raw-FlipBest80.txt',
+        'log-mnist-spl-ForceFlip1.txt',
+    )
 
-    m0r0b2 = get_test_acc_list('log-mnist-stochastic-lr-m0r0b2.txt')
-    m2r_2b2 = get_test_acc_list('log-mnist-stochastic-lr-ForceFlip1.txt')
-    m_2r2b2 = get_test_acc_list('log-mnist-stochastic-lr-m_2r2b2.txt')
-    m_3r3b2 = get_test_acc_list('log-mnist-stochastic-lr-m_3r3b2.txt')
-    m_4r4b2 = get_test_acc_list('log-mnist-stochastic-lr-m_4r4b2.txt')
+    # m0r0b2 = get_test_acc_list('log-mnist-stochastic-lr-m0r0b2.txt')
+    # m2r_2b2 = get_test_acc_list('log-mnist-stochastic-lr-ForceFlip1.txt')
+    # m_2r2b2 = get_test_acc_list('log-mnist-stochastic-lr-m_2r2b2.txt')
+    # m_3r3b2 = get_test_acc_list('log-mnist-stochastic-lr-m_3r3b2.txt')
+    # m_4r4b2 = get_test_acc_list('log-mnist-stochastic-lr-m_4r4b2.txt')
 
-    speed = get_test_acc_list('log-mnist-stochastic-lr-Flip2.txt')
-    speed_best = get_test_acc_list('log-mnist-stochastic-lr-speed-Flip2Best.txt')
-    delta_acc_best = get_test_acc_list('log-mnist-stochastic-lr-delta_acc-Flip2.txt')
+    # speed = get_test_acc_list('log-mnist-stochastic-lr-Flip2.txt')
+    # speed_best = get_test_acc_list('log-mnist-stochastic-lr-speed-Flip2Best.txt')
+    # delta_acc_best = get_test_acc_list('log-mnist-stochastic-lr-delta_acc-Flip2.txt')
 
     plt.plot(raw, label='raw')
-    # plt.plot(best80, label='best 80%')
+    plt.plot(best80, label='best 80%')
     plt.plot(spl, label='spl')
 
-    plt.plot(speed, label='speed last (340)')
-    plt.plot(speed_best, label='speed best (286)')
-    plt.plot(delta_acc_best, label='delta acc best (213)')
+    # plt.plot(speed, label='speed last (340)')
+    # plt.plot(speed_best, label='speed best (286)')
+    # plt.plot(delta_acc_best, label='delta acc best (213)')
 
     # plt.plot(m0r0b2, '--', label='m0r0b2')
     # plt.plot(m2r_2b2, '--', label='m2r-2b2')
@@ -92,6 +123,62 @@ def plot_c_mnist():
     plt.xlim(xmax=1200 // Interval)
 
     plt.legend(loc='lower right')
+
+    plt.show()
+
+
+def plot_accuracy_curve(title, style, y, vp_size, smooth, interval, maxlen):
+    x = range(vp_size, 1 + len(y) * vp_size, vp_size)
+
+    if interval > 1:
+        x = [e for i, e in enumerate(x) if (i + 1) % interval == 0]
+        y = [e for i, e in enumerate(y) if (i + 1) % interval == 0]
+
+    min_len = min(len(x), len(y), maxlen)
+    x, y = x[:min_len], y[:min_len]
+
+    if smooth > 0:
+        x_new = np.linspace(min(x), max(x), smooth)
+        power_smooth = spline(x, y, x_new)
+    else:
+        x_new = x
+        power_smooth = y
+
+    plt.plot(x_new, power_smooth, linewidth=2.0, label=title, linestyle=style)
+
+
+def plot_for_paper_mnist():
+    plot_for_paper_all_mnist(
+
+    )
+
+
+def plot_for_paper_c_mnist():
+    plot_for_paper_all_mnist(
+        'log-mnist-raw-Flip1.txt',
+        'log-mnist-spl-ForceFlip1.txt',
+        'log-mnist-random_drop-speed-Flip2.txt',
+        'log-mnist-stochastic-lr-speed-Flip2Best.txt',
+    )
+
+
+def plot_for_paper_all_mnist(*filenames, **kwargs):
+    interval = kwargs.pop('interval', 5)
+    vp_size = 2500
+    maxlen = 400
+    smooth = 200
+
+    raw, spl, random_drop, reinforce = get_test_acc_lists(*filenames, interval=1)
+
+    plot_accuracy_curve(Curves[0].title, '-.', random_drop, vp_size, smooth, interval, maxlen)
+    plot_accuracy_curve(Curves[2].title, '--', spl, vp_size, smooth, interval, maxlen)
+    plot_accuracy_curve(Curves[3].title, '--', raw, vp_size, smooth, interval, maxlen)
+    plot_accuracy_curve(Curves[5].title, '-', reinforce, vp_size, smooth, interval, maxlen)
+
+    legend(use_ac=False)
+
+    plt.xlim(xmin=160 * vp_size, xmax=1200 * vp_size)
+    plt.ylim(ymin=0.89, ymax=0.96)
 
     plt.show()
 
@@ -133,5 +220,7 @@ if __name__ == '__main__':
     # plot_c_mnist()
     # plot_mnist()
 
-    main()
+    # main()
+
+    plot_for_paper_c_mnist()
     pass
