@@ -208,7 +208,7 @@ ActionPartSize {} ImmediateRewardSize {}'''.format(
         # If it is speed reward, use smooth update to reduce the speed of policy update.
         # [NOTE] ONLY for speed reward!
         if PolicyConfig['reward_checker'] == 'speed':
-            smooth = PolicyConfig['smooth_update']
+            smooth = floatX(PolicyConfig['smooth_update'])
             for i, param in enumerate(self.parameters):
                 param.set_value(smooth * old_parameters[i] + (1 - smooth) * param.get_value())
 
