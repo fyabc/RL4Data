@@ -383,8 +383,9 @@ def test_policy_CIFAR10():
     input_size = CIFARModelBase.get_policy_input_size()
     message('Input size of policy network:', input_size)
 
-    # Load the dataset and get small training data
-    x_train, y_train, x_validate, y_validate, x_test, y_test = split_cifar10_data(load_cifar10_data())
+    # Load the dataset
+    x_train, y_train, x_validate, y_validate, x_test, y_test, \
+        train_size, validate_size, test_size = pre_process_CIFAR10_data()
 
     message('Training data size:', y_train.shape[0])
     message('Validation data size:', y_validate.shape[0])
@@ -410,6 +411,10 @@ def test_policy_CIFAR10():
     best_validate_acc = -np.inf
     best_iteration = 0
     test_score = 0.0
+
+    # Learning rate discount
+    lr_discount_41, lr_discount_61 = False, False
+
     start_time = time.time()
 
     for epoch in range(ParamConfig['epoch_per_episode']):
@@ -431,7 +436,11 @@ def test_policy_CIFAR10():
             test_score = test_acc
 
         if isinstance(model, CIFARModel):
-            if (epoch + 1) in (41, 61):
+            if not lr_discount_41 and updater.total_accepted_cases >= 41 * train_size:
+                lr_discount_41 = True
+                model.update_learning_rate()
+            if not lr_discount_61 and updater.total_accepted_cases > 61 * train_size:
+                lr_discount_61 = True
                 model.update_learning_rate()
 
         message("Epoch {} of {} took {:.3f}s".format(
