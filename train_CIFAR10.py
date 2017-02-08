@@ -421,7 +421,9 @@ def test_policy_CIFAR10():
             part_train_cost = updater.add_batch(train_index)
 
         validate_acc, test_acc = validate_point_message(
-            model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater)
+            model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater,
+            run_test=True,
+        )
 
         if validate_acc > best_validate_acc:
             best_validate_acc = validate_acc
