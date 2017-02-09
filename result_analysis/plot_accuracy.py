@@ -127,7 +127,7 @@ def plot_c_mnist():
     plt.show()
 
 
-def plot_accuracy_curve(title, style, y, vp_size, smooth, interval, maxlen):
+def plot_accuracy_curve(title, style, y, vp_size, smooth, interval, maxlen, line_width=2.0):
     x = range(vp_size, 1 + len(y) * vp_size, vp_size)
 
     if interval > 1:
@@ -144,32 +144,10 @@ def plot_accuracy_curve(title, style, y, vp_size, smooth, interval, maxlen):
         x_new = x
         power_smooth = y
 
-    plt.plot(x_new, power_smooth, linewidth=2.0, label=title, linestyle=style)
+    plt.plot(x_new, power_smooth, linewidth=line_width, label=title, linestyle=style)
 
 
-def plot_for_paper_mnist():
-    plot_for_paper_all_mnist(
-        'log-mnist-raw-NonC1.txt',
-        'log-mnist-spl-NonC1.txt',
-        'log-mnist-random_drop-speed-NonC3.txt',
-        'log-mnist-stochastic-lr-speed-NonC3Best.txt',
-
-        xmin=0,
-        ymin=0.90,
-        ymax=0.98,
-    )
-
-
-def plot_for_paper_c_mnist():
-    plot_for_paper_all_mnist(
-        'log-mnist-raw-Flip1.txt',
-        'log-mnist-spl-ForceFlip1.txt',
-        'log-mnist-random_drop-speed-Flip2.txt',
-        'log-mnist-stochastic-lr-speed-Flip2Best.txt',
-    )
-
-
-def plot_for_paper_all_mnist(*filenames, **kwargs):
+def plot_for_paper_all(*filenames, **kwargs):
     interval = kwargs.pop('interval', 5)
     vp_size = kwargs.pop('vp_size', 2500)
     maxlen = kwargs.pop('maxlen', 400)
@@ -182,9 +160,9 @@ def plot_for_paper_all_mnist(*filenames, **kwargs):
 
     raw, spl, random_drop, reinforce = get_test_acc_lists(*filenames, interval=1)
 
-    plot_accuracy_curve(Curves[0].title, '-.', random_drop, vp_size, smooth, interval, maxlen)
+    plot_accuracy_curve(Curves[0].title, '-', random_drop, vp_size, smooth, interval, maxlen, line_width=1.0)
     plot_accuracy_curve(Curves[2].title, '--', spl, vp_size, smooth, interval, maxlen)
-    plot_accuracy_curve(Curves[3].title, '--', raw, vp_size, smooth, interval, maxlen)
+    plot_accuracy_curve(Curves[3].title, '-', raw, vp_size, smooth, interval, maxlen, line_width=1.0)
     plot_accuracy_curve(Curves[5].title, '-', reinforce, vp_size, smooth, interval, maxlen)
 
     legend(use_ac=False)
@@ -193,6 +171,41 @@ def plot_for_paper_all_mnist(*filenames, **kwargs):
     plt.ylim(ymin=ymin, ymax=ymax)
 
     plt.show()
+
+
+def plot_for_paper_mnist():
+    plot_for_paper_all(
+        'log-mnist-raw-NonC1.txt',
+        'log-mnist-spl-NonC1.txt',
+        'log-mnist-random_drop-speed-NonC3.txt',
+        'log-mnist-stochastic-lr-speed-NonC3Best.txt',
+
+        xmin=0,
+        ymin=0.90,
+        ymax=0.98,
+    )
+
+
+def plot_for_paper_c_mnist():
+    plot_for_paper_all(
+        'log-mnist-raw-Flip1.txt',
+        'log-mnist-spl-ForceFlip1.txt',
+        'log-mnist-random_drop-speed-Flip2.txt',
+        'log-mnist-stochastic-lr-speed-Flip2Best.txt',
+    )
+
+
+def plot_for_paper_cifar():
+    plot_for_paper_all(
+        'log-cifar10-raw-NonC1.txt',
+        'log-cifar10-spl-NonC1.txt',
+        'log-cifar10-random_drop-speed-NonC2.txt',
+        'log-cifar10-stochastic-lr-speed-NonC2Best_1.txt',
+
+        xmin=0,
+        ymin=0.5,
+        ymax=0.95,
+    )
 
 
 def plot_by_args(options):
@@ -235,5 +248,6 @@ if __name__ == '__main__':
     # main()
 
     # plot_for_paper_c_mnist()
-    plot_for_paper_mnist()
+    # plot_for_paper_mnist()
+    plot_for_paper_cifar()
     pass
