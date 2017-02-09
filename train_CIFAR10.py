@@ -128,6 +128,12 @@ def train_SPL_CIFAR10():
     # Train the network
     # Some variables
 
+    # Learning rate discount
+    lr_discount_41, lr_discount_61 = False, False
+
+    # To prevent the double validate point
+    last_validate_point = -1
+
     best_validate_acc = -np.inf
     best_iteration = 0
     test_score = 0.0
@@ -141,17 +147,28 @@ def train_SPL_CIFAR10():
         for _, train_index in kf:
             part_train_cost = updater.add_batch(train_index)
 
-        validate_acc, test_acc = validate_point_message(
-            model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater)
+            if updater.total_train_batches > 0 and \
+                    updater.total_train_batches != last_validate_point and \
+                    updater.total_train_batches % ParamConfig['valid_freq'] == 0:
+                last_validate_point = updater.total_train_batches
+                validate_acc, test_acc = validate_point_message(
+                    model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater,
+                    # validate_size=validate_size,  # Use part validation set in baseline
+                    run_test=True,
+                )
 
-        if validate_acc > best_validate_acc:
-            best_validate_acc = validate_acc
-            best_iteration = updater.iteration
-            test_score = test_acc
+                if validate_acc > best_validate_acc:
+                    best_validate_acc = validate_acc
+                    best_iteration = updater.iteration
+                    test_score = test_acc
 
-        if isinstance(model, CIFARModel):
-            if (epoch + 1) in (41, 61):
-                model.update_learning_rate()
+            if isinstance(model, CIFARModel):
+                if not lr_discount_41 and updater.total_accepted_cases >= 41 * train_size:
+                        lr_discount_41 = True
+                        model.update_learning_rate()
+                if not lr_discount_61 and updater.total_accepted_cases > 61 * train_size:
+                        lr_discount_61 = True
+                        model.update_learning_rate()
 
         message("Epoch {} of {} took {:.3f}s".format(
             epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
@@ -415,6 +432,9 @@ def test_policy_CIFAR10():
     # Learning rate discount
     lr_discount_41, lr_discount_61 = False, False
 
+    # To prevent the double validate point
+    last_validate_point = -1
+
     start_time = time.time()
 
     for epoch in range(ParamConfig['epoch_per_episode']):
@@ -425,23 +445,28 @@ def test_policy_CIFAR10():
         for _, train_index in kf:
             part_train_cost = updater.add_batch(train_index)
 
-        validate_acc, test_acc = validate_point_message(
-            model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater,
-            run_test=True,
-        )
+            if updater.total_train_batches > 0 and \
+                    updater.total_train_batches != last_validate_point and \
+                    updater.total_train_batches % ParamConfig['valid_freq'] == 0:
+                last_validate_point = updater.total_train_batches
+                validate_acc, test_acc = validate_point_message(
+                    model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater,
+                    # validate_size=validate_size,  # Use part validation set in baseline
+                    run_test=True,
+                )
 
-        if validate_acc > best_validate_acc:
-            best_validate_acc = validate_acc
-            best_iteration = updater.iteration
-            test_score = test_acc
+                if validate_acc > best_validate_acc:
+                    best_validate_acc = validate_acc
+                    best_iteration = updater.iteration
+                    test_score = test_acc
 
-        if isinstance(model, CIFARModel):
-            if not lr_discount_41 and updater.total_accepted_cases >= 41 * train_size:
-                lr_discount_41 = True
-                model.update_learning_rate()
-            if not lr_discount_61 and updater.total_accepted_cases > 61 * train_size:
-                lr_discount_61 = True
-                model.update_learning_rate()
+            if isinstance(model, CIFARModel):
+                if not lr_discount_41 and updater.total_accepted_cases >= 41 * train_size:
+                        lr_discount_41 = True
+                        model.update_learning_rate()
+                if not lr_discount_61 and updater.total_accepted_cases > 61 * train_size:
+                        lr_discount_61 = True
+                        model.update_learning_rate()
 
         message("Epoch {} of {} took {:.3f}s".format(
             epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
