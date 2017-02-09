@@ -201,12 +201,39 @@ def plot_for_paper_cifar():
         'log-cifar10-raw-NonC1.txt',
         'log-cifar10-spl-NonC1.txt',
         'log-cifar10-random_drop-speed-NonC2.txt',
+        # 'log-cifar10-raw-NonC1.txt',
+        # 'log-cifar10-raw-NonC1.txt',
         'log-cifar10-stochastic-lr-speed-NonC2Best_1.txt',
 
         dataset='cifar10',
         xmin=0,
+        xmax=150,
         ymin=0.5,
         ymax=0.95,
+        interval=1,
+        vp_size=390 * 128,
+        smooth=800,
+    )
+
+
+def plot_for_paper_c_cifar():
+    plot_for_paper_all(
+        'log-cifar10-raw-Flip1.txt',
+        # 'log-cifar10-spl-Flip1.txt',
+        'log-cifar10-raw-Flip1.txt',
+        'log-cifar10-random_drop-delta_acc-Flip2.txt',
+        # 'log-cifar10-raw-Flip1.txt',
+        'log-cifar10-stochastic-lr-delta_acc-Flip2Best_1.txt',
+        # 'log-cifar10-raw-Flip1.txt',
+
+        dataset='cifar10',
+        xmin=0,
+        xmax=100,
+        ymin=0.5,
+        ymax=0.9,
+        interval=1,
+        vp_size=390 * 128,
+        smooth=800,
     )
 
 
@@ -251,5 +278,6 @@ if __name__ == '__main__':
 
     # plot_for_paper_c_mnist()
     # plot_for_paper_mnist()
-    plot_for_paper_cifar()
+    # plot_for_paper_cifar()
+    plot_for_paper_c_cifar()
     pass

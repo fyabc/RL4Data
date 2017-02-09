@@ -286,10 +286,8 @@ def train_actor_critic_CIFAR10():
     actor.check_load()
 
     # Load the dataset
-    x_train, y_train, x_validate, y_validate, x_test, y_test = split_cifar10_data(load_cifar10_data())
-
-    message('Validation data size:', y_validate.shape[0])
-    message('Test data size:', y_test.shape[0])
+    x_train, y_train, x_validate, y_validate, x_test, y_test, \
+        train_size, validate_size, test_size = pre_process_CIFAR10_data()
 
     # Train the network
     start_episode = 1 + PolicyConfig['start_episode']
@@ -403,10 +401,6 @@ def test_policy_CIFAR10():
     # Load the dataset
     x_train, y_train, x_validate, y_validate, x_test, y_test, \
         train_size, validate_size, test_size = pre_process_CIFAR10_data()
-
-    message('Training data size:', y_train.shape[0])
-    message('Validation data size:', y_validate.shape[0])
-    message('Test data size:', y_test.shape[0])
 
     if ParamConfig['warm_start']:
         model.load_model()
