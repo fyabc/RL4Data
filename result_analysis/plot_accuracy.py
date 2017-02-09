@@ -148,6 +148,7 @@ def plot_accuracy_curve(title, style, y, vp_size, smooth, interval, maxlen, line
 
 
 def plot_for_paper_all(*filenames, **kwargs):
+    dataset = kwargs.pop('dataset', 'mnist')
     interval = kwargs.pop('interval', 5)
     vp_size = kwargs.pop('vp_size', 2500)
     maxlen = kwargs.pop('maxlen', 400)
@@ -158,7 +159,7 @@ def plot_for_paper_all(*filenames, **kwargs):
     ymin = kwargs.pop('ymin', 0.89)
     ymax = kwargs.pop('ymax', 0.96)
 
-    raw, spl, random_drop, reinforce = get_test_acc_lists(*filenames, interval=1)
+    raw, spl, random_drop, reinforce = get_test_acc_lists(*filenames, interval=1, dataset=dataset)
 
     plot_accuracy_curve(Curves[0].title, '-', random_drop, vp_size, smooth, interval, maxlen, line_width=1.0)
     plot_accuracy_curve(Curves[2].title, '--', spl, vp_size, smooth, interval, maxlen)
@@ -202,6 +203,7 @@ def plot_for_paper_cifar():
         'log-cifar10-random_drop-speed-NonC2.txt',
         'log-cifar10-stochastic-lr-speed-NonC2Best_1.txt',
 
+        dataset='cifar10',
         xmin=0,
         ymin=0.5,
         ymax=0.95,
