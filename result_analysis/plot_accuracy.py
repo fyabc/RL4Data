@@ -182,9 +182,13 @@ def plot_for_paper_mnist():
         'log-mnist-random_drop-speed-NonC3.txt',
         'log-mnist-stochastic-lr-speed-NonC3Best.txt',
 
-        xmin=0,
-        ymin=0.90,
+        xmin=65,
+        xmax=990,
+        ymin=0.91,
         ymax=0.98,
+        interval=2,
+        maxlen=600,
+        smooth=150,
     )
 
 
@@ -211,7 +215,7 @@ def plot_for_paper_cifar():
         xmax=90,
         ymin=0.5,
         ymax=0.95,
-        interval=1,
+        interval=2,
         vp_size=390 * 128,
         smooth=800,
     )
@@ -282,5 +286,5 @@ def main(args=sys.argv):
 
 
 if __name__ == '__main__':
-    main()
+    main(['-b', 'cifar10'])
     pass
