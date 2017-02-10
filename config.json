@@ -166,6 +166,11 @@
         // rb_new = (1 - rb_update_rate) * rb_old + rb_update_rate * recent_reward
         "reward_baseline_update_rate": 0.8,
 
+        // Update the policy smoothly
+        // policy_new = $(smooth_update) * policy_old + (1 - $()) * policy_current
+        // It $(smooth_update) == 0, there is not any smooth.
+        "smooth_update": 0.3,
+
         /// Actor-Critic configurations
         "actor_gamma": 1.0,
 
