@@ -459,7 +459,7 @@ VA: {}""".format(
             message("TeL: {}".format(test_loss))
         if test_acc is not None:
             message("TeA: {}".format(test_acc))
-        message("NAC: {} / {}".format(updater.total_accepted_cases, updater.total_seen_cases,))
+        message("NAC: {} / {} T".format(updater.total_accepted_cases, updater.total_seen_cases,))
 
     # Check speed rewards
     if reward_checker is not None:
