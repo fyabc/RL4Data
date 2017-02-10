@@ -208,10 +208,10 @@ def plot_for_paper_cifar():
 
         dataset='cifar10',
         xmin=0,
-        xmax=54,
+        xmax=90,
         ymin=0.5,
         ymax=0.95,
-        interval=3,
+        interval=1,
         vp_size=390 * 128,
         smooth=800,
     )
@@ -220,8 +220,8 @@ def plot_for_paper_cifar():
 def plot_for_paper_c_cifar():
     plot_for_paper_all(
         'log-cifar10-raw-Flip1.txt',
-        # 'log-cifar10-spl-Flip1.txt',
-        'log-cifar10-raw-Flip1.txt',
+        'log-cifar10-spl-Flip1.txt',
+        # 'log-cifar10-raw-Flip1.txt',
         'log-cifar10-random_drop-delta_acc-Flip2.txt',
         # 'log-cifar10-raw-Flip1.txt',
         'log-cifar10-stochastic-lr-delta_acc-Flip2Best_1.txt',
@@ -232,7 +232,7 @@ def plot_for_paper_c_cifar():
         xmax=100,
         ymin=0.5,
         ymax=0.9,
-        interval=2,
+        interval=1,
         vp_size=390 * 128,
         smooth=400,
     )
@@ -251,10 +251,10 @@ def plot_by_args(options):
     plt.show()
 
 
-def main():
+def main(args=sys.argv):
     parser = argparse.ArgumentParser(description='The test accuracy plotter')
 
-    parser.add_argument('filename', nargs='+')
+    parser.add_argument('filename', nargs='*')
     parser.add_argument('-d', '--dataset', action='store', dest='dataset', default='mnist',
                         help='The dataset (default is "mnist")')
     parser.add_argument('-i', '--interval', action='store', dest='interval', type=int, default=Interval,
@@ -265,20 +265,22 @@ def main():
                         help='The y max value (default is 0.98)')
     parser.add_argument('-X', '--xmax', action='store', dest='xmax', type=int, default=1200,
                         help='The x max value before divided by interval (default is 1200)')
+    parser.add_argument('-b', '--builtin', action='store', dest='builtin', default=None,
+                        help='Plot the builtin curve (default is None, candidates are (c)cifar10/mnist)')
 
-    options = parser.parse_args()
+    options = parser.parse_args(args)
 
-    plot_by_args(options)
+    if options.builtin is None:
+        plot_by_args(options)
+    else:
+        {
+            'mnist': plot_for_paper_mnist,
+            'c-mnist': plot_for_paper_c_mnist,
+            'cifar10': plot_for_paper_cifar,
+            'c-cifar10': plot_for_paper_c_cifar,
+        }[options.builtin]()
 
 
 if __name__ == '__main__':
-    # plot_c_mnist()
-    # plot_mnist()
-
-    # main()
-
-    # plot_for_paper_c_mnist()
-    # plot_for_paper_mnist()
-    plot_for_paper_cifar()
-    # plot_for_paper_c_cifar()
+    main()
     pass
