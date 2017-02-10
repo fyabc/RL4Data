@@ -24,7 +24,7 @@ def get_drop_number(filename, dataset='mnist'):
         result = [
             int(line.split()[-2])
             for line in f
-            if line.startswith('Number of accepted cases')
+            if line.startswith(('Number of accepted cases', 'NAC:'))
         ]
 
     return result

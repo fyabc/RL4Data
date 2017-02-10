@@ -46,8 +46,9 @@ def get_test_acc_list(filename, dataset='mnist', interval=Interval):
             results.append([
                 float(line.split()[-1])
                 for line in f
-                if line.startswith('Test accuracy:')
+                if line.startswith(('Test accuracy:', 'TeA:'))
             ])
+        # print('#', filename)
 
     result = average_list(*results)
 
@@ -207,10 +208,10 @@ def plot_for_paper_cifar():
 
         dataset='cifar10',
         xmin=0,
-        xmax=150,
+        xmax=54,
         ymin=0.5,
         ymax=0.95,
-        interval=1,
+        interval=3,
         vp_size=390 * 128,
         smooth=800,
     )
@@ -231,9 +232,9 @@ def plot_for_paper_c_cifar():
         xmax=100,
         ymin=0.5,
         ymax=0.9,
-        interval=1,
+        interval=2,
         vp_size=390 * 128,
-        smooth=800,
+        smooth=400,
     )
 
 
@@ -278,6 +279,6 @@ if __name__ == '__main__':
 
     # plot_for_paper_c_mnist()
     # plot_for_paper_mnist()
-    # plot_for_paper_cifar()
-    plot_for_paper_c_cifar()
+    plot_for_paper_cifar()
+    # plot_for_paper_c_cifar()
     pass

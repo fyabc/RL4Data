@@ -26,7 +26,7 @@ def get_reward_list(filename, dataset='mnist'):
         result = [
             float(line.split()[-1])
             for line in f
-            if line.startswith('Real cost')
+            if line.startswith(('Real cost', 'TR'))
         ]
 
     return result

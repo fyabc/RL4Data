@@ -421,24 +421,45 @@ def validate_point_message(
         test_loss = None
         test_acc = None
 
-    message("""\
-Validate Point {}: Epoch {} Iteration {} Batch {} TotalBatch {}
-Training Loss: {}
-History Training Loss: {}
-Validate Loss: {}
-Validate accuracy: {}
-Test Loss: {}
-Test accuracy: {}
-Number of accepted cases: {} of {} total""".format(
-        updater.vp_number, updater.epoch, updater.iteration, updater.epoch_train_batches, updater.total_train_batches,
-        '[NotComputed]' if train_loss is None else train_loss,
-        updater.epoch_history_train_loss / updater.epoch_train_batches,
-        validate_loss,
-        validate_acc,
-        '[NotComputed]' if test_loss is None else test_loss,
-        '[NotComputed]' if test_acc is None else test_acc,
-        updater.total_accepted_cases, updater.total_seen_cases,
-    ))
+    if False:
+        message("""\
+    Validate Point {}: Epoch {} Iteration {} Batch {} TotalBatch {}
+    Training Loss: {}
+    History Training Loss: {}
+    Validate Loss: {}
+    Validate accuracy: {}
+    Test Loss: {}
+    Test accuracy: {}
+    Number of accepted cases: {} of {} total""".format(
+            updater.vp_number, updater.epoch, updater.iteration, updater.epoch_train_batches,
+            updater.total_train_batches,
+            '[NotComputed]' if train_loss is None else train_loss,
+            updater.epoch_history_train_loss / updater.epoch_train_batches,
+            validate_loss,
+            validate_acc,
+            '[NotComputed]' if test_loss is None else test_loss,
+            '[NotComputed]' if test_acc is None else test_acc,
+            updater.total_accepted_cases, updater.total_seen_cases,
+        ))
+    else:
+        message("VP {}: E {} I {} B {} TB {}".format(
+            updater.vp_number, updater.epoch, updater.iteration, updater.epoch_train_batches,
+            updater.total_train_batches))
+        if train_loss is not None:
+            message("TL: {}".format(train_loss))
+        message("""\
+HTL: {}
+VL: {}
+VA: {}""".format(
+            updater.epoch_history_train_loss / updater.epoch_train_batches,
+            validate_loss,
+            validate_acc,
+        ))
+        if test_loss is not None:
+            message("TeL: {}".format(test_loss))
+        if test_acc is not None:
+            message("TeA: {}".format(test_acc))
+        message("NAC: {} / {}".format(updater.total_accepted_cases, updater.total_seen_cases,))
 
     # Check speed rewards
     if reward_checker is not None:
