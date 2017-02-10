@@ -292,7 +292,7 @@ def process_before_train2(args=None):
             PolicyConfig['policy_load_file'], PolicyConfig['start_episode'] = find_newest(
                 model_path, raw_name, ext, ret_number=True)
         else:
-            PolicyConfig['start_episode'] = int(episode)
+            PolicyConfig['start_episode'] = int(episode[1:])
         append = True
 
     else:
