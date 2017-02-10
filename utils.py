@@ -425,9 +425,9 @@ def validate_point_message(
         message("""\
     Validate Point {}: Epoch {} Iteration {} Batch {} TotalBatch {}
     Training Loss: {}
-    History Training Loss: {}
-    Validate Loss: {}
-    Validate accuracy: {}
+    History Training Loss: {:.6f}
+    Validate Loss: {:.6f}
+    Validate accuracy: {:.6f}
     Test Loss: {}
     Test accuracy: {}
     Number of accepted cases: {} of {} total""".format(
@@ -446,19 +446,19 @@ def validate_point_message(
             updater.vp_number, updater.epoch, updater.iteration, updater.epoch_train_batches,
             updater.total_train_batches))
         if train_loss is not None:
-            message("TL: {}".format(train_loss))
+            message("TL: {:.6f}".format(train_loss))
         message("""\
-HTL: {}
-VL: {}
-VA: {}""".format(
+HTL: {:.6f}
+VL: {:.6f}
+VA: {:.6f}""".format(
             updater.epoch_history_train_loss / updater.epoch_train_batches,
             validate_loss,
             validate_acc,
         ))
         if test_loss is not None:
-            message("TeL: {}".format(test_loss))
+            message("TeL: {:.6f}".format(test_loss))
         if test_acc is not None:
-            message("TeA: {}".format(test_acc))
+            message("TeA: {:.6f}".format(test_acc))
         message("NAC: {} / {} T".format(updater.total_accepted_cases, updater.total_seen_cases,))
 
     # Check speed rewards
