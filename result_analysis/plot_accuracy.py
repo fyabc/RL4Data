@@ -178,7 +178,7 @@ def plot_for_paper_all(*filenames, **kwargs):
 def plot_for_paper_mnist():
     plot_for_paper_all(
         'log-mnist-raw-NonC1.txt',
-        'log-mnist-spl-NonC1.txt',
+        'log-mnist-spl-NonC3.txt',
         'log-mnist-random_drop-speed-NonC3.txt',
         'log-mnist-stochastic-lr-speed-NonC3Best.txt',
 
@@ -286,5 +286,5 @@ def main(args=sys.argv):
 
 
 if __name__ == '__main__':
-    main(['-b', 'cifar10'])
+    main(['-b', 'mnist'])
     pass
