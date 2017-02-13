@@ -128,7 +128,7 @@ def plot_c_mnist():
     plt.show()
 
 
-def plot_accuracy_curve(title, style, y, vp_size, smooth, interval, maxlen, line_width=2.0):
+def plot_accuracy_curve(title, style, y, vp_size, smooth, interval, maxlen, **kwargs):
     x = range(vp_size, 1 + len(y) * vp_size, vp_size)
 
     if interval > 1:
@@ -145,7 +145,7 @@ def plot_accuracy_curve(title, style, y, vp_size, smooth, interval, maxlen, line
         x_new = x
         power_smooth = y
 
-    plt.plot(x_new, power_smooth, linewidth=line_width, label=title, linestyle=style)
+    plt.plot(x_new, power_smooth, style, label=title, **kwargs)
 
 
 def plot_for_paper_all(*filenames, **kwargs):
@@ -154,23 +154,43 @@ def plot_for_paper_all(*filenames, **kwargs):
     vp_size = kwargs.pop('vp_size', 2500)
     maxlen = kwargs.pop('maxlen', 400)
     smooth = kwargs.pop('smooth', 200)
+    spl_cfg = kwargs.pop('spl_cfg', [165])
+    speed_count = kwargs.pop('speed_count', 1)
+
+    spl_count = len(spl_cfg)
 
     xmin = kwargs.pop('xmin', 160)
     xmax = kwargs.pop('xmax', 1200)
     ymin = kwargs.pop('ymin', 0.89)
     ymax = kwargs.pop('ymax', 0.96)
 
-    raw, spl, random_drop, reinforce = get_test_acc_lists(*filenames, interval=1, dataset=dataset)
+    test_acc_lists = get_test_acc_lists(*filenames, interval=1, dataset=dataset)
+    raw = test_acc_lists[0]
+    spls = test_acc_lists[1:1 + spl_count]
+    random_drop = test_acc_lists[1 + spl_count]
+    reinforces = test_acc_lists[-speed_count:]
 
-    plot_accuracy_curve(Curves[0].title, '-', random_drop, vp_size, smooth, interval, maxlen, line_width=1.0)
-    plot_accuracy_curve(Curves[2].title, '--', spl, vp_size, smooth, interval, maxlen)
-    plot_accuracy_curve(Curves[3].title, '-', raw, vp_size, smooth, interval, maxlen, line_width=1.0)
-    plot_accuracy_curve(Curves[5].title, '-', reinforce, vp_size, smooth, interval, maxlen)
+    # These 4 lines should not be changed. The color should be fixed.
+    plot_accuracy_curve(Curves[0].title, 'b-', random_drop, vp_size, smooth, interval, maxlen, linewidth=1.0)
 
-    legend(use_ac=False)
+    plot_accuracy_curve(r'$SPL-{}$'.format(spl_cfg[0]),
+                        'g--', spls[0], vp_size, smooth, interval, maxlen, linewidth=1.5)
+    if len(spls) >= 2:
+        plot_accuracy_curve(r'$SPL-{}$'.format(spl_cfg[1]),
+                            'm--', spls[1], vp_size, smooth, interval, maxlen, linewidth=1.5)
+    if len(spls) >= 3:
+        plot_accuracy_curve(r'$SPL-{}$'.format(spl_cfg[2]),
+                            'y--', spls[2], vp_size, smooth, interval, maxlen, linewidth=1.5)
+
+    plot_accuracy_curve(Curves[3].title, 'r-', raw, vp_size, smooth, interval, maxlen, linewidth=1.0)
+    plot_accuracy_curve(Curves[5].title, 'c-', reinforces[0], vp_size, smooth, interval, maxlen, linewidth=2.0)
+
+    legend(use_ac=False, spl_count=spl_count, speed_count=speed_count)
 
     plt.xlim(xmin=xmin * vp_size, xmax=xmax * vp_size)
     plt.ylim(ymin=ymin, ymax=ymax)
+
+    plt.grid(True, axis='y', linestyle='--')
 
     plt.show()
 
@@ -178,17 +198,21 @@ def plot_for_paper_all(*filenames, **kwargs):
 def plot_for_paper_mnist():
     plot_for_paper_all(
         'log-mnist-raw-NonC1.txt',
-        'log-mnist-spl-NonC3.txt',
+        'log-mnist-spl-NonC5.txt',
+        'log-mnist-spl-NonC4.txt',
+        'log-mnist-spl-NonC6.txt',
         'log-mnist-random_drop-speed-NonC3.txt',
         'log-mnist-stochastic-lr-speed-NonC3Best.txt',
 
-        xmin=65,
-        xmax=990,
-        ymin=0.91,
-        ymax=0.98,
+        xmin=130,
+        xmax=1100,
+        ymin=0.93,
+        ymax=0.977,
         interval=2,
         maxlen=600,
         smooth=150,
+
+        spl_cfg=[80, 120, 160],
     )
 
 
@@ -212,12 +236,14 @@ def plot_for_paper_cifar():
 
         dataset='cifar10',
         xmin=0,
-        xmax=90,
+        xmax=87,
         ymin=0.5,
         ymax=0.95,
         interval=2,
         vp_size=390 * 128,
         smooth=800,
+
+        spl_cfg=[124]
     )
 
 
@@ -228,7 +254,8 @@ def plot_for_paper_c_cifar():
         # 'log-cifar10-raw-Flip1.txt',
         'log-cifar10-random_drop-delta_acc-Flip2.txt',
         # 'log-cifar10-raw-Flip1.txt',
-        'log-cifar10-stochastic-lr-delta_acc-Flip2Best_1.txt',
+        # 'log-cifar10-stochastic-lr-delta_acc-Flip2Best_1.txt',
+        'log-cifar10-stochastic-lr-speed-Flip3Best.txt',
         # 'log-cifar10-raw-Flip1.txt',
 
         dataset='cifar10',
@@ -236,9 +263,11 @@ def plot_for_paper_c_cifar():
         xmax=100,
         ymin=0.5,
         ymax=0.9,
-        interval=1,
+        interval=2,
         vp_size=390 * 128,
         smooth=400,
+
+        spl_cfg=[124],
     )
 
 
@@ -286,5 +315,5 @@ def main(args=sys.argv):
 
 
 if __name__ == '__main__':
-    main(['-b', 'mnist'])
+    main(['-b', 'c-cifar10'])
     pass

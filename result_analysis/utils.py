@@ -81,14 +81,16 @@ def init(**kwargs):
 
 def legend(**kwargs):
     use_ac = kwargs.pop('use_ac', True)
+    spl_count = kwargs.pop('spl_count', 1)
+    speed_count = kwargs.pop('speed_count', 1)
+
+    total_number = 1 + 1 + spl_count + speed_count
 
     if use_ac:
-        col = 3
-    else:
-        col = 2
+        total_number += 2
 
-    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.07),
-               fancybox=False, shadow=False, ncol=col, fontsize=20)
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.02),
+               fancybox=False, shadow=False, ncol=total_number // 2 + total_number % 2, fontsize=20)
 
 
 def plot_acc_line(k, style, xs, ys, interval=1, smooth=300):
