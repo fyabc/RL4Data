@@ -251,8 +251,9 @@ def plot_for_paper_c_cifar():
     plot_for_paper_all(
         'log-cifar10-raw-Flip1.txt',
         'log-cifar10-spl-Flip1.txt',
+        'log-cifar10-spl-Flip180.txt',
         # 'log-cifar10-raw-Flip1.txt',
-        'log-cifar10-random_drop-delta_acc-Flip2.txt',
+        'log-cifar10-random_drop-speed-Flip3.txt',
         # 'log-cifar10-raw-Flip1.txt',
         # 'log-cifar10-stochastic-lr-delta_acc-Flip2Best_1.txt',
         'log-cifar10-stochastic-lr-speed-Flip3Best.txt',
@@ -260,14 +261,14 @@ def plot_for_paper_c_cifar():
 
         dataset='cifar10',
         xmin=0,
-        xmax=100,
+        xmax=86,
         ymin=0.5,
         ymax=0.9,
         interval=2,
         vp_size=390 * 128,
         smooth=400,
 
-        spl_cfg=[124],
+        spl_cfg=[124, 180],
     )
 
 

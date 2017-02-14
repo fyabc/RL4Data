@@ -6,9 +6,9 @@ import cPickle as pkl
 
 import numpy as np
 
-from config import IMDBConfig
-from utils import fX
-from logging_utils import logging
+from config import IMDBConfig as ParamConfig
+from utils import fX, get_minibatches_idx
+from logging_utils import logging, message
 
 __author__ = 'fyabc'
 
@@ -34,7 +34,7 @@ def load_imdb_data(data_dir=None, n_words=100000, valid_portion=0.1, maxlen=None
         shuffle the train set at each epoch.
     """
 
-    data_dir = data_dir or IMDBConfig['data_dir']
+    data_dir = data_dir or ParamConfig['data_dir']
 
     import gzip
     if data_dir.endswith(".gz"):
@@ -108,7 +108,7 @@ def preprocess_imdb_data(train_data, valid_data, test_data):
     train_x, train_y = train_data
     test_x, test_y = test_data
 
-    test_size = IMDBConfig['test_size']
+    test_size = ParamConfig['test_size']
     if test_size > 0:
         # The test set is sorted by size, but we want to keep random
         # size example.  So we must select a random selection of the
@@ -120,7 +120,7 @@ def preprocess_imdb_data(train_data, valid_data, test_data):
 
     ydim = np.max(train_y) + 1
 
-    IMDBConfig['ydim'] = ydim
+    ParamConfig['ydim'] = ydim
 
     return train_data, valid_data, test_data
 
@@ -200,6 +200,47 @@ def test():
     print('Test:', test_x.shape, test_y.shape)
 
     print(sum(train_y), sum(valid_y), sum(test_y))
+    
+
+def pre_process_IMDB_data():
+    # Loading data
+    train_data, valid_data, test_data = load_imdb_data(n_words=ParamConfig['n_words'],
+                                                       valid_portion=ParamConfig['valid_portion'],
+                                                       maxlen=ParamConfig['maxlen'])
+    train_data, valid_data, test_data = preprocess_imdb_data(train_data, valid_data, test_data)
+
+    train_x, train_y = train_data
+    valid_x, valid_y = valid_data
+    test_x, test_y = test_data
+
+    train_size = len(train_x)
+    valid_size = len(valid_x)
+    test_size = len(test_x)
+
+    message('Training data size:', train_size)
+    message('Validation data size:', valid_size)
+    message('Test data size:', test_size)
+
+    return train_x, train_y, valid_x, valid_y, test_x, test_y, train_size, valid_size, test_size
+
+
+def pre_process_config(model, train_size, valid_size, test_size):
+    kf_valid = get_minibatches_idx(valid_size, model.validate_batch_size)
+    kf_test = get_minibatches_idx(test_size, model.validate_batch_size)
+
+    valid_freq = ParamConfig['valid_freq']
+    if valid_freq == -1:
+        valid_freq = train_size // model.train_batch_size
+
+    save_freq = ParamConfig['save_freq']
+    if save_freq == -1:
+        save_freq = train_size // model.train_batch_size
+
+    display_freq = ParamConfig['display_freq']
+    save_to = ParamConfig['save_to']
+    patience = ParamConfig['patience']
+
+    return kf_valid, kf_test, valid_freq, save_freq, display_freq, save_to, patience
 
 
 if __name__ == '__main__':

@@ -10,55 +10,14 @@ from critic_network import CriticNetwork
 from model_IMDB import IMDBModel
 from policy_network import PolicyNetworkBase
 from utils import *
-from utils_IMDB import load_imdb_data, preprocess_imdb_data
+from utils_IMDB import pre_process_IMDB_data, pre_process_config
 from utils_IMDB import prepare_imdb_data as prepare_data
+from batch_updater import *
 
 __author__ = 'fyabc'
 
 
 # TODO: Change code into updaters
-
-
-def pre_process_data():
-    # Loading data
-    train_data, valid_data, test_data = load_imdb_data(n_words=ParamConfig['n_words'],
-                                                       valid_portion=ParamConfig['valid_portion'],
-                                                       maxlen=ParamConfig['maxlen'])
-    train_data, valid_data, test_data = preprocess_imdb_data(train_data, valid_data, test_data)
-
-    train_x, train_y = train_data
-    valid_x, valid_y = valid_data
-    test_x, test_y = test_data
-
-    train_size = len(train_x)
-    valid_size = len(valid_x)
-    test_size = len(test_x)
-
-    message("{} train examples".format(train_size))
-    message("{} valid examples".format(valid_size))
-    message("{} test examples".format(test_size))
-
-    return train_x, train_y, valid_x, valid_y, test_x, test_y, \
-        train_size, valid_size, test_size
-
-
-def pre_process_config(model, train_size, valid_size, test_size):
-    kf_valid = get_minibatches_idx(valid_size, model.validate_batch_size)
-    kf_test = get_minibatches_idx(test_size, model.validate_batch_size)
-
-    valid_freq = ParamConfig['valid_freq']
-    if valid_freq == -1:
-        valid_freq = train_size // model.train_batch_size
-
-    save_freq = ParamConfig['save_freq']
-    if save_freq == -1:
-        save_freq = train_size // model.train_batch_size
-
-    display_freq = ParamConfig['display_freq']
-    save_to = ParamConfig['save_to']
-    patience = ParamConfig['patience']
-
-    return kf_valid, kf_test, valid_freq, save_freq, display_freq, save_to, patience
 
 
 def save_parameters(model, best_parameters, save_to, history_errs):
@@ -101,7 +60,7 @@ def test_and_post_process(model,
 def train_raw_IMDB():
     # Loading data
     train_x, train_y, valid_x, valid_y, test_x, test_y, \
-        train_size, valid_size, test_size = pre_process_data()
+        train_size, valid_size, test_size = pre_process_IMDB_data()
 
     # Building model
     model = IMDBModel(ParamConfig['reload_model'])
@@ -125,77 +84,77 @@ def train_raw_IMDB():
     total_n_samples = 0
 
     for epoch in range(ParamConfig['epoch_per_episode']):
-            print('[Epoch {}]'.format(epoch))
-            message('[Epoch {}]'.format(epoch))
+        print('[Epoch {}]'.format(epoch))
+        message('[Epoch {}]'.format(epoch))
 
-            n_samples = 0
+        n_samples = 0
 
-            # Get new shuffled index for the training set.
-            kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
+        # Get new shuffled index for the training set.
+        kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
 
-            for _, train_index in kf:
-                update_index += 1
-                model.use_noise.set_value(floatX(1.))
+        for _, train_index in kf:
+            update_index += 1
+            model.use_noise.set_value(floatX(1.))
 
-                # Select the random examples for this minibatch
-                x = [train_x[t] for t in train_index]
-                y = [train_y[t] for t in train_index]
+            # Select the random examples for this minibatch
+            x = [train_x[t] for t in train_index]
+            y = [train_y[t] for t in train_index]
 
-                # Get the data in numpy.ndarray format
-                # This swap the axis!
-                # Return something of shape (minibatch maxlen, n samples)
-                x, mask, y = prepare_data(x, np.asarray(y, dtype='int64'))
+            # Get the data in numpy.ndarray format
+            # This swap the axis!
+            # Return something of shape (minibatch maxlen, n samples)
+            x, mask, y = prepare_data(x, np.asarray(y, dtype='int64'))
 
-                n_samples += x.shape[1]
-                total_n_samples += x.shape[1]
+            n_samples += x.shape[1]
+            total_n_samples += x.shape[1]
 
-                cost = model.f_train(x, mask, y)
+            cost = model.f_train(x, mask, y)
 
-                history_train_costs.append(cost)
+            history_train_costs.append(cost)
 
-                if cost is not None and (np.isnan(cost) or np.isinf(cost)):
-                    message('bad cost detected: ', cost)
-                    return 1., 1., 1.
+            if cost is not None and (np.isnan(cost) or np.isinf(cost)):
+                message('bad cost detected: ', cost)
+                return 1., 1., 1.
 
-                if update_index % display_freq == 0:
-                    message('Epoch ', epoch, 'Update ', update_index, 'Cost ', cost)
+            if update_index % display_freq == 0:
+                message('Epoch ', epoch, 'Update ', update_index, 'Cost ', cost)
 
-                if save_to and update_index % save_freq == 0:
-                    save_parameters(model, best_parameters, save_to, history_errs)
+            if save_to and update_index % save_freq == 0:
+                save_parameters(model, best_parameters, save_to, history_errs)
 
-                if update_index % ParamConfig['train_loss_freq'] == 0:
-                    train_loss = model.get_training_loss(train_x, train_y)
-                    message('Training Loss:', train_loss)
-                    valid_loss = model.get_training_loss(valid_x, valid_y)
-                    message('Validate Loss:', valid_loss)
-                    test_loss = model.get_training_loss(test_x, test_y)
-                    message('Test Loss:', test_loss)
+            if update_index % ParamConfig['train_loss_freq'] == 0:
+                train_loss = model.get_training_loss(train_x, train_y)
+                message('Training Loss:', train_loss)
+                valid_loss = model.get_training_loss(valid_x, valid_y)
+                message('Validate Loss:', valid_loss)
+                test_loss = model.get_training_loss(test_x, test_y)
+                message('Test Loss:', test_loss)
 
-                if update_index % valid_freq == 0:
-                    model.use_noise.set_value(0.)
-                    valid_err = model.predict_error(valid_x, valid_y, kf_valid)
-                    test_err = model.predict_error(test_x, test_y, kf_test)
+            if update_index % valid_freq == 0:
+                model.use_noise.set_value(0.)
+                valid_err = model.predict_error(valid_x, valid_y, kf_valid)
+                test_err = model.predict_error(test_x, test_y, kf_test)
 
-                    history_errs.append([valid_err, test_err])
+                history_errs.append([valid_err, test_err])
 
-                    if best_parameters is None or valid_err <= np.array(history_errs)[:, 0].min():
-                        best_parameters = model.get_parameter_values()
-                        bad_counter = 0
+                if best_parameters is None or valid_err <= np.array(history_errs)[:, 0].min():
+                    best_parameters = model.get_parameter_values()
+                    bad_counter = 0
 
-                    message('Train', 0.00, 'Valid', valid_err, 'Test', test_err,
-                            'Total_samples', total_n_samples)
+                message('Train', 0.00, 'Valid', valid_err, 'Test', test_err,
+                        'Total_samples', total_n_samples)
 
-                    if len(history_errs) > patience and valid_err >= np.array(history_errs)[:-patience, 0].min():
-                        bad_counter += 1
-                        if bad_counter > patience:
-                            message('Early Stop!')
-                            early_stop = True
-                            break
+                if len(history_errs) > patience and valid_err >= np.array(history_errs)[:-patience, 0].min():
+                    bad_counter += 1
+                    if bad_counter > patience:
+                        message('Early Stop!')
+                        early_stop = True
+                        break
 
-            message('Seen %d samples' % n_samples)
+        message('Seen %d samples' % n_samples)
 
-            if early_stop:
-                break
+        if early_stop:
+            break
 
     end_time = time.time()
 
@@ -207,10 +166,59 @@ def train_raw_IMDB():
                           save_to)
 
 
+def train_raw_IMDB2():
+    model = IMDBModel()
+
+    # Loading data
+    x_train, y_train, x_validate, y_validate, x_test, y_test, \
+        train_size, valid_size, test_size = pre_process_IMDB_data()
+
+    # Loading configure settings
+    kf_valid, kf_test, \
+        valid_freq, save_freq, display_freq, \
+        save_to, patience = pre_process_config(model, train_size, valid_size, test_size)
+
+    updater = RawUpdater(model, [x_train, y_train], prepare_data=prepare_data)
+
+    # Train the network
+    # Some variables
+    # To prevent the double validate point
+    last_validate_point = -1
+
+    best_validate_acc = -np.inf
+    best_iteration = 0
+    test_score = 0.0
+    start_time = time.time()
+
+    for epoch in range(ParamConfig['epoch_per_episode']):
+        epoch_start_time = start_new_epoch(updater, epoch)
+
+        kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
+
+        for _, train_index in kf:
+            model.use_noise.set_value(floatX(1.))
+            part_train_cost = updater.add_batch(train_index)
+
+            if updater.total_train_batches > 0 and \
+                    updater.total_train_batches != last_validate_point and \
+                    updater.total_train_batches % ParamConfig['valid_freq'] == 0:
+                last_validate_point = updater.total_train_batches
+                validate_acc, test_acc = validate_point_message(
+                    model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater,
+                    # validate_size=validate_size,  # Use part validation set in baseline
+                    run_test=True,
+                )
+
+                if validate_acc > best_validate_acc:
+                    best_validate_acc = validate_acc
+                    best_iteration = updater.iteration
+                    test_score = test_acc
+
+
 def train_SPL_IMDB():
     # Loading data
     train_x, train_y, valid_x, valid_y, test_x, test_y, \
-        train_size, valid_size, test_size = pre_process_data()
+        train_size, valid_size, test_size = pre_process_IMDB_data()
 
     # Building model
     model = IMDBModel(ParamConfig['reload_model'])
@@ -365,7 +373,7 @@ def train_SPL_IMDB():
 def train_policy_IMDB():
     # Loading data
     train_x, train_y, valid_x, valid_y, test_x, test_y, \
-        train_size, valid_size, test_size = pre_process_data()
+        train_size, valid_size, test_size = pre_process_IMDB_data()
 
     # Building model
     model = IMDBModel(ParamConfig['reload_model'])
@@ -534,7 +542,7 @@ def train_policy_IMDB():
 def train_actor_critic_IMDB():
     # Loading data
     train_x, train_y, valid_x, valid_y, test_x, test_y, \
-        train_size, valid_size, test_size = pre_process_data()
+        train_size, valid_size, test_size = pre_process_IMDB_data()
 
     # Building model
     model = IMDBModel(ParamConfig['reload_model'])
@@ -717,7 +725,7 @@ def train_actor_critic_IMDB():
 def test_policy_IMDB():
     # Loading data
     train_x, train_y, valid_x, valid_y, test_x, test_y, \
-        train_size, valid_size, test_size = pre_process_data()
+        train_size, valid_size, test_size = pre_process_IMDB_data()
 
     # Building model
     model = IMDBModel(ParamConfig['reload_model'])

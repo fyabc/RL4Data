@@ -58,9 +58,9 @@ def train_raw_MNIST():
                 if validate_acc > best_validate_acc:
                     # improve patience if loss improvement is good enough
                     if (1. - validate_acc) < (1. - best_validate_acc) * improvement_threshold:
-                        patience = max(patience, updater.iteration * patience_increase)
+                        patience = max(patience, updater.total_train_batches * patience_increase)
                     best_validate_acc = validate_acc
-                    best_iteration = updater.iteration
+                    best_iteration = updater.total_train_batches
                     test_score = test_acc
 
             if updater.total_train_batches >= patience:
@@ -68,7 +68,7 @@ def train_raw_MNIST():
 
         message("Epoch {} of {} took {:.3f}s".format(
             epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
-        if updater.iteration >= patience:
+        if updater.total_train_batches >= patience:
             break
 
     episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
@@ -117,13 +117,13 @@ def train_SPL_MNIST():
                     model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater,
                     run_test=True,
                 )
-                
+
                 if validate_acc > best_validate_acc:
                     # improve patience if loss improvement is good enough
                     if (1. - validate_acc) < (1. - best_validate_acc) * improvement_threshold:
-                        patience = max(patience, updater.iteration * patience_increase)
+                        patience = max(patience, updater.total_train_batches * patience_increase)
                     best_validate_acc = validate_acc
-                    best_iteration = updater.iteration
+                    best_iteration = updater.total_train_batches
                     test_score = test_acc
 
             if updater.total_train_batches >= patience:
@@ -131,7 +131,7 @@ def train_SPL_MNIST():
 
         message("Epoch {} of {} took {:.3f}s".format(
             epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
-        if updater.iteration >= patience:
+        if updater.total_train_batches >= patience:
             break
 
     episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
@@ -209,9 +209,9 @@ def train_policy_MNIST():
                     if validate_acc > best_validate_acc:
                         # improve patience if loss improvement is good enough
                         if (1. - validate_acc) < (1. - best_validate_acc) * improvement_threshold:
-                            patience = max(patience, updater.iteration * patience_increase)
+                            patience = max(patience, updater.total_train_batches * patience_increase)
                         best_validate_acc = validate_acc
-                        best_iteration = updater.iteration
+                        best_iteration = updater.total_train_batches
                         test_score = test_acc
 
                 if updater.total_train_batches >= patience:
@@ -220,7 +220,7 @@ def train_policy_MNIST():
             message("Epoch {} of {} took {:.3f}s".format(
                 epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
 
-            if updater.iteration >= patience:
+            if updater.total_train_batches >= patience:
                 break
 
         episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
@@ -338,9 +338,9 @@ def train_actor_critic_MNIST():
                     if validate_acc > best_validate_acc:
                         # improve patience if loss improvement is good enough
                         if (1. - validate_acc) < (1. - best_validate_acc) * improvement_threshold:
-                            patience = max(patience, updater.iteration * patience_increase)
+                            patience = max(patience, updater.total_train_batches * patience_increase)
                         best_validate_acc = validate_acc
-                        best_iteration = updater.iteration
+                        best_iteration = updater.total_train_batches
                         test_score = test_acc
 
                 if updater.total_train_batches >= patience:
@@ -416,9 +416,9 @@ def test_policy_MNIST():
                 if validate_acc > best_validate_acc:
                     # improve patience if loss improvement is good enough
                     if (1. - validate_acc) < (1. - best_validate_acc) * improvement_threshold:
-                        patience = max(patience, updater.iteration * patience_increase)
+                        patience = max(patience, updater.total_train_batches * patience_increase)
                     best_validate_acc = validate_acc
-                    best_iteration = updater.iteration
+                    best_iteration = updater.total_train_batches
                     test_score = test_acc
 
             if updater.total_train_batches >= patience:
@@ -426,7 +426,7 @@ def test_policy_MNIST():
 
         message("Epoch {} of {} took {:.3f}s".format(
             epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
-        if updater.iteration >= patience:
+        if updater.total_train_batches >= patience:
             break
 
     episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
