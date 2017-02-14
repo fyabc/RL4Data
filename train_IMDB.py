@@ -211,7 +211,7 @@ def train_raw_IMDB2():
 
                 if validate_acc > best_validate_acc:
                     best_validate_acc = validate_acc
-                    best_iteration = updater.iteration
+                    best_iteration = updater.total_train_batches
                     test_score = test_acc
 
 

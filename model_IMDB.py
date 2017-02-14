@@ -153,11 +153,24 @@ class IMDBModelBase(object):
 
         return np.hstack(to_be_stacked)
 
+    def validate_or_test(self, x_test, y_test):
+        test_err = 0.0
+        test_acc = 0.0
+        kf = get_minibatches_idx(len(y_test), self.train_batch_size, shuffle=False)
+
+        for _, test_index in kf:
+            inputs = x_test[test_index]
+            targets = y_test[test_index]
+
+            # todo: add f_validate
+            err, acc = self.f_validate(inputs, targets)
+            test_err += err
+            test_acc += acc
+
+        return test_err, test_acc, len(kf)
+
 
 class IMDBModel(IMDBModelBase):
-
-    output_size = 2
-
     def __init__(self,
                  reload_model=False,
                  train_batch_size=None,

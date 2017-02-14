@@ -69,6 +69,7 @@ def train_raw_MNIST():
         message("Epoch {} of {} took {:.3f}s".format(
             epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
         if updater.total_train_batches >= patience:
+            message('Early Stop!')
             break
 
     episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
@@ -132,6 +133,7 @@ def train_SPL_MNIST():
         message("Epoch {} of {} took {:.3f}s".format(
             epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
         if updater.total_train_batches >= patience:
+            message('Early Stop!')
             break
 
     episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
@@ -221,6 +223,7 @@ def train_policy_MNIST():
                 epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
 
             if updater.total_train_batches >= patience:
+                message('Early Stop!')
                 break
 
         episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
@@ -349,6 +352,7 @@ def train_actor_critic_MNIST():
             message("Epoch {} of {} took {:.3f}s".format(
                 epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
             if updater.total_train_batches >= patience:
+                message('Early Stop!')
                 break
 
         episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
@@ -427,6 +431,7 @@ def test_policy_MNIST():
         message("Epoch {} of {} took {:.3f}s".format(
             epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
         if updater.total_train_batches >= patience:
+            message('Early Stop!')
             break
 
     episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
