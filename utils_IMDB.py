@@ -213,6 +213,13 @@ def pre_process_IMDB_data():
     valid_x, valid_y = valid_data
     test_x, test_y = test_data
 
+    train_x = np.asarray(train_x)
+    train_y = np.asarray(train_y)
+    valid_x = np.asarray(valid_x)
+    valid_y = np.asarray(valid_y)
+    test_x = np.asarray(test_x)
+    test_y = np.asarray(test_y)
+
     train_size = len(train_x)
     valid_size = len(valid_x)
     test_size = len(test_x)

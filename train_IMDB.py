@@ -167,11 +167,12 @@ def train_raw_IMDB():
 
 
 def train_raw_IMDB2():
-    model = IMDBModel()
-
     # Loading data
+    # [NOTE] This must before the build of model, because the ParamConfig['ydim'] should be set.
     x_train, y_train, x_validate, y_validate, x_test, y_test, \
         train_size, valid_size, test_size = pre_process_IMDB_data()
+
+    model = IMDBModel()
 
     # Loading configure settings
     kf_valid, kf_test, \
@@ -872,7 +873,7 @@ def new_train_IMDB():
     pass
 
 
-def main(args=None):
+def main2(args=None):
     process_before_train(args, ParamConfig)
 
     try:
@@ -898,9 +899,9 @@ def main(args=None):
         process_after_train()
         
         
-def main2():
+def main():
     dataset_main({
-        'raw': train_raw_IMDB,
+        'raw': train_raw_IMDB2,
         'self_paced': train_SPL_IMDB,
         'spl': train_SPL_IMDB,
 

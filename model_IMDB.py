@@ -21,7 +21,6 @@ __author__ = 'fyabc'
 
 
 class IMDBModelBase(object):
-
     output_size = 2
 
     def __init__(self,
@@ -38,6 +37,8 @@ class IMDBModelBase(object):
         self.f_cost_list_without_decay = None
         self.f_cost_without_decay = None
         self.f_cost = None
+
+        self.f_validate = None
 
     def reset_parameters(self):
         pass
@@ -162,8 +163,9 @@ class IMDBModelBase(object):
             inputs = x_test[test_index]
             targets = y_test[test_index]
 
-            # todo: add f_validate
-            err, acc = self.f_validate(inputs, targets)
+            x, mask, y = prepare_data(inputs, targets, maxlen=None)
+
+            err, acc = self.f_validate(x, mask, y)
             test_err += err
             test_acc += acc
 
@@ -320,12 +322,12 @@ class IMDBModel(IMDBModelBase):
 
         if ParamConfig['use_dropout']:
             proj = self.dropout_layer(proj, self.use_noise, trng)
-            
+
         predict = T.nnet.softmax(T.dot(proj, self.parameters['U']) + self.parameters['b'])
 
         self.f_probs = theano.function([self.inputs, self.mask], predict, name='f_pred_prob')
         self.f_predict = theano.function([self.inputs, self.mask], predict.argmax(axis=1), name='f_pred')
-    
+
         off = 1e-8
         if predict.dtype == 'float16':
             off = 1e-6
@@ -334,7 +336,7 @@ class IMDBModel(IMDBModelBase):
         self.f_cost_list_without_decay = theano.function(
             [self.inputs, self.mask, self.targets], cost_list, name='f_cost_list_without_decay'
         )
-    
+
         cost = cost_list.mean()
 
         self.f_cost_without_decay = theano.function(
@@ -357,6 +359,13 @@ class IMDBModel(IMDBModelBase):
         lr = T.scalar('lr', dtype=fX)
         self.f_grad_shared, self.f_update = eval(ParamConfig['optimizer'])(
             lr, self.parameters, grads, [self.inputs, self.mask, self.targets], cost)
+
+        # Build validate function.
+        test_acc = T.mean(T.eq(T.argmax(predict, axis=1), self.targets), dtype=theano.config.floatX)
+        self.f_validate = theano.function([self.inputs, self.mask, self.targets], [cost, test_acc])
+
+    def build_validate_funcion(self):
+        pass
 
     def f_train(self, x, mask, y):
         if x.shape[1] == 0:

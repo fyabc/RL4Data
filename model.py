@@ -12,3 +12,6 @@ class ModelBase(object):
 
     def build_validate_function(self):
         raise NotImplementedError()
+
+    def validate_or_test(self, x_test, y_test):
+        raise NotImplementedError()
