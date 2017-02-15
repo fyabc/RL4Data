@@ -271,7 +271,7 @@
         "use_dropout": true,
 
         "save_to": false, //"./data/imdb/lstm_model.npz",
-        "valid_freq": 370,
+        "valid_freq": 370,  // Change the default value to 100?
         "save_freq": 1110,
         "train_loss_freq": 370
     },

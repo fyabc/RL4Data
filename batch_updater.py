@@ -134,7 +134,6 @@ class BatchUpdater(object):
 
         # Get x[], mask[], y[], ..., then prepare them
         selected_batch_data = [data[self.last_update_batch_index] for data in self.all_data]
-        selected_batch_data = self.prepare_data(*selected_batch_data)
 
         if Config['temp_job'] == 'check_selected_data_label':
             selected_batch_label = selected_batch_data[-1]
@@ -143,7 +142,9 @@ class BatchUpdater(object):
                 self.epoch_label_count[i] += count_i
                 self.total_label_count[i] += count_i
 
-        part_train_cost = self.model.f_train(*selected_batch_data)
+        # [NOTE] Prepared data may swap the axis (in IMDB)!
+        p_selected_batch_data = self.prepare_data(*selected_batch_data)
+        part_train_cost = self.model.f_train(*p_selected_batch_data)
 
         if np.isinf(part_train_cost) or np.isnan(part_train_cost):
             raise OverflowError('NaN detected at epoch {} case {}'.format(self.epoch, self.epoch_accepted_cases))

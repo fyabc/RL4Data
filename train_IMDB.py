@@ -202,11 +202,11 @@ def train_raw_IMDB2():
 
             if updater.total_train_batches > 0 and \
                     updater.total_train_batches != last_validate_point and \
-                    updater.total_train_batches % ParamConfig['valid_freq'] == 0:
+                    updater.total_train_batches % valid_freq == 0:
                 last_validate_point = updater.total_train_batches
                 validate_acc, test_acc = validate_point_message(
                     model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater,
-                    # validate_size=validate_size,  # Use part validation set in baseline
+                    validate_size=valid_size,  # Use part validation set in baseline
                     run_test=True,
                 )
 
