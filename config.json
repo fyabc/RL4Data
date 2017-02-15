@@ -66,6 +66,7 @@
     //     "log_data": log the number of selected data in each corrupt part
     //     "check_selected_data_label": log the number of selected data in each label
     //     "check_part_loss": check the loss and margin of different parts in corrupted data
+    //     "log_dropped_data": log the features of dropped data (only used in test policy process)
     "temp_job": "",
 
     // Get filtered data?

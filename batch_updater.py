@@ -5,6 +5,7 @@ from __future__ import print_function, unicode_literals
 
 from collections import deque
 import heapq
+from itertools import izip
 
 import numpy as np
 
@@ -194,7 +195,7 @@ class BatchUpdater(object):
                 cost_list = self.model.f_cost_list_without_decay(*selected_batch_data)
             else:
                 cost_list = [0.0 for _ in indices]
-            for idx, loss in zip(indices, cost_list):
+            for idx, loss in izip(indices, cost_list):
                 self.add_index(idx, loss)
 
     # Only for temp_job:"log_data"
@@ -385,6 +386,13 @@ class TestPolicyUpdater(BatchUpdater):
         action = self.policy.take_action(probability, False)
 
         result = [index for i, index in enumerate(batch_index) if action[i]]
+
+        # todo: log features of dropped data here
+        if Config['temp_job'] == 'log_dropped_data':
+            # [NOTE] Just log rank now.
+            for a, p in izip(action, probability):
+                if not a:
+                    print('$', p)
 
         self.add_index_list(result)
 
