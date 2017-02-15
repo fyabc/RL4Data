@@ -81,7 +81,7 @@ def train_raw_CIFAR10():
 
             # Log training loss of each batch in test process
             if part_train_cost is not None:
-                message("tL {}: {:.6f}".format(updater.epoch_train_batches, part_train_cost))
+                message("tL {}: {:.6f}".format(updater.epoch_train_batches, part_train_cost.tolist()))
 
             if updater.total_train_batches > 0 and \
                     updater.total_train_batches != last_validate_point and \
@@ -153,7 +153,7 @@ def train_SPL_CIFAR10():
 
             # Log training loss of each batch in test process
             if part_train_cost is not None:
-                message("tL {}: {:.6f}".format(updater.epoch_train_batches, part_train_cost))
+                message("tL {}: {:.6f}".format(updater.epoch_train_batches, part_train_cost.tolist()))
 
             if updater.total_train_batches > 0 and \
                     updater.total_train_batches != last_validate_point and \
@@ -449,7 +449,7 @@ def test_policy_CIFAR10():
 
             # Log training loss of each batch in test process
             if part_train_cost is not None:
-                message("tL {}: {:.6f}".format(updater.epoch_train_batches, part_train_cost))
+                message("tL {}: {:.6f}".format(updater.epoch_train_batches, part_train_cost.tolist()))
 
             if updater.total_train_batches > 0 and \
                     updater.total_train_batches != last_validate_point and \

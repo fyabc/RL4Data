@@ -242,9 +242,9 @@ class BatchUpdater(object):
                 for _ in range(SampleBatchNumber):
                     sample_batch_idx = np.random.choice(class_range, self.batch_size)
                     sample_batch_data = [data[sample_batch_idx] for data in self.all_data]
-                    sample_batch_data = self.prepare_data(*sample_batch_data)
+                    p_sample_batch_data = self.prepare_data(*sample_batch_data)
 
-                    features = self.model.get_policy_input(*(sample_batch_data + (self, self.history_accuracy)))
+                    features = self.model.get_policy_input(*(p_sample_batch_data + (self, self.history_accuracy)))
                     to_be_stacked.append(features)
 
                 all_features = np.hstack(to_be_stacked)
