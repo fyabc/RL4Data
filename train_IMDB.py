@@ -18,6 +18,11 @@ __author__ = 'fyabc'
 
 
 # TODO: Change code into updaters
+# raw: Done
+# spl: X
+# REINFORCE: X
+# A-C: X
+# Test: X
 
 
 def save_parameters(model, best_parameters, save_to, history_errs):

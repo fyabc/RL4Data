@@ -255,9 +255,9 @@
 
         // These are original settings
         "test_size": 5000,
-        "valid_portion": 0.05,
+        "valid_portion": 0.1,
         "n_words": 10000,
-        "maxlen": null,
+        "maxlen": 1000,
         "dim_proj": 128,
         "patience": 10,
         "display_freq": 10,
@@ -265,13 +265,13 @@
         "learning_rate": 0.0001,
         "train_batch_size": 16,
         "validate_batch_size": 64,
-        "optimizer": "adam",
+        "optimizer": "adadelta",
         "noise_std": 0.0,
         "reload_model": false,
         "use_dropout": true,
 
         "save_to": false, //"./data/imdb/lstm_model.npz",
-        "valid_freq": 370,  // Change the default value to 100?
+        "valid_freq": 100,  // Change the default value to 100?
         "save_freq": 1110,
         "train_loss_freq": 370
     },

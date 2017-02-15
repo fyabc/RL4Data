@@ -100,6 +100,17 @@ model/
 # log
 log/
 
+# Some stub files
+!/data/cifar10/stub.txt
+!/data/imdb/stub.txt
+!/data/mnist/stub.txt
+!/model/cifar10/stub.txt
+!/model/imdb/stub.txt
+!/model/mnist/stub.txt
+!/log/cifar10/stub.txt
+!/log/imdb/stub.txt
+!/log/mnist/stub.txt
+
 # numpy saved models
 *.npz
 

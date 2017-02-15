@@ -237,7 +237,7 @@ def plot_for_paper_cifar():
         dataset='cifar10',
         xmin=0,
         xmax=87,
-        ymin=0.5,
+        ymin=0.6,
         ymax=0.95,
         interval=2,
         vp_size=390 * 128,
@@ -262,13 +262,33 @@ def plot_for_paper_c_cifar():
         dataset='cifar10',
         xmin=0,
         xmax=86,
-        ymin=0.5,
+        ymin=0.6,
         ymax=0.9,
         interval=2,
         vp_size=390 * 128,
         smooth=400,
 
         spl_cfg=[124, 180],
+    )
+
+
+def plot_for_paper_imdb():
+    plot_for_paper_all(
+        'log-imdb-raw-NonC1.txt',
+        'log-imdb-raw-NonC1Adam.txt',
+        'log-imdb-raw-NonC1.txt',
+        'log-imdb-raw-NonC1.txt',
+
+        dataset='imdb',
+        xmin=0,
+        xmax=86,
+        ymin=0.45,
+        ymax=0.9,
+        interval=1,
+        vp_size=50 * 16,
+        smooth=400,
+
+        spl_cfg=[160],
     )
 
 
@@ -282,10 +302,12 @@ def plot_by_args(options):
 
     plt.legend(loc='lower right')
 
+    plt.grid(True, axis='y', linestyle='--')
+
     plt.show()
 
 
-def main(args=sys.argv):
+def main(args=None):
     parser = argparse.ArgumentParser(description='The test accuracy plotter')
 
     parser.add_argument('filename', nargs='*')
@@ -312,9 +334,11 @@ def main(args=sys.argv):
             'c-mnist': plot_for_paper_c_mnist,
             'cifar10': plot_for_paper_cifar,
             'c-cifar10': plot_for_paper_c_cifar,
+            'imdb': plot_for_paper_imdb,
         }[options.builtin]()
 
 
 if __name__ == '__main__':
     main(['-b', 'c-cifar10'])
+    # main()
     pass
