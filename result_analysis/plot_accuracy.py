@@ -171,19 +171,19 @@ def plot_for_paper_all(*filenames, **kwargs):
     reinforces = test_acc_lists[-speed_count:]
 
     # These 4 lines should not be changed. The color should be fixed.
-    plot_accuracy_curve(Curves[0].title, 'b-', random_drop, vp_size, smooth, interval, maxlen, linewidth=1.0)
+    plot_accuracy_curve(Curves[0].title, 'b-', random_drop, vp_size, smooth, interval, maxlen, linewidth=2.5)
 
     plot_accuracy_curve(r'$SPL-{}$'.format(spl_cfg[0]),
-                        'g--', spls[0], vp_size, smooth, interval, maxlen, linewidth=1.5)
+                        'g--', spls[0], vp_size, smooth, interval, maxlen, linewidth=2.5)
     if len(spls) >= 2:
         plot_accuracy_curve(r'$SPL-{}$'.format(spl_cfg[1]),
-                            'm--', spls[1], vp_size, smooth, interval, maxlen, linewidth=1.5)
+                            'm--', spls[1], vp_size, smooth, interval, maxlen, linewidth=2.5)
     if len(spls) >= 3:
         plot_accuracy_curve(r'$SPL-{}$'.format(spl_cfg[2]),
-                            'y--', spls[2], vp_size, smooth, interval, maxlen, linewidth=1.5)
+                            'y--', spls[2], vp_size, smooth, interval, maxlen, linewidth=2.5)
 
-    plot_accuracy_curve(Curves[3].title, 'r-', raw, vp_size, smooth, interval, maxlen, linewidth=1.0)
-    plot_accuracy_curve(Curves[5].title, 'c-', reinforces[0], vp_size, smooth, interval, maxlen, linewidth=2.0)
+    plot_accuracy_curve(Curves[3].title, 'r-', raw, vp_size, smooth, interval, maxlen, linewidth=2.5)
+    plot_accuracy_curve(Curves[5].title, 'c-', reinforces[0], vp_size, smooth, interval, maxlen, linewidth=2.5)
 
     legend(use_ac=False, spl_count=spl_count, speed_count=speed_count)
 
@@ -210,7 +210,7 @@ def plot_for_paper_mnist():
         ymax=0.977,
         interval=2,
         maxlen=600,
-        smooth=150,
+        smooth=800,
 
         spl_cfg=[80, 120, 160],
     )
@@ -239,7 +239,7 @@ def plot_for_paper_cifar():
         xmax=87,
         ymin=0.6,
         ymax=0.95,
-        interval=2,
+        interval=1,
         vp_size=390 * 128,
         smooth=800,
 
@@ -264,7 +264,7 @@ def plot_for_paper_c_cifar():
         xmax=86,
         ymin=0.6,
         ymax=0.9,
-        interval=2,
+        interval=1,
         vp_size=390 * 128,
         smooth=400,
 
@@ -339,6 +339,6 @@ def main(args=None):
 
 
 if __name__ == '__main__':
-    main(['-b', 'c-cifar10'])
+    main(['-b', 'cifar10'])
     # main()
     pass

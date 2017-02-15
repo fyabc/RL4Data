@@ -45,6 +45,10 @@ def train_raw_MNIST():
         for _, train_index in kf:
             part_train_cost = updater.add_batch(train_index)
 
+            # Log training loss of each batch in test process
+            if part_train_cost is not None:
+                message("tL {}: {:.6f}".format(updater.epoch_train_batches, part_train_cost))
+
             if updater.total_train_batches > 0 and \
                     updater.total_train_batches != last_validate_point and \
                     updater.total_train_batches % validation_frequency == 0:
@@ -108,6 +112,10 @@ def train_SPL_MNIST():
 
         for _, train_index in kf:
             part_train_cost = updater.add_batch(train_index)
+
+            # Log training loss of each batch in test process
+            if part_train_cost is not None:
+                message("tL {}: {:.6f}".format(updater.epoch_train_batches, part_train_cost))
 
             if updater.total_train_batches > 0 and \
                     updater.total_train_batches != last_validate_point and \
@@ -407,6 +415,10 @@ def test_policy_MNIST():
 
         for _, train_index in kf:
             part_train_cost = updater.add_batch(train_index)
+
+            # Log training loss of each batch in test process
+            if part_train_cost is not None:
+                message("tL {}: {:.6f}".format(updater.epoch_train_batches, part_train_cost))
 
             if updater.total_train_batches > 0 and \
                     updater.total_train_batches != last_validate_point and \
