@@ -414,8 +414,10 @@ class TestPolicyUpdater(BatchUpdater):
         message('[Log Dropped Data]')
         message('Rank distribution (0 -> batch_size) of dropped data')
 
-        message('Part  :', '\t'.join(str(r) for r in self.part_dropped_ranks))
-        message('Total :', '\t'.join(str(r) for r in self.total_dropped_ranks))
+        message('Part  (total {:>8}):'.format(sum(self.part_dropped_ranks)),
+                '\t'.join(str(r) for r in self.part_dropped_ranks))
+        message('Total (total {:>8}):'.format(sum(self.total_dropped_ranks)),
+                '\t'.join(str(r) for r in self.total_dropped_ranks))
 
         message('[Log Dropped Data End]')
 

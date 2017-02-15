@@ -65,6 +65,13 @@ def average(sequence):
 
 
 def get_rank(a):
+    """Get the rank of numpy array a.
+
+    >>> import numpy as np
+    >>> get_rank(np.array([10, 15, -3, 9, 1]))
+    array([3, 4, 0, 2, 1])
+    """
+
     temp = a.argsort()
     ranks = np.empty_like(a)
     ranks[temp] = np.arange(len(a))
