@@ -199,7 +199,7 @@ class BatchUpdater(object):
                 self.add_index(idx, loss)
 
     # Only for temp_job:"log_data"
-    def message_at_vp(self, reset=True, test_margin=True):
+    def log_data_message_at_vp(self, reset=True, test_margin=True):
         updated_indices = [len(loss_list) for loss_list in self.avg_loss]
         part_updated_indices = [len(loss_list) for loss_list in self.part_avg_loss]
 
@@ -259,9 +259,14 @@ class BatchUpdater(object):
             message('Margin Avg            :', '\t'.join(format(mf[-4], '.3f') for mf in mean_feature_list))
             message('Margin Std            :', '\t'.join(format(sf[-4], '.3f') for sf in std_feature_list))
 
+        message('[Log Data End]')
+
         if reset:
             # self.part_updated_indices = [0 for _ in range(ClassNumber)]
             self.part_avg_loss = [[] for _ in range(ClassNumber)]
+
+    def log_dropped_data_message_at_vp(self):
+        pass
 
 
 class RawUpdater(BatchUpdater):
@@ -374,6 +379,10 @@ class TestPolicyUpdater(BatchUpdater):
         super(TestPolicyUpdater, self).__init__(model, all_data, **kwargs)
         self.policy = policy
 
+        if Config['temp_job'] == 'log_dropped_data':
+            self.total_dropped_ranks = [0 for _ in range(self.batch_size)]
+            self.part_dropped_ranks = [0 for _ in range(self.batch_size)]
+
     def start_new_epoch(self):
         super(TestPolicyUpdater, self).start_new_epoch()
         self.policy.start_new_validation_point()
@@ -392,11 +401,25 @@ class TestPolicyUpdater(BatchUpdater):
             # [NOTE] Just log rank now.
             for a, p in izip(action, probability):
                 if not a:
-                    print('$', p)
+                    rank = int(round(p[-2] * self.batch_size))
+
+                    self.total_dropped_ranks[rank] += 1
+                    self.part_dropped_ranks[rank] += 1
 
         self.add_index_list(result)
 
         return result
+
+    def log_dropped_data_message_at_vp(self):
+        message('[Log Dropped Data]')
+        message('Rank distribution (0 -> batch_size) of dropped data')
+
+        message('Part  :', '\t'.join(str(r) for r in self.part_dropped_ranks))
+        message('Total :', '\t'.join(str(r) for r in self.total_dropped_ranks))
+
+        message('[Log Dropped Data End]')
+
+        self.part_dropped_ranks = [0 for _ in range(self.batch_size)]
 
 
 class RandomDropUpdater(BatchUpdater):
