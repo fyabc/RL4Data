@@ -142,9 +142,14 @@
         /// Negative reward? true means positive, this is common to false
         "reward_sign": false,
 
-        "policy_optimizer": "adam",
-        "policy_learning_rate": 0.02,
-        "policy_learning_rate_discount": 0.7,
+        "policy_optimizer": "sgd",
+        "policy_learning_rate": 0.0002,
+        "policy_learning_rate_discount": 0.5,
+
+        /// Discount learning rate per ? episode
+        // mnist: 50
+        // cifar10: 8
+        // imdb: 25
         "policy_learning_rate_discount_freq": 50,
 
         /// MLP policy parameters

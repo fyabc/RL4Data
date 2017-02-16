@@ -159,6 +159,12 @@ def plot_for_paper_all(*filenames, **kwargs):
 
     spl_count = len(spl_cfg)
 
+    figure, (axis1, axis2) = plt.subplots(1, 2)
+
+    # Plot test accuracy
+    plt.sca(axis1)
+    plt.title(r'$Test\ Accuracy$')
+
     xmin = kwargs.pop('xmin', 160)
     xmax = kwargs.pop('xmax', 1200)
     ymin = kwargs.pop('ymin', 0.89)
@@ -192,6 +198,15 @@ def plot_for_paper_all(*filenames, **kwargs):
 
     plt.grid(True, axis='y', linestyle='--')
 
+    # End plot test accuracy
+
+    # Plot training loss
+    plt.sca(axis2)
+    plt.title(r'$Training\ Loss$')
+
+    # End plot training loss
+
+    figure.tight_layout()
     plt.show()
 
 
@@ -281,12 +296,12 @@ def plot_for_paper_imdb():
 
         dataset='imdb',
         xmin=0,
-        xmax=86,
+        xmax=401,
         ymin=0.45,
         ymax=0.9,
         interval=1,
         vp_size=50 * 16,
-        smooth=400,
+        smooth=800,
 
         spl_cfg=[160],
     )
@@ -339,6 +354,6 @@ def main(args=None):
 
 
 if __name__ == '__main__':
-    main(['-b', 'cifar10'])
+    main(['-b', 'mnist'])
     # main()
     pass
