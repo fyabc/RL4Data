@@ -250,9 +250,9 @@
         "data_dir": "~/imdb.pkl",
 
         // Training small size default to the whole training set
-        "train_small_size": 10000,
+        "train_small_size": 25000,
 
-        "epoch_per_episode": 100,
+        "epoch_per_episode": 12,
 
         // These are original settings
         "test_size": 5000,
@@ -260,7 +260,7 @@
         "n_words": 10000,
         "maxlen": 1000,
         "dim_proj": 128,
-        "patience": 10,
+        "patience": 15,
         "display_freq": 10,
         "decay_c": 0.0,
         "learning_rate": 0.0001,
@@ -272,7 +272,7 @@
         "use_dropout": true,
 
         "save_to": false, //"./data/imdb/lstm_model.npz",
-        "valid_freq": 100,  // Change the default value to 100?
+        "valid_freq": 200,  // Change the default value to 100?
         "save_freq": 1110,
         "train_loss_freq": 370
     },
