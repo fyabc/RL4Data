@@ -194,6 +194,8 @@ def train_raw_IMDB2():
     best_validate_acc = -np.inf
     best_iteration = 0
     test_score = 0.0
+    bad_counter = 0
+    early_stop = False
     start_time = time.time()
 
     for epoch in range(ParamConfig['epoch_per_episode']):
@@ -209,6 +211,8 @@ def train_raw_IMDB2():
                     updater.total_train_batches != last_validate_point and \
                     updater.total_train_batches % valid_freq == 0:
                 last_validate_point = updater.total_train_batches
+
+                model.use_noise.set_value(floatX(0.))
                 validate_acc, test_acc = validate_point_message(
                     model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater,
                     validate_size=valid_size,  # Use part validation set in baseline
@@ -219,6 +223,20 @@ def train_raw_IMDB2():
                     best_validate_acc = validate_acc
                     best_iteration = updater.total_train_batches
                     test_score = test_acc
+                    bad_counter = 0
+
+                if len(updater.history_accuracy) >= patience and \
+                        validate_acc <= max(updater.history_accuracy[:-patience]):
+                    bad_counter += 1
+                    if bad_counter > patience:
+                        early_stop = True
+                        break
+
+        message("Epoch {} of {} took {:.3f}s".format(
+            epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
+        if early_stop:
+            message('Early Stop!')
+            break
 
 
 def train_SPL_IMDB():
