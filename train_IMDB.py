@@ -709,10 +709,6 @@ def train_policy_IMDB2():
                 model.use_noise.set_value(floatX(1.))
                 part_train_cost = updater.add_batch(train_index)
 
-                # Log training loss of each batch in test process
-                if part_train_cost is not None:
-                    message("tL {}: {:.6f}".format(updater.epoch_train_batches, part_train_cost.tolist()))
-
                 if updater.total_train_batches > 0 and \
                         updater.total_train_batches != last_validate_point and \
                         updater.total_train_batches % valid_freq == 0:
