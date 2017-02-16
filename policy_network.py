@@ -223,15 +223,25 @@ Real cost (Final reward for terminal): {}""".format(
 
         # self.message_parameters()
 
+    @logging
+    def discount_learning_rate(self, discount_rate=0.5, linear_drop=None):
+        if linear_drop is not None:
+            self.learning_rate.set_value(floatX(self.learning_rate.get_value() - linear_drop))
+        else:
+            self.learning_rate.set_value(floatX(self.learning_rate.get_value() * discount_rate))
+
     def start_new_validation_point(self):
         self.input_buffer.append([])
         self.action_buffer.append([])
 
     start_new_epoch = start_new_validation_point
 
-    def start_new_episode(self):
+    def start_new_episode(self, episode):
         self.message_parameters()
         self.start_new_validation_point()
+
+        if (episode + 1) % PolicyConfig['policy_learning_rate_discount_freq'] == 0:
+            self.discount_learning_rate(discount_rate=PolicyConfig['policy_learning_rate_discount'])
 
     def clear_buffer(self):
         self.input_buffer = []

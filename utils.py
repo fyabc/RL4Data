@@ -503,7 +503,7 @@ def start_new_episode(model, policy, episode):
     print('[Episode {}]'.format(episode))
     message('[Episode {}]'.format(episode))
 
-    policy.start_new_episode()
+    policy.start_new_episode(episode)
     model.reset_parameters()
 
 

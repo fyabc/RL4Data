@@ -89,7 +89,7 @@ def legend(**kwargs):
     if use_ac:
         total_number += 2
 
-    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.02),
+    plt.legend(loc='lower center', bbox_to_anchor=(0.5, -0.0), bbox_transform=plt.gcf().transFigure,
                fancybox=False, shadow=False, ncol=total_number // 2 + total_number % 2, fontsize=20)
 
 
