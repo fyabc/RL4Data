@@ -230,7 +230,7 @@ def train_raw_IMDB2():
                     test_score = test_acc
                     bad_counter = 0
 
-                if len(updater.history_accuracy) >= patience and \
+                if len(updater.history_accuracy) > patience and \
                         validate_acc <= max(updater.history_accuracy[:-patience]):
                     bad_counter += 1
                     if bad_counter > patience:
@@ -459,7 +459,7 @@ def train_SPL_IMDB2():
                     test_score = test_acc
                     bad_counter = 0
 
-                if len(updater.history_accuracy) >= patience and \
+                if len(updater.history_accuracy) > patience and \
                         validate_acc <= max(updater.history_accuracy[:-patience]):
                     bad_counter += 1
                     if bad_counter > patience:
@@ -727,7 +727,7 @@ def train_policy_IMDB2():
                         test_score = test_acc
                         bad_counter = 0
 
-                    if len(updater.history_accuracy) >= patience and \
+                    if len(updater.history_accuracy) > patience and \
                             validate_acc <= max(updater.history_accuracy[:-patience]):
                         bad_counter += 1
                         if bad_counter > patience:
