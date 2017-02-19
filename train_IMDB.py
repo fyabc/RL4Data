@@ -283,7 +283,7 @@ def train_policy_IMDB():
 
                     model.use_noise.set_value(floatX(0.))
                     validate_acc, test_acc = validate_point_message(
-                        model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater,
+                        model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater, reward_checker,
                         validate_size=valid_size,  # Use part validation set in baseline
                         run_test=False,
                     )
