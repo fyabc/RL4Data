@@ -270,7 +270,7 @@ def train_policy_IMDB():
         for epoch in range(ParamConfig['epoch_per_episode']):
             epoch_start_time = start_new_epoch(updater, epoch)
 
-            kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
+            kf = get_minibatches_idx(train_small_size, model.train_batch_size, shuffle=True)
 
             for _, train_index in kf:
                 model.use_noise.set_value(floatX(1.))
