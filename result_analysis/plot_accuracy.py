@@ -333,17 +333,17 @@ def plot_for_paper_imdb():
     plot_for_paper_all(
         'log-imdb-raw-NonC1.txt',
         'log-imdb-spl-NonC1.txt',
-        'log-imdb-stochastic-lr-speed-NonC1Best.txt',
-        'log-imdb-stochastic-lr-speed-NonC_Old.txt',
+        'log-imdb-spl-NonC1.txt',
+        'log-imdb-stochastic-lr-speed-NonC_Old2.txt',
 
         dataset='imdb',
         xmin=0,
-        xmax=55,
+        xmax=37.5,
         ymin=0.45,
-        ymax=0.9,
+        ymax=0.92,
         interval=1,
         vp_size=200 * 16,
-        smooth=800,
+        smooth=0,
 
         spl_cfg=[40],
     )
