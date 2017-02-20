@@ -98,15 +98,17 @@
         "num_episodes": 5000,
 
         /// Policy input features
-        "add_label_input": true,
-        "add_label": false,
-        "use_first_layer_output": false,
-        "add_margin": true,
-        "add_average_accuracy": true,
-        "add_epoch_number": false,
-        "add_learning_rate": false,
-        "add_loss_rank": true,
-        "add_accepted_data_number": true,
+        // Policy input size:
+        // model.output_size (10 in MNIST, CIFAR-10; 2 in IMDB)
+        "add_label_input": true,                    // 1
+        "add_label": false,                         // 1
+        "use_first_layer_output": false,            // ? >> 1
+        "add_margin": true,                         // 1
+        "add_average_accuracy": true,               // 1
+        "add_epoch_number": false,                  // 1
+        "add_learning_rate": false,                 // 1
+        "add_loss_rank": true,                      // 1
+        "add_accepted_data_number": true,           // 1
 
         // This sample size is used in AC immediate reward
         "immediate_reward_sample_size": 10000,

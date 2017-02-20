@@ -100,7 +100,6 @@ class IMDBModelBase(object):
         if PolicyConfig['add_label_input']:
             label_inputs = np.zeros(shape=(batch_size, 1), dtype=fX)
             for i in range(batch_size):
-                # assert probability[i, targets[i]] > 0, 'Probability <= 0!!!'
                 label_inputs[i, 0] = np.log(max(probability[i, y[i]], 1e-9))
             to_be_stacked.append(label_inputs)
 
