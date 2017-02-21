@@ -161,10 +161,11 @@ def plot_for_paper_all(*filenames, **kwargs):
     maxlen = kwargs.pop('maxlen', 400)
     smooth = kwargs.pop('smooth', 200)
     spl_cfg = kwargs.pop('spl_cfg', [165])
-    speed_count = kwargs.pop('speed_count', 1)
+    speed_cfg = kwargs.pop('speed_cfg', ['-'])
     line_width = kwargs.pop('line_width', 2.5)
 
     spl_count = len(spl_cfg)
+    speed_count = len(speed_cfg)
 
     figure, (axis1, axis2) = plt.subplots(1, 2)
 
@@ -196,7 +197,15 @@ def plot_for_paper_all(*filenames, **kwargs):
                             'y--', spls[2], vp_size, smooth, interval, maxlen, linewidth=line_width)
 
     plot_accuracy_curve(Curves[3].title, 'r-', raw, vp_size, smooth, interval, maxlen, linewidth=line_width)
-    plot_accuracy_curve(Curves[5].title, 'c-', reinforces[0], vp_size, smooth, interval, maxlen, linewidth=line_width)
+    plot_accuracy_curve(r'$NDF-REINFORCE-{}$'.format(speed_cfg[0]),
+                        'c-', reinforces[0], vp_size, smooth, interval, maxlen, linewidth=line_width)
+
+    if len(reinforces) >= 2:
+        plot_accuracy_curve(r'$NDF-REINFORCE-{}$'.format(speed_cfg[1]),
+                            'm-', reinforces[1], vp_size, smooth, interval, maxlen, linewidth=line_width)
+    if len(reinforces) >= 3:
+        plot_accuracy_curve(r'$NDF-REINFORCE-{}$'.format(speed_cfg[2]),
+                            'y-', reinforces[2], vp_size, smooth, interval, maxlen, linewidth=line_width)
 
     legend(use_ac=False, spl_count=spl_count, speed_count=speed_count)
 
@@ -270,6 +279,7 @@ def plot_for_paper_mnist():
         smooth=800,
 
         spl_cfg=[80, 120, 160],
+        speed_cfg=['lrNonC3'],
     )
 
 
@@ -307,6 +317,7 @@ def plot_for_paper_cifar():
 def plot_for_paper_c_cifar():
     plot_for_paper_all(
         'log-cifar10-raw-Flip1.txt',
+        'log-cifar10-spl-Flip60.txt',
         'log-cifar10-spl-Flip1.txt',
         'log-cifar10-spl-Flip180.txt',
         # 'log-cifar10-raw-Flip1.txt',
@@ -325,7 +336,8 @@ def plot_for_paper_c_cifar():
         vp_size=390 * 128,
         smooth=400,
 
-        spl_cfg=[124, 180],
+        spl_cfg=[60, 124, 180],
+        speed_cfg=['1'],
     )
 
 
@@ -335,6 +347,7 @@ def plot_for_paper_imdb():
         'log-imdb-spl-NonC1.txt',
         'log-imdb-spl-NonC1.txt',
         'log-imdb-stochastic-lr-speed-NonC_Old2.txt',
+        'log-imdb-stochastic-mlp-speed-NonC1Best.txt',
 
         dataset='imdb',
         xmin=0,
@@ -345,6 +358,7 @@ def plot_for_paper_imdb():
         vp_size=200 * 16,
         smooth=0,
 
+        speed_cfg=['1', '2'],
         spl_cfg=[40],
     )
 
