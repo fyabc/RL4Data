@@ -10,8 +10,8 @@ from itertools import izip
 import numpy as np
 
 from extensions import PartLossChecker
-from config import Config
-from utils import message
+from config import Config, PolicyConfig
+from utils import message, get_rank
 
 # Some Magic Numbers.
 
@@ -399,12 +399,24 @@ class TestPolicyUpdater(BatchUpdater):
         # todo: log features of dropped data here
         if Config['temp_job'] == 'log_dropped_data':
             # [NOTE] Just log rank now.
-            for a, p in izip(action, probability):
-                if not a:
-                    rank = int(round(p[-2] * self.batch_size))
+            if PolicyConfig['add_loss_rank'] is True:
+                for a, p in izip(action, probability):
+                    if not a:
+                        rank = int(round(p[-2] * self.batch_size))
 
-                    self.total_dropped_ranks[rank] += 1
-                    self.part_dropped_ranks[rank] += 1
+                        self.total_dropped_ranks[rank] += 1
+                        self.part_dropped_ranks[rank] += 1
+                else:
+                    # [NOTE] Compatibility for old IMDB version
+                    # loss = -log(P(y)), output of PolicyConfig['add_label_input'] is log(P(y)).
+                    losses = np.array([-prob[self.model.output_size] for prob in probability])
+
+                    rank = get_rank(losses)
+
+                    for a, r in izip(action, rank):
+                        if not a:
+                            self.total_dropped_ranks[r] += a
+                            self.part_dropped_ranks[r] += a
 
         self.add_index_list(result)
 

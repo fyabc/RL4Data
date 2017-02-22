@@ -16,7 +16,7 @@ from scipy.interpolate import spline
 import matplotlib.pyplot as plt
 
 from config import LogPath
-from utils import Curves, legend, average_list
+from utils import Curves, legend, average_list, avg
 
 __author__ = 'fyabc'
 
@@ -135,6 +135,8 @@ def plot_c_mnist():
 
 
 def plot_accuracy_curve(title, style, y, vp_size, smooth, interval, maxlen, **kwargs):
+    mv_avg = kwargs.pop('mv_avg', False)
+
     x = range(vp_size, 1 + len(y) * vp_size, vp_size)
 
     if interval > 1:
@@ -144,8 +146,16 @@ def plot_accuracy_curve(title, style, y, vp_size, smooth, interval, maxlen, **kw
     min_len = min(len(x), len(y), maxlen)
     x, y = x[:min_len], y[:min_len]
 
+    if mv_avg is not False:
+        y_new = [avg(y[max(i - mv_avg, 0):i + 1]) for i in range(len(y))]
+        y = y_new
+
     if smooth > 0:
-        x_new = np.linspace(min(x), max(x), smooth)
+        try:
+            x_new = np.linspace(min(x), max(x), smooth)
+        except ValueError as e:
+            print('Plot error:', title, e)
+            return
         power_smooth = spline(x, y, x_new)
     else:
         x_new = x
@@ -167,16 +177,19 @@ def plot_for_paper_all(*filenames, **kwargs):
     spl_count = len(spl_cfg)
     speed_count = len(speed_cfg)
 
-    figure, (axis1, axis2) = plt.subplots(1, 2)
+    if False:
+        figure, (axis1, axis2) = plt.subplots(1, 2)
+
+        plt.sca(axis1)
 
     # Plot test accuracy
-    plt.sca(axis1)
-    plt.title(r'$Test\ Accuracy$')
+    plt.title(r'$Test\ Accuracy$', fontsize=18)
 
     xmin = kwargs.pop('xmin', 160)
     xmax = kwargs.pop('xmax', 1200)
     ymin = kwargs.pop('ymin', 0.89)
     ymax = kwargs.pop('ymax', 0.96)
+    mv_avg = kwargs.pop('mv_avg', False)
 
     test_acc_lists = get_test_acc_lists(*filenames, interval=1, dataset=dataset)
     raw = test_acc_lists[0]
@@ -185,75 +198,81 @@ def plot_for_paper_all(*filenames, **kwargs):
     reinforces = test_acc_lists[-speed_count:]
 
     # The color should be fixed.
-    plot_accuracy_curve(Curves[0].title, 'b-', random_drop, vp_size, smooth, interval, maxlen, linewidth=line_width)
+    plot_accuracy_curve(Curves[0].title, 'b-', random_drop, vp_size, smooth, interval, maxlen,
+                        linewidth=line_width, mv_avg=mv_avg)
 
-    plot_accuracy_curve(r'$SPL-{}$'.format(spl_cfg[0]),
-                        'g--', spls[0], vp_size, smooth, interval, maxlen, linewidth=line_width)
-    if len(spls) >= 2:
-        plot_accuracy_curve(r'$SPL-{}$'.format(spl_cfg[1]),
-                            'm--', spls[1], vp_size, smooth, interval, maxlen, linewidth=line_width)
-    if len(spls) >= 3:
-        plot_accuracy_curve(r'$SPL-{}$'.format(spl_cfg[2]),
-                            'y--', spls[2], vp_size, smooth, interval, maxlen, linewidth=line_width)
+    spl_lines = ['g--', 'm--', 'y--']
 
-    plot_accuracy_curve(Curves[3].title, 'r-', raw, vp_size, smooth, interval, maxlen, linewidth=line_width)
-    plot_accuracy_curve(r'$NDF-REINFORCE-{}$'.format(speed_cfg[0]),
-                        'c-', reinforces[0], vp_size, smooth, interval, maxlen, linewidth=line_width)
+    for i, spl in enumerate(spls):
+        plot_accuracy_curve(r'$SPL-{}$'.format(spl_cfg[i]),
+                            spl_lines[i], spl, vp_size, smooth, interval, maxlen,
+                            linewidth=line_width, mv_avg=mv_avg)
 
-    if len(reinforces) >= 2:
-        plot_accuracy_curve(r'$NDF-REINFORCE-{}$'.format(speed_cfg[1]),
-                            'm-', reinforces[1], vp_size, smooth, interval, maxlen, linewidth=line_width)
-    if len(reinforces) >= 3:
-        plot_accuracy_curve(r'$NDF-REINFORCE-{}$'.format(speed_cfg[2]),
-                            'y-', reinforces[2], vp_size, smooth, interval, maxlen, linewidth=line_width)
+    plot_accuracy_curve(Curves[3].title, 'r-.', raw, vp_size, smooth, interval, maxlen,
+                        linewidth=line_width + 1, mv_avg=mv_avg)
 
-    legend(use_ac=False, spl_count=spl_count, speed_count=speed_count)
+    reinforce_line_style = '-'
+    reinforce_lines = ['c', 'm', 'y', 'g', 'k', 'w']
+
+    for i, reinforce in enumerate(reinforces):
+        plot_accuracy_curve(r'$NDF-REINFORCE-{}$'.format(speed_cfg[i]),
+                            reinforce_lines[i] + reinforce_line_style, reinforce, vp_size, smooth, interval, maxlen,
+                            linewidth=line_width, mv_avg=mv_avg)
+
+    legend(use_ac=False, spl_count=spl_count, speed_count=speed_count, n_rows=3)
 
     plt.xlim(xmin=xmin * vp_size, xmax=xmax * vp_size)
     plt.ylim(ymin=ymin, ymax=ymax)
-
     plt.grid(True, axis='y', linestyle='--')
 
     # End plot test accuracy
 
-    # Plot training loss
-    plt.sca(axis2)
-    plt.title(r'$Training\ Loss$')
+    if False:
+        # Plot training loss
+        plt.sca(axis2)
+        plt.title(r'$Training\ Loss$')
 
-    interval = kwargs.pop('interval2', 80)
-    vp_size = kwargs.pop('vp_size2', 1)
-    smooth = kwargs.pop('smooth2', 0)
-    maxlen = kwargs.pop('maxlen2', 2000)
+        interval = kwargs.pop('interval2', 80)
+        vp_size = kwargs.pop('vp_size2', 1)
+        smooth = kwargs.pop('smooth2', 0)
+        maxlen = kwargs.pop('maxlen2', 2000)
+        # line_width = 0.7
 
-    xmin = kwargs.pop('xmin2', None)
-    xmax = kwargs.pop('xmax2', None)
-    ymin = kwargs.pop('ymin2', None)
-    ymax = kwargs.pop('ymax2', 0.75)
+        xmin = kwargs.pop('xmin2', None)
+        xmax = kwargs.pop('xmax2', None)
+        ymin = kwargs.pop('ymin2', None)
+        ymax = kwargs.pop('ymax2', 0.75)
 
-    train_loss_lists = get_train_loss_lists(*filenames, interval=1, dataset=dataset)
+        mv_avg = kwargs.pop('mv_avg2', 5)
 
-    raw = train_loss_lists[0]
-    spls = train_loss_lists[1:1 + spl_count]
-    random_drop = train_loss_lists[1 + spl_count]
-    reinforces = train_loss_lists[-speed_count:]
+        train_loss_lists = get_train_loss_lists(*filenames, interval=1, dataset=dataset)
 
-    # End plot training loss
-    plot_accuracy_curve(Curves[3].title, 'r-', random_drop, vp_size, smooth, interval, maxlen, linewidth=line_width)
+        raw = train_loss_lists[0]
+        spls = train_loss_lists[1:1 + spl_count]
+        random_drop = train_loss_lists[1 + spl_count]
+        reinforces = train_loss_lists[-speed_count:]
 
-    plot_accuracy_curve(r'$SPL-{}$'.format(spl_cfg[0]),
-                        'g--', spls[0], vp_size, smooth, interval, maxlen, linewidth=line_width)
-    if len(spls) >= 2:
-        plot_accuracy_curve(r'$SPL-{}$'.format(spl_cfg[1]),
-                            'm--', spls[1], vp_size, smooth, interval, maxlen, linewidth=line_width)
-    if len(spls) >= 3:
-        plot_accuracy_curve(r'$SPL-{}$'.format(spl_cfg[2]),
-                            'y--', spls[2], vp_size, smooth, interval, maxlen, linewidth=line_width)
+        plot_accuracy_curve(Curves[3].title, 'b-', random_drop, vp_size, smooth, interval, maxlen,
+                            linewidth=line_width, mv_avg=mv_avg)
 
-    plot_accuracy_curve(Curves[3].title, 'r-', raw, vp_size, smooth, interval, maxlen, linewidth=line_width)
-    plot_accuracy_curve(Curves[5].title, 'c-', reinforces[0], vp_size, smooth, interval, maxlen, linewidth=line_width)
+        for i, spl in enumerate(spls):
+            plot_accuracy_curve(r'$SPL-{}$'.format(spl_cfg[i]),
+                                spl_lines[i], spl, vp_size, smooth, interval, maxlen,
+                                linewidth=line_width, mv_avg=mv_avg)
 
-    plt.xlim(xmin=xmin, xmax=xmax)
-    plt.ylim(ymin=ymin, ymax=ymax)
+        plot_accuracy_curve(Curves[3].title, 'r-.', raw, vp_size, smooth, interval, maxlen,
+                            linewidth=line_width + 1, mv_avg=mv_avg)
+
+        for i, reinforce in enumerate(reinforces):
+            plot_accuracy_curve(r'$NDF-REINFORCE-{}$'.format(speed_cfg[i]),
+                                reinforce_lines[i] + reinforce_line_style, reinforce, vp_size, smooth, interval, maxlen,
+                                linewidth=line_width, mv_avg=mv_avg)
+
+        plt.xlim(xmin=xmin, xmax=xmax)
+        plt.ylim(ymin=ymin, ymax=ymax)
+        plt.grid(True, axis='y', linestyle='--')
+
+        # End plot training loss
 
     # figure.tight_layout()
     # figure.set_size_inches(20, 5)
@@ -269,17 +288,26 @@ def plot_for_paper_mnist():
         'log-mnist-spl-NonC6.txt',
         'log-mnist-random_drop-speed-NonC3.txt',
         'log-mnist-stochastic-lr-speed-NonC3Best.txt',
+        'log-mnist-stochastic-lr-speed-NonC7Best.txt',
+        'log-mnist-stochastic-lr-speed-NonC8Best.txt',
+        'log-mnist-stochastic-lr-speed-NonC10Best.txt',
+        # 'log-mnist-stochastic-lr-speed-NonC11Best.txt',
 
         xmin=130,
         xmax=1100,
         ymin=0.93,
-        ymax=0.977,
+        ymax=0.985,
         interval=2,
         maxlen=600,
         smooth=800,
 
+        interval2=200,
+        xmax2=200000,
+        smooth2=200,
+        mv_avg2=20,
+
         spl_cfg=[80, 120, 160],
-        speed_cfg=['lrNonC3'],
+        speed_cfg=['lrNonC3', 'lrNonC7', 'lrNonC8', 'lrNonC10'],
     )
 
 
@@ -295,22 +323,32 @@ def plot_for_paper_c_mnist():
 def plot_for_paper_cifar():
     plot_for_paper_all(
         'log-cifar10-raw-NonC1.txt',
+
         'log-cifar10-spl-NonC1.txt',
+        'log-cifar10-spl-NonC60.txt',
+        'log-cifar10-spl-NonC180.txt',
+
         'log-cifar10-random_drop-speed-NonC2.txt',
-        # 'log-cifar10-raw-NonC1.txt',
-        # 'log-cifar10-raw-NonC1.txt',
+
         'log-cifar10-stochastic-lr-speed-NonC2Best_1.txt',
+        'log-cifar10-stochastic-lr-speed-NonC3Best.txt',
+        'log-cifar10-stochastic-lr-speed-NonC4Best.txt',
 
         dataset='cifar10',
         xmin=0,
-        xmax=87,
+        xmax=99,
         ymin=0.6,
         ymax=0.95,
         interval=1,
         vp_size=390 * 128,
         smooth=800,
 
-        spl_cfg=[124]
+        ymin2=None,
+        ymax2=None,
+        xmax2=40000,
+
+        spl_cfg=[120, 60, 180],
+        speed_cfg=['lrNonC2', 'lrNonC3', 'lrNonC4']
     )
 
 
@@ -345,9 +383,12 @@ def plot_for_paper_imdb():
     plot_for_paper_all(
         'log-imdb-raw-NonC1.txt',
         'log-imdb-spl-NonC1.txt',
-        'log-imdb-spl-NonC1.txt',
+        'log-imdb-spl-NonC2.txt',
+        'log-imdb-spl-NonC3.txt',
+        'log-imdb-random_drop-lr-speed-NonC_old2.txt',
         'log-imdb-stochastic-lr-speed-NonC_Old2.txt',
         'log-imdb-stochastic-mlp-speed-NonC1Best.txt',
+        'log-imdb-stochastic-mlp-speed-NonC2Best.txt',
 
         dataset='imdb',
         xmin=0,
@@ -356,10 +397,18 @@ def plot_for_paper_imdb():
         ymax=0.92,
         interval=1,
         vp_size=200 * 16,
-        smooth=0,
+        # smooth=800,
+        mv_avg=5,
 
-        speed_cfg=['1', '2'],
-        spl_cfg=[40],
+        ymin2=None,
+        ymax2=None,
+        xmax2=40000,
+        interval2=200,
+        smooth2=800,
+        mv_avg2=5,
+
+        speed_cfg=['lrNonCOld', 'mlpNonC1', 'mlpNonC2'],
+        spl_cfg=[40, 80, 160],
     )
 
 
@@ -410,6 +459,6 @@ def main(args=None):
 
 
 if __name__ == '__main__':
-    main(['-b', 'imdb'])
+    main(['-b', 'cifar10'])
     # main()
     pass
