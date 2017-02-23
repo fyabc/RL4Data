@@ -16,7 +16,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from config import LogPath, DataPath
-from utils import save_list
+from utils import save_list, move_avg, CFG, pick_interval
 
 __author__ = 'fyabc'
 
@@ -69,22 +69,26 @@ def get_drop_number_rank(filename, dataset='mnist', series_number=5):
 
     rank_numbers = [[] for _ in range(series_number)]
 
-    pick_index = None
+    rank_size = None
+    pick_start = None
+    pick_end = None
 
     with open(abs_filename, 'r') as f:
         for line in f:
             if line.startswith('Part  (total'):
                 words = line.split()
 
-                if pick_index is None:
-                    pick_index = np.linspace(3, len(words) - 1, series_number, dtype=int)
+                if rank_size is None:
+                    rank_size = len(words) - 3
+                    pick_start = np.linspace(0, rank_size, series_number, dtype=int, endpoint=False)
+                    pick_end = [pick_start[i + 1] for i in range(series_number - 1)] + [rank_size]
 
                 total_number.append(int(words[2][:-2]))
 
                 for i, rank_number in enumerate(rank_numbers):
-                    rank_number.append(int(words[pick_index[i]]))
+                    rank_number.append(sum(int(word) for word in words[3 + pick_start[i]:3 + pick_end[i]]))
 
-    return total_number, rank_numbers, pick_index
+    return total_number, rank_numbers, pick_start, pick_end, rank_size
 
 
 def plot_drop_number_rank(filename, **kwargs):
@@ -92,6 +96,9 @@ def plot_drop_number_rank(filename, **kwargs):
     plot_total = kwargs.pop('plot_total', False)
     series_number = kwargs.pop('series_number', 5)
     title = kwargs.pop('title', filename)
+    mv_avg = kwargs.pop('mv_avg', False)
+    interval = kwargs.pop('interval', 1)
+    legend_loc = kwargs.pop('legend_loc', 'upper left')
 
     vp2epoch = kwargs.pop('vp2epoch', {
         'mnist': 20 * 125.0 / 50000,
@@ -104,23 +111,49 @@ def plot_drop_number_rank(filename, **kwargs):
     xmax = kwargs.pop('xmax', None)
     xmin = kwargs.pop('xmin', None)
 
-    total, rank_numbers, pick_index = get_drop_number_rank(filename, dataset, series_number)
+    line_width = kwargs.pop('line_width', CFG['linewidth'])
+
+    line_styles = ['-', '--', '-.', 'o-', '*-']
+
+    total, rank_numbers, pick_start, pick_end, rank_size = get_drop_number_rank(filename, dataset, series_number)
 
     xs = np.arange(len(total), dtype=float) * vp2epoch
+    xs = pick_interval(xs, interval)
 
     if plot_total:
-        plt.plot(xs, total, label='$total$', linewidth=2.0)
-    for rank_number, idx in zip(rank_numbers, pick_index):
-        plt.plot(xs, rank_number, label='$Rank {}$'.format(idx - 3), linewidth=2.0)
+        if mv_avg is not False:
+            total = move_avg(total, mv_avg)
+
+        total = pick_interval(total, interval)
+
+        plt.plot(xs, total, label='$Total$',
+                 linewidth=line_width, markersize=CFG['markersize'])
+
+    colors = ['blue', 'green', 'red', 'cyan', 'magenta']
+
+    for i, rank_number in reversed(list(enumerate(rank_numbers))):
+        if mv_avg is not False:
+            rank_number = move_avg(rank_number, mv_avg)
+
+        rank_number = pick_interval(rank_number, interval)
+
+        plt.plot(xs, rank_number, line_styles[i],
+                 label=r'$Bucket\ {} \sim {}$'.format(rank_size + 1 - pick_end[i], rank_size - pick_start[i]),
+                 linewidth=line_width, markersize=CFG['markersize'], color=colors[i])
 
     plt.xlim(xmin=xmin, xmax=xmax)
     plt.ylim(ymin=ymin, ymax=ymax)
 
-    plt.legend(loc='upper left')
-    plt.title('${}$'.format(title))
+    plt.legend(loc=legend_loc, fontsize=28,
+               borderpad=0.2, labelspacing=0.2, handletextpad=0.2, borderaxespad=0.2)
+    # plt.title('${}$'.format(title), fontsize=40)
+    plt.xticks(fontsize=21)
+    plt.yticks(fontsize=24)
 
-    plt.xlabel('$Epoch$', fontsize=18)
-    plt.ylabel(r'$Filter\ Number$', fontsize=18)
+    plt.xlabel('$Epoch$', fontsize=30)
+    plt.ylabel(r'$Filter\ Number$', fontsize=30)
+
+    plt.grid(True, axis='both', linestyle='--')
 
     plt.show()
 
@@ -131,7 +164,7 @@ def main(args=None):
     parser.add_argument('filenames', nargs='+', help='The log filenames')
     parser.add_argument('-d', '--dataset', action='store', dest='dataset', default='mnist',
                         help='The dataset (default is "mnist")')
-    parser.add_argument('-o', action='append', nargs='+', dest='save_filenames', default=[],
+    parser.add_argument('-o', nargs='+', dest='save_filenames', default=[],
                         help='The save filename (default is "drop_num_$(filename)")')
     parser.add_argument('-p', '--plot', action='store_true', dest='plot', default=False,
                         help='Plot the drop number instead of dump it (default is False)')
@@ -145,6 +178,44 @@ def main(args=None):
     plot_by_args(options)
 
 
+def plot_cifar10():
+    plot_drop_number_rank(
+        'log-cifar10-stochastic-lr-speed-NonC3Best_1.txt',
+        dataset='cifar10',
+        series_number=5,
+        title='CIFAR-10\ NDF-REINFORCE\ LR',
+        ymax=45000,
+        xmax=24,
+    )
+
+
+def plot_imdb():
+    plot_drop_number_rank(
+        'log-imdb-stochastic-lr-speed-NonC_Old2_2.txt',
+        dataset='imdb',
+        series_number=5,
+        title='IMDB\ NDF-REINFORCE\ LR',
+        # xmax=5.420788724759452,
+        # xmax=12,
+        xmax=None,
+        mv_avg=2,
+        legend_loc='upper right'
+    )
+
+
+def plot_mnist():
+    plot_drop_number_rank(
+        'log-mnist-stochastic-lr-speed-NonC8Best_1.txt',
+        dataset='mnist',
+        series_number=5,
+        title='MNIST\ NDF-REINFORCE\ LR',
+        xmax=64,
+        plot_total=False,
+
+        interval=10,
+    )
+
+
 if __name__ == '__main__':
     # main([
     #     '-p',
@@ -154,30 +225,11 @@ if __name__ == '__main__':
     #     'log-mnist-stochastic-lr-speed-NonC10Best.txt',
     # ])
 
-    # plot_drop_number_rank(
-    #     'log-cifar10-stochastic-lr-speed-NonC3Best_1.txt',
-    #     dataset='cifar10',
-    #     series_number=5,
-    #     title='CIFAR-10\ NDF-REINFORCE\ LR',
-    #     ymax=None,
-    #     xmax=24,
-    # )
-
-    # plot_drop_number_rank(
-    #     'log-imdb-stochastic-mlp-speed-NonC1Best.txt',
-    #     dataset='imdb',
-    #     series_number=5,
-    #     title='IMDB\ NDF-REINFORCE\ MLP',
-    #     xmax=10.5,
-    # )
-
-    plot_drop_number_rank(
-        'log-mnist-stochastic-lr-speed-NonC8Best_1.txt',
-        dataset='mnist',
-        series_number=5,
-        title='MNIST\ NDF-REINFORCE\ LR',
-        xmax=65,
-        plot_total=True,
-    )
+    {
+        'imdb': plot_imdb,
+        'cifar10': plot_cifar10,
+        'mnist': plot_mnist,
+        'main': main,
+    }['imdb']()
 
     pass

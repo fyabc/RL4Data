@@ -16,7 +16,7 @@ from scipy.interpolate import spline
 import matplotlib.pyplot as plt
 
 from config import LogPath
-from utils import Curves, legend, average_list, avg
+from utils import Curves, legend, average_list, move_avg, CFG, pick_interval
 
 __author__ = 'fyabc'
 
@@ -139,16 +139,11 @@ def plot_accuracy_curve(title, style, y, vp_size, smooth, interval, maxlen, **kw
 
     x = range(vp_size, 1 + len(y) * vp_size, vp_size)
 
-    if interval > 1:
-        x = [e for i, e in enumerate(x) if (i + 1) % interval == 0]
-        y = [e for i, e in enumerate(y) if (i + 1) % interval == 0]
-
     min_len = min(len(x), len(y), maxlen)
     x, y = x[:min_len], y[:min_len]
 
     if mv_avg is not False:
-        y_new = [avg(y[max(i - mv_avg, 0):i + 1]) for i in range(len(y))]
-        y = y_new
+        y = move_avg(y, mv_avg)
 
     if smooth > 0:
         try:
@@ -161,6 +156,9 @@ def plot_accuracy_curve(title, style, y, vp_size, smooth, interval, maxlen, **kw
         x_new = x
         power_smooth = y
 
+    x_new = pick_interval(x_new, interval)
+    power_smooth = pick_interval(power_smooth, interval)
+
     plt.plot(x_new, power_smooth, style, label=title, **kwargs)
 
 
@@ -172,7 +170,7 @@ def plot_for_paper_all(*filenames, **kwargs):
     smooth = kwargs.pop('smooth', 200)
     spl_cfg = kwargs.pop('spl_cfg', [165])
     speed_cfg = kwargs.pop('speed_cfg', ['-'])
-    line_width = kwargs.pop('line_width', 2.5)
+    line_width = kwargs.pop('line_width', CFG['linewidth'])
 
     spl_count = len(spl_cfg)
     speed_count = len(speed_cfg)
@@ -183,9 +181,9 @@ def plot_for_paper_all(*filenames, **kwargs):
         plt.sca(axis1)
 
     # Plot test accuracy
-    plt.title(r'$Test\ Accuracy$', fontsize=24)
-    plt.xticks(fontsize=15)
-    plt.yticks(fontsize=15)
+    # plt.title(r'$Test\ Accuracy$', fontsize=40)
+    plt.xticks(fontsize=21)
+    plt.yticks(fontsize=24)
 
     xmin = kwargs.pop('xmin', 160)
     xmax = kwargs.pop('xmax', 1200)
@@ -199,33 +197,39 @@ def plot_for_paper_all(*filenames, **kwargs):
     random_drop = test_acc_lists[1 + spl_count]
     reinforces = test_acc_lists[-speed_count:]
 
-    # The color should be fixed.
-    plot_accuracy_curve(Curves[0].title, 'b-', random_drop, vp_size, smooth, interval, maxlen,
-                        linewidth=line_width, mv_avg=mv_avg)
-
-    spl_lines = ['g--', 'm--', 'y--']
-
-    for i, spl in enumerate(spls):
-        plot_accuracy_curve(r'$SPL-{}$'.format(spl_cfg[i]),
-                            spl_lines[i], spl, vp_size, smooth, interval, maxlen,
-                            linewidth=line_width, mv_avg=mv_avg)
-
-    plot_accuracy_curve(Curves[3].title, 'r-.', raw, vp_size, smooth, interval, maxlen,
-                        linewidth=line_width + 1, mv_avg=mv_avg)
-
+    raw_line_style = '-o'
+    random_line_style = '-^'
+    spl_line_style = '--'
     reinforce_line_style = '-'
-    reinforce_lines = ['c', 'm', 'y', 'g', 'k', 'w']
+
+    # The color should be fixed.
+    spl_colors = ['g', 'm', 'y']
+    reinforce_colors = ['c', 'm', 'y', 'g', 'k', 'w']
 
     for i, reinforce in enumerate(reinforces):
         plot_accuracy_curve(r'$NDF-REINFORCE-{}$'.format(speed_cfg[i]),
-                            reinforce_lines[i] + reinforce_line_style, reinforce, vp_size, smooth, interval, maxlen,
-                            linewidth=line_width, mv_avg=mv_avg)
+                            reinforce_colors[i] + reinforce_line_style, reinforce, vp_size, smooth, interval, maxlen,
+                            linewidth=line_width, mv_avg=mv_avg, markersize=CFG['markersize'])
+
+    for i, spl in enumerate(spls):
+        plot_accuracy_curve(r'$SPL-{}$'.format(spl_cfg[i]),
+                            spl_colors[i] + spl_line_style, spl, vp_size, smooth, interval, maxlen,
+                            linewidth=line_width, mv_avg=mv_avg, markersize=CFG['markersize'])
+
+    plot_accuracy_curve(Curves[0].title, 'b' + random_line_style, random_drop, vp_size, smooth, interval, maxlen,
+                        linewidth=line_width, mv_avg=mv_avg, markersize=CFG['markersize'])
+
+    plot_accuracy_curve(Curves[3].title, 'r' + raw_line_style, raw, vp_size, smooth, interval, maxlen,
+                        linewidth=line_width + 1, mv_avg=mv_avg, markersize=CFG['markersize'])
 
     legend(use_ac=False, spl_count=spl_count, speed_count=speed_count, n_rows=3)
 
+    plt.xlabel('$Number\ of\ Accepted\ Training\ Instances$', fontsize=30)
+    plt.ylabel(r'$Test\ Accuracy$', fontsize=30)
+
     plt.xlim(xmin=xmin * vp_size, xmax=xmax * vp_size)
     plt.ylim(ymin=ymin, ymax=ymax)
-    plt.grid(True, axis='y', linestyle='--')
+    plt.grid(True, axis='both', linestyle='--')
 
     # End plot test accuracy
 
@@ -254,21 +258,21 @@ def plot_for_paper_all(*filenames, **kwargs):
         random_drop = train_loss_lists[1 + spl_count]
         reinforces = train_loss_lists[-speed_count:]
 
-        plot_accuracy_curve(Curves[3].title, 'b-', random_drop, vp_size, smooth, interval, maxlen,
-                            linewidth=line_width, mv_avg=mv_avg)
+        for i, reinforce in enumerate(reinforces):
+            plot_accuracy_curve(r'$NDF-REINFORCE-{}$'.format(speed_cfg[i]),
+                                reinforce_colors[i] + reinforce_line_style, reinforce, vp_size, smooth, interval, maxlen,
+                                linewidth=line_width, mv_avg=mv_avg, markersize=CFG['markersize'])
 
         for i, spl in enumerate(spls):
             plot_accuracy_curve(r'$SPL-{}$'.format(spl_cfg[i]),
-                                spl_lines[i], spl, vp_size, smooth, interval, maxlen,
-                                linewidth=line_width, mv_avg=mv_avg)
+                                spl_colors[i] + spl_line_style, spl, vp_size, smooth, interval, maxlen,
+                                linewidth=line_width, mv_avg=mv_avg, markersize=CFG['markersize'])
 
-        plot_accuracy_curve(Curves[3].title, 'r-.', raw, vp_size, smooth, interval, maxlen,
-                            linewidth=line_width + 1, mv_avg=mv_avg)
+        plot_accuracy_curve(Curves[3].title, 'b' + random_line_style, random_drop, vp_size, smooth, interval, maxlen,
+                            linewidth=line_width, mv_avg=mv_avg, markersize=CFG['markersize'])
 
-        for i, reinforce in enumerate(reinforces):
-            plot_accuracy_curve(r'$NDF-REINFORCE-{}$'.format(speed_cfg[i]),
-                                reinforce_lines[i] + reinforce_line_style, reinforce, vp_size, smooth, interval, maxlen,
-                                linewidth=line_width, mv_avg=mv_avg)
+        plot_accuracy_curve(Curves[3].title, 'b' + raw_line_style, raw, vp_size, smooth, interval, maxlen,
+                            linewidth=line_width + 1, mv_avg=mv_avg, markersize=CFG['markersize'])
 
         plt.xlim(xmin=xmin, xmax=xmax)
         plt.ylim(ymin=ymin, ymax=ymax)
@@ -289,17 +293,17 @@ def plot_for_paper_mnist():
         'log-mnist-spl-NonC4.txt',
         'log-mnist-spl-NonC6.txt',
         'log-mnist-random_drop-speed-NonC3.txt',
-        'log-mnist-stochastic-lr-speed-NonC3Best.txt',
+        # 'log-mnist-stochastic-lr-speed-NonC3Best.txt',
         'log-mnist-stochastic-lr-speed-NonC7Best.txt',
         'log-mnist-stochastic-lr-speed-NonC8Best.txt',
         'log-mnist-stochastic-lr-speed-NonC10Best.txt',
         # 'log-mnist-stochastic-lr-speed-NonC11Best.txt',
 
-        xmin=130,
-        xmax=1100,
+        xmin=125,
+        xmax=600,
         ymin=0.93,
-        ymax=0.985,
-        interval=2,
+        ymax=0.981,
+        interval=10,
         maxlen=600,
         smooth=800,
 
@@ -309,7 +313,8 @@ def plot_for_paper_mnist():
         mv_avg2=20,
 
         spl_cfg=[80, 120, 160],
-        speed_cfg=['lrNonC3', 'lrNonC7', 'lrNonC8', 'lrNonC10'],
+        # speed_cfg=['0.94', '.89\ .92\ .94', '.80\ .88\ .96'],
+        speed_cfg=['0.94', '0.96', '0.98'],
     )
 
 
@@ -338,19 +343,21 @@ def plot_for_paper_cifar():
 
         dataset='cifar10',
         xmin=0,
-        xmax=99,
+        xmax=87,
         ymin=0.6,
         ymax=0.95,
-        interval=1,
+        interval=7,
         vp_size=390 * 128,
         smooth=800,
+        mv_avg=2,
 
         ymin2=None,
         ymax2=None,
         xmax2=40000,
 
         spl_cfg=[120, 60, 180],
-        speed_cfg=['lrNonC2', 'lrNonC3', 'lrNonC4']
+        # speed_cfg=['.80\ .84\ .865', '.84', '.80'],
+        speed_cfg=['0.80', '0.84', '0.88'],
     )
 
 
@@ -383,14 +390,16 @@ def plot_for_paper_c_cifar():
 
 def plot_for_paper_imdb():
     plot_for_paper_all(
-        'log-imdb-raw-NonC1.txt',
+        'log-imdb-raw-NonC1s.txt',
         # 'log-imdb-spl-NonC1.txt',
         'log-imdb-spl-NonC2.txt',
         'log-imdb-spl-NonC100.txt',
         'log-imdb-spl-NonC120.txt',
         'log-imdb-random_drop-lr-speed-NonC_old2.txt',
         'log-imdb-stochastic-lr-speed-NonC_Old2_1.txt',
-        'log-imdb-stochastic-lr-speed-OldNonC2Warm_1.txt',
+        'log-imdb-stochastic-lr-speed-OldNonC2Warm2.txt',
+        'log-imdb-stochastic-lr-speed-NonC_Old2_2.txt',
+        # 'log-imdb-stochastic-lr-speed-NonC_Old.txt',
         # 'log-imdb-stochastic-mlp-speed-NonC1Best.txt',
         # 'log-imdb-stochastic-mlp-speed-NonC2Best.txt',
         # 'log-imdb-raw-NonC1_3.txt',
@@ -398,12 +407,13 @@ def plot_for_paper_imdb():
         dataset='imdb',
         xmin=0,
         xmax=37.5,
+        # xmax=70,
         ymin=0.45,
         ymax=0.92,
-        interval=1,
+        interval=5,
         vp_size=200 * 16,
-        # smooth=800,
-        mv_avg=3,
+        smooth=800,
+        mv_avg=2,
 
         ymin2=None,
         ymax2=None,
@@ -412,7 +422,8 @@ def plot_for_paper_imdb():
         smooth2=800,
         mv_avg2=5,
 
-        speed_cfg=['lrNonCOld', 'lrNonCOld2'],
+        # speed_cfg=['.80\ .83\ .86', '.70\ .80\ .85', '.80\ .83\ .86'],
+        speed_cfg=['0.80', '0.83', '0.86'],
         spl_cfg=[80, 100, 120],
     )
 

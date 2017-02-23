@@ -27,6 +27,12 @@ Curves = [
 ]
 
 
+CFG = {
+    'linewidth': 7.5,
+    'markersize': 12.0,
+}
+
+
 def load_list(filename, dtype=float):
     if not os.path.exists(filename):
         return []
@@ -56,6 +62,17 @@ def average_list(*lists):
         average_without_none(elements)
         for elements in izip_longest(*lists)
     ]
+
+
+def move_avg(l, mv_avg=5):
+    return [avg(l[max(i - mv_avg, 0):i + 1]) for i in range(len(l))]
+
+
+def pick_interval(l, interval=1):
+    if interval <= 1:
+        return l
+
+    return [e for i, e in enumerate(l) if (i + 1) % interval == 0]
 
 
 def get_data(data_field, dataset=DataSet):
@@ -96,7 +113,8 @@ def legend(**kwargs):
 
     plt.legend(loc='lower center', bbox_to_anchor=(0.5, -0.0), bbox_transform=plt.gcf().transFigure,
                fancybox=False, shadow=False,
-               ncol=total_number // n_rows + int(bool(total_number % n_rows)), fontsize=20)
+               ncol=total_number // n_rows + int(bool(total_number % n_rows)), fontsize=28,
+               borderpad=0.2, labelspacing=0.2, handletextpad=0.2, borderaxespad=0.2)
 
 
 def plot_acc_line(k, style, xs, ys, interval=1, smooth=300):
