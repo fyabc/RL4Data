@@ -415,8 +415,8 @@ class TestPolicyUpdater(BatchUpdater):
 
                 for a, r in izip(action, rank):
                     if not a:
-                        self.total_dropped_ranks[r] += 1
-                        self.part_dropped_ranks[r] += 1
+                        self.total_dropped_ranks[int(round(r))] += 1
+                        self.part_dropped_ranks[int(round(r))] += 1
 
         self.add_index_list(result)
 
