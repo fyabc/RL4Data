@@ -183,7 +183,9 @@ def plot_for_paper_all(*filenames, **kwargs):
         plt.sca(axis1)
 
     # Plot test accuracy
-    plt.title(r'$Test\ Accuracy$', fontsize=18)
+    plt.title(r'$Test\ Accuracy$', fontsize=24)
+    plt.xticks(fontsize=15)
+    plt.yticks(fontsize=15)
 
     xmin = kwargs.pop('xmin', 160)
     xmax = kwargs.pop('xmax', 1200)
@@ -382,13 +384,16 @@ def plot_for_paper_c_cifar():
 def plot_for_paper_imdb():
     plot_for_paper_all(
         'log-imdb-raw-NonC1.txt',
-        'log-imdb-spl-NonC1.txt',
+        # 'log-imdb-spl-NonC1.txt',
         'log-imdb-spl-NonC2.txt',
-        'log-imdb-spl-NonC3.txt',
+        'log-imdb-spl-NonC100.txt',
+        'log-imdb-spl-NonC120.txt',
         'log-imdb-random_drop-lr-speed-NonC_old2.txt',
-        'log-imdb-stochastic-lr-speed-NonC_Old2.txt',
-        'log-imdb-stochastic-mlp-speed-NonC1Best.txt',
-        'log-imdb-stochastic-mlp-speed-NonC2Best.txt',
+        'log-imdb-stochastic-lr-speed-NonC_Old2_1.txt',
+        'log-imdb-stochastic-lr-speed-OldNonC2Warm_1.txt',
+        # 'log-imdb-stochastic-mlp-speed-NonC1Best.txt',
+        # 'log-imdb-stochastic-mlp-speed-NonC2Best.txt',
+        # 'log-imdb-raw-NonC1_3.txt',
 
         dataset='imdb',
         xmin=0,
@@ -398,7 +403,7 @@ def plot_for_paper_imdb():
         interval=1,
         vp_size=200 * 16,
         # smooth=800,
-        mv_avg=5,
+        mv_avg=3,
 
         ymin2=None,
         ymax2=None,
@@ -407,8 +412,8 @@ def plot_for_paper_imdb():
         smooth2=800,
         mv_avg2=5,
 
-        speed_cfg=['lrNonCOld', 'mlpNonC1', 'mlpNonC2'],
-        spl_cfg=[40, 80, 160],
+        speed_cfg=['lrNonCOld', 'lrNonCOld2'],
+        spl_cfg=[80, 100, 120],
     )
 
 
@@ -459,6 +464,6 @@ def main(args=None):
 
 
 if __name__ == '__main__':
-    main(['-b', 'cifar10'])
+    main(['-b', 'imdb'])
     # main()
     pass

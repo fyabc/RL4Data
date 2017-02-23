@@ -406,17 +406,17 @@ class TestPolicyUpdater(BatchUpdater):
 
                         self.total_dropped_ranks[rank] += 1
                         self.part_dropped_ranks[rank] += 1
-                else:
-                    # [NOTE] Compatibility for old IMDB version
-                    # loss = -log(P(y)), output of PolicyConfig['add_label_input'] is log(P(y)).
-                    losses = np.array([-prob[self.model.output_size] for prob in probability])
+            else:
+                # [NOTE] Compatibility for old IMDB version
+                # loss = -log(P(y)), output of PolicyConfig['add_label_input'] is log(P(y)).
+                losses = np.array([-prob[self.model.output_size] for prob in probability])
 
-                    rank = get_rank(losses)
+                rank = get_rank(losses)
 
-                    for a, r in izip(action, rank):
-                        if not a:
-                            self.total_dropped_ranks[r] += a
-                            self.part_dropped_ranks[r] += a
+                for a, r in izip(action, rank):
+                    if not a:
+                        self.total_dropped_ranks[r] += a
+                        self.part_dropped_ranks[r] += a
 
         self.add_index_list(result)
 
