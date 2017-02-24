@@ -18,7 +18,7 @@ DataSet = 'imdb'
 
 Curve = namedtuple('Curve', ['raw_name', 'title'])
 Curves = [
-    Curve('random_drop_speed', r'$RandomDropREINFORCE$'),
+    Curve('random_drop_speed', r'$RandomDrop$'),
     Curve('random_drop_AC', r'$RandomDropActorCritic$'),
     Curve('SPL', r'$SPL$'),
     Curve('raw', r'$UnfilteredSGD$'),
@@ -29,7 +29,7 @@ Curves = [
 
 CFG = {
     'linewidth': 7.5,
-    'markersize': 12.0,
+    'markersize': 17.0,
 }
 
 

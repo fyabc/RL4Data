@@ -198,7 +198,7 @@ def plot_for_paper_all(*filenames, **kwargs):
     reinforces = test_acc_lists[-speed_count:]
 
     raw_line_style = '-o'
-    random_line_style = '-^'
+    random_line_style = '-s'
     spl_line_style = '--'
     reinforce_line_style = '-'
 
@@ -217,10 +217,10 @@ def plot_for_paper_all(*filenames, **kwargs):
                             linewidth=line_width, mv_avg=mv_avg, markersize=CFG['markersize'])
 
     plot_accuracy_curve(Curves[0].title, 'b' + random_line_style, random_drop, vp_size, smooth, interval, maxlen,
-                        linewidth=line_width, mv_avg=mv_avg, markersize=CFG['markersize'])
+                        linewidth=line_width - 1, mv_avg=mv_avg, markersize=CFG['markersize'])
 
     plot_accuracy_curve(Curves[3].title, 'r' + raw_line_style, raw, vp_size, smooth, interval, maxlen,
-                        linewidth=line_width + 1, mv_avg=mv_avg, markersize=CFG['markersize'])
+                        linewidth=line_width - 1, mv_avg=mv_avg, markersize=CFG['markersize'])
 
     legend(use_ac=False, spl_count=spl_count, speed_count=speed_count, n_rows=3)
 
@@ -300,10 +300,10 @@ def plot_for_paper_mnist():
         # 'log-mnist-stochastic-lr-speed-NonC11Best.txt',
 
         xmin=125,
-        xmax=600,
+        xmax=595,
         ymin=0.93,
         ymax=0.981,
-        interval=10,
+        interval=15,
         maxlen=600,
         smooth=800,
 
@@ -346,7 +346,7 @@ def plot_for_paper_cifar():
         xmax=87,
         ymin=0.6,
         ymax=0.95,
-        interval=7,
+        interval=10,
         vp_size=390 * 128,
         smooth=800,
         mv_avg=2,
@@ -406,7 +406,7 @@ def plot_for_paper_imdb():
 
         dataset='imdb',
         xmin=0,
-        xmax=37.5,
+        xmax=37.5 * 7 / 6,
         # xmax=90,
         ymin=0.45,
         ymax=0.90,
