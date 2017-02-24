@@ -225,11 +225,13 @@ if __name__ == '__main__':
     #     'log-mnist-stochastic-lr-speed-NonC10Best.txt',
     # ])
 
+    import sys
+
     {
         'imdb': plot_imdb,
         'cifar10': plot_cifar10,
         'mnist': plot_mnist,
         'main': main,
-    }['imdb']()
+    }[sys.argv[1]]()
 
     pass

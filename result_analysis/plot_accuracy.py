@@ -207,7 +207,7 @@ def plot_for_paper_all(*filenames, **kwargs):
     reinforce_colors = ['c', 'm', 'y', 'g', 'k', 'w']
 
     for i, reinforce in enumerate(reinforces):
-        plot_accuracy_curve(r'$NDF-REINFORCE-{}$'.format(speed_cfg[i]),
+        plot_accuracy_curve(r'$NDF-{}$'.format(speed_cfg[i]),
                             reinforce_colors[i] + reinforce_line_style, reinforce, vp_size, smooth, interval, maxlen,
                             linewidth=line_width, mv_avg=mv_avg, markersize=CFG['markersize'])
 
@@ -259,7 +259,7 @@ def plot_for_paper_all(*filenames, **kwargs):
         reinforces = train_loss_lists[-speed_count:]
 
         for i, reinforce in enumerate(reinforces):
-            plot_accuracy_curve(r'$NDF-REINFORCE-{}$'.format(speed_cfg[i]),
+            plot_accuracy_curve(r'$NDF-{}$'.format(speed_cfg[i]),
                                 reinforce_colors[i] + reinforce_line_style, reinforce, vp_size, smooth, interval, maxlen,
                                 linewidth=line_width, mv_avg=mv_avg, markersize=CFG['markersize'])
 
@@ -475,6 +475,6 @@ def main(args=None):
 
 
 if __name__ == '__main__':
-    main(['-b', 'imdb'])
-    # main()
+    # main(['-b', 'imdb'])
+    main()
     pass

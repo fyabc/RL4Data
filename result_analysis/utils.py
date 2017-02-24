@@ -23,7 +23,7 @@ Curves = [
     Curve('SPL', r'$SPL$'),
     Curve('raw', r'$UnfilteredSGD$'),
     Curve('AC_valacc', r'$NDF-ActorCritic$'),
-    Curve('valacc', r'$NDF-REINFORCE$'),
+    Curve('valacc', r'$NDF$'),
 ]
 
 
