@@ -5,7 +5,7 @@ from __future__ import print_function, unicode_literals
 
 import numpy as np
 
-from logging_utils import message
+from my_logging import message
 
 
 class PartLossChecker(object):

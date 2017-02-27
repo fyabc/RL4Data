@@ -2,16 +2,16 @@
 
 from __future__ import print_function, unicode_literals
 
-import sys
 import os
+import sys
 
 ProjectRootPath = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(ProjectRootPath)
 
 import numpy as np
 
-from config import ModelPath
-from utils import floatX, fX
+from libs.utility.config import ModelPath
+from libs.utility.utils import floatX, fX
 
 __author__ = 'fyabc'
 

@@ -3,15 +3,16 @@
 
 from __future__ import print_function, unicode_literals
 
-import gzip
-import numpy as np
 import cPickle as pickle
+import gzip
+
+import numpy as np
 import theano
 import theano.tensor as T
 
 from config import Config, MNISTConfig as ParamConfig
 from utils import fX, get_part_data
-from logging_utils import message
+from my_logging import message
 
 
 def load_mnist_data(data_dir=None):
@@ -111,7 +112,10 @@ def pre_process_MNIST_data():
 
 
 def test():
-    rval = load_mnist_data()
+    from config import DataPath
+    import os
+
+    rval = load_mnist_data(os.path.join(DataPath, 'mnist', 'mnist.pkl.gz'))
 
     for val in rval:
         print(type(val), val.shape, val.dtype)
@@ -119,10 +123,6 @@ def test():
     train_x, train_y = rval[0], rval[1]
     print(train_x[0], train_x.max(), train_x.min())
     print(train_y[:25], train_y.max(), train_y.min())
-
-
-if __name__ == '__main__':
-    test()
 
 
 def pre_process_config(model, train_size):
@@ -141,3 +141,7 @@ def pre_process_config(model, train_size):
     validation_frequency = ParamConfig['valid_freq']
 
     return patience, patience_increase, improvement_threshold, validation_frequency
+
+
+if __name__ == '__main__':
+    test()

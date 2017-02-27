@@ -3,8 +3,8 @@
 
 from __future__ import print_function, unicode_literals
 
-import sys
 import os
+import sys
 
 ProjectRootPath = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(ProjectRootPath)
@@ -14,7 +14,7 @@ import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 
-from config import LogPath
+from libs.utility.config import LogPath
 
 __author__ = 'fyabc'
 

@@ -10,11 +10,11 @@ import theano
 import theano.tensor as T
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
-from config import Config, PolicyConfig
-from utils import fX, floatX, init_norm
-from logging_utils import message, logging
-from name_register import NameRegister
-from optimizers import adadelta, adam, sgd, rmsprop
+from utility.config import Config, PolicyConfig
+from utility.my_logging import message, logging
+from utility.name_register import NameRegister
+from utility.utils import fX, floatX, init_norm
+from utility.optimizers import sgd, adadelta, adam, rmsprop
 
 __author__ = 'fyabc'
 
@@ -354,6 +354,9 @@ MLPPolicyNetwork.register_class(['mlp'])
 
 def test():
     print(PolicyNetworkBase.get_by_name('mlp'))
+
+    # Just ref them, or they may be optimized out by PyCharm.
+    _ = sgd, adam, adadelta, rmsprop
 
 
 if __name__ == '__main__':

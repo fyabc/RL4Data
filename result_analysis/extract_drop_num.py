@@ -3,8 +3,8 @@
 
 from __future__ import print_function, unicode_literals
 
-import sys
 import os
+import sys
 
 ProjectRootPath = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(ProjectRootPath)
@@ -15,7 +15,7 @@ from itertools import izip_longest
 import numpy as np
 import matplotlib.pyplot as plt
 
-from config import LogPath, DataPath
+from libs.utility.config import LogPath, DataPath
 from utils import save_list, move_avg, CFG, pick_interval
 
 __author__ = 'fyabc'
@@ -197,7 +197,7 @@ def plot_imdb():
         title='IMDB\ NDF-REINFORCE\ LR',
         # xmax=5.420788724759452,
         # xmax=12,
-        xmax=None,
+        xmax=16,
         mv_avg=2,
         legend_loc='upper right'
     )

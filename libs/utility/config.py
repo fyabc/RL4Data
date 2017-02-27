@@ -8,8 +8,15 @@ import re
 
 __author__ = 'fyabc'
 
+# Paths
+ProjectRootPath = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+DataPath = os.path.join(ProjectRootPath, 'data')
+LogPath = os.path.join(ProjectRootPath, 'log')
+ModelPath = os.path.join(ProjectRootPath, 'model')
+ReservedDataPath = os.path.join(ProjectRootPath, 'reserved_data')
+
 # Load JSON config file and remove line comments
-_lines = list(open(os.path.join(os.path.dirname(__file__), 'config.json'), 'r'))
+_lines = list(open(os.path.join(ProjectRootPath, 'config.json'), 'r'))
 
 for _i, line in enumerate(_lines):
     _lines[_i] = re.sub(r'//.*\n', '\n', line)
@@ -19,13 +26,6 @@ CifarConfig = Config['cifar10']
 IMDBConfig = Config['imdb']
 MNISTConfig = Config['mnist']
 PolicyConfig = Config['policy']
-
-# Paths
-ProjectRootPath = os.path.dirname(os.path.abspath(__file__))
-DataPath = os.path.join(ProjectRootPath, 'data')
-LogPath = os.path.join(ProjectRootPath, 'log')
-ModelPath = os.path.join(ProjectRootPath, 'model')
-ReservedDataPath = os.path.join(ProjectRootPath, 'reserved_data')
 
 # All train types.
 TrainTypes = {

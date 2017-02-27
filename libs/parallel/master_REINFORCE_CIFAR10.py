@@ -3,9 +3,9 @@
 
 from __future__ import print_function, unicode_literals
 
-from config import CifarConfig as ParamConfig
-from model_CIFAR10 import CIFARModel
-from parallel_utils import parallel_run_async
+from ..model_class.CIFAR10 import CIFARModel
+from ..utility.parallel_utils import parallel_run_async
+from ..utility.config import CifarConfig as ParamConfig
 
 
 def main():

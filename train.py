@@ -2,18 +2,16 @@
 
 from __future__ import print_function, unicode_literals
 
-import sys
-
-import train_CIFAR10
-import train_IMDB
-import train_MNIST
-
-from utils import process_before_train2
+from libs.train import MNIST, CIFAR10, IMDB
+from libs.utility.utils import process_before_train2
 
 __author__ = 'fyabc'
 
 
 def main():
+    # Just ref them, or they may be optimized out by PyCharm.
+    _ = CIFAR10, IMDB, MNIST
+
     # Set the configs (include dataset specific config), and return the dataset attributes.
     dataset_attr = process_before_train2()
 

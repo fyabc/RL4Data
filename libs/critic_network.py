@@ -4,15 +4,13 @@ from __future__ import print_function, unicode_literals
 
 import math
 from collections import OrderedDict
+
 import numpy as np
-
-import theano.tensor as T
 import theano
-from lasagne.layers import LSTMLayer, InputLayer
-from lasagne.layers import get_output, get_all_params
+import theano.tensor as T
 
-from utils import fX, floatX
-from optimizers import adam
+from libs.utility.optimizers import adam
+from utility.utils import fX, floatX
 
 __author__ = 'fyabc'
 

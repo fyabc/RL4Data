@@ -13,9 +13,9 @@ from collections import namedtuple
 import numpy as np
 
 from config import *
-from logging_utils import init_logging_file, finalize_logging_file, message, get_logging_file
-from path_util import get_path, split_policy_name, find_newest
-from preprocess_utils import Tilde, simple_parse_args2, check_config, strict_update
+from my_logging import init_logging_file, finalize_logging_file, message, get_logging_file
+from path import get_path, split_policy_name, find_newest
+from preprocess import Tilde, simple_parse_args2, check_config, strict_update
 
 __author__ = 'fyabc'
 
@@ -24,9 +24,9 @@ DatasetAttributes = namedtuple('DatasetAttributes', ['name', 'config', 'main_ent
 
 # All datasets
 Datasets = {
-    'cifar10': DatasetAttributes('cifar10', CifarConfig, 'train_CIFAR10.main'),
-    'mnist': DatasetAttributes('mnist', MNISTConfig, 'train_MNIST.main'),
-    'imdb': DatasetAttributes('imdb', IMDBConfig, 'train_IMDB.main'),
+    'cifar10': DatasetAttributes('cifar10', CifarConfig, 'CIFAR10.main'),
+    'mnist': DatasetAttributes('mnist', MNISTConfig, 'MNIST.main'),
+    'imdb': DatasetAttributes('imdb', IMDBConfig, 'IMDB.main'),
 }
 
 # The float type of Theano. Default to 'float32'.
@@ -185,11 +185,11 @@ def process_before_train2(args=None):
 
     Parameters
     ----------
-    args
+    args: The command line arguments.
 
     Returns
     -------
-    A DatasetAttributes instance, indicates the dataset information.
+    A `DatasetAttributes` instance, indicates the dataset information.
     """
 
     args = args or sys.argv
@@ -198,8 +198,8 @@ def process_before_train2(args=None):
     import platform
 
     if '-h' in args or '--help' in args:
-        # TODO add more help message
-        exit()
+        print('See comments of file "config.json" to know how to set arguments.')
+        exit(0)
 
     global_args_dict, policy_args_dict, param_args_dict = simple_parse_args2(args)
 

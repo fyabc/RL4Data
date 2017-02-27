@@ -3,19 +3,20 @@
 
 from __future__ import print_function, unicode_literals
 
-import sys
-import os
 import cPickle as pkl
-import time
 import gc
+import os
 import subprocess
-import psutil
-import numpy as np
+import sys
+import time
 
-from utils import process_before_train, get_policy
-from logging_utils import message
+import numpy as np
+import psutil
+
 from config import PolicyConfig, Config
-from policy_network import LRPolicyNetwork, MLPPolicyNetwork
+from my_logging import message
+from utils import process_before_train, get_policy
+from ..policy_network import LRPolicyNetwork, MLPPolicyNetwork
 
 
 def get_gpu_id():
@@ -178,3 +179,8 @@ def parallel_run_sync(model_type, param_config, slave_script_name):
 
         policy.save_policy(PolicyConfig['policy_save_file'].replace('.npz', '_ep{}.npz'.format(episode)))
         policy.save_policy()
+
+
+def just_ref():
+    # Just ref them, or they may be optimized out by PyCharm.
+    _ = LRPolicyNetwork, MLPPolicyNetwork

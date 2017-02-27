@@ -2,9 +2,9 @@
 
 from __future__ import print_function, unicode_literals
 
-import sys
-import os
 import argparse
+import os
+import sys
 
 ProjectRootPath = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(ProjectRootPath)
@@ -15,7 +15,7 @@ import numpy as np
 from scipy.interpolate import spline
 import matplotlib.pyplot as plt
 
-from config import LogPath
+from libs.utility.config import LogPath
 from utils import Curves, legend, average_list, move_avg, CFG, pick_interval
 
 __author__ = 'fyabc'

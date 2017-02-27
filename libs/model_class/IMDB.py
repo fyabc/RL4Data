@@ -2,20 +2,18 @@
 
 from __future__ import print_function, unicode_literals
 
-import time
-import numpy as np
-import cPickle as pkl
 from collections import OrderedDict
 
-import theano.tensor as T
+import numpy as np
 import theano
+import theano.tensor as T
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
-from utils import fX, floatX, average, get_minibatches_idx, get_rank
-from logging_utils import message, logging
-from utils_IMDB import prepare_imdb_data as prepare_data, pr, ortho_weight
-from optimizers import adadelta, adam, sgd, rmsprop
-from config import IMDBConfig as ParamConfig, PolicyConfig, Config
+from ..utility.config import IMDBConfig as ParamConfig, PolicyConfig, Config
+from ..utility.my_logging import logging
+from ..utility.utils import fX, floatX, average, get_minibatches_idx, get_rank
+from ..utility.IMDB import prepare_imdb_data as prepare_data, pr, ortho_weight
+from ..utility.optimizers import sgd, adam, adadelta, rmsprop
 
 __author__ = 'fyabc'
 
@@ -425,10 +423,6 @@ class IMDBModel(IMDBModelBase):
         return sum_loss / len(kf)
 
 
-def test():
-    ParamConfig['ydim'] = 2
-    model = IMDBModel()
-
-
-if __name__ == '__main__':
-    test()
+def just_ref():
+    # Just ref them, or they may be optimized out by PyCharm.
+    _ = sgd, adam, adadelta, rmsprop

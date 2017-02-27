@@ -16,7 +16,7 @@
 - Set force init policy weights:
     add these into parameters:
 
-    ```
+    ```python
     P.W_init=[0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,2.,0.,-2.,0.]
     P.b_init=2.0
     ```

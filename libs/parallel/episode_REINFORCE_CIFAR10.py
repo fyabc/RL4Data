@@ -3,13 +3,14 @@
 
 from __future__ import print_function, unicode_literals
 
-from batch_updater import TrainPolicyUpdater
-from config import CifarConfig as ParamConfig
-from model_CIFAR10 import CIFARModel
-from policy_network import LRPolicyNetwork, MLPPolicyNetwork
-from reward_checker import SpeedRewardChecker
-from utils import *
-from utils_CIFAR10 import pre_process_CIFAR10_data, prepare_CIFAR10_data
+from ..batch_updater import TrainPolicyUpdater
+from ..model_class.CIFAR10 import CIFARModel
+from ..policy_network import LRPolicyNetwork, MLPPolicyNetwork
+from ..reward_checker import SpeedRewardChecker
+from ..utility.CIFAR10 import pre_process_CIFAR10_data, prepare_CIFAR10_data
+from ..utility.config import CifarConfig as ParamConfig
+from ..utility.utils import *
+from ..utility.optimizers import sgd, adam, adadelta, rmsprop
 
 
 def train_episode():
@@ -88,11 +89,10 @@ def train_episode():
 
 
 def just_ref():
-    """
-    This function is just refer some names to prevent them from being optimized by Pycharm.
-    """
+    # Just ref them, or they may be optimized out by PyCharm.
 
     _ = LRPolicyNetwork, MLPPolicyNetwork
+    _ = sgd, adam, adadelta, rmsprop
 
 
 def main(args=None):

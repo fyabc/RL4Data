@@ -4,10 +4,10 @@ from __future__ import print_function, unicode_literals
 
 import numpy as np
 
-from utils import load_list
-from logging_utils import message
-from config import PolicyConfig
-from name_register import NameRegister
+from utility.config import PolicyConfig
+from utility.my_logging import message
+from utility.name_register import NameRegister
+from utility.utils import load_list
 
 __author__ = 'fyabc'
 

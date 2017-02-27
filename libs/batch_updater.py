@@ -3,15 +3,15 @@
 
 from __future__ import print_function, unicode_literals
 
-from collections import deque
 import heapq
+from collections import deque
 from itertools import izip
 
 import numpy as np
 
-from extensions import PartLossChecker
-from config import Config, PolicyConfig
-from utils import message, get_rank
+from utility.extensions import PartLossChecker
+from utility.config import Config, PolicyConfig
+from utility.utils import message, get_rank
 
 # Some Magic Numbers.
 

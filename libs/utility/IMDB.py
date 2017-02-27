@@ -8,7 +8,7 @@ import numpy as np
 
 from config import IMDBConfig as ParamConfig
 from utils import fX, get_minibatches_idx
-from logging_utils import logging, message
+from my_logging import logging, message
 
 __author__ = 'fyabc'
 

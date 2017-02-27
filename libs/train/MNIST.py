@@ -3,28 +3,61 @@
 
 from __future__ import print_function, unicode_literals
 
-from batch_updater import *
-from config import MNISTConfig as ParamConfig
-from critic_network import CriticNetwork
-from model_MNIST import MNISTModel
-from new_train.new_train_MNIST import new_train_MNIST
-from policy_network import PolicyNetworkBase
-from reward_checker import RewardChecker, get_reward_checker
-from utils import *
-from utils import episode_final_message
-from utils_MNIST import pre_process_MNIST_data, pre_process_config
+from functools import partial
+
+from ..batch_updater import *
+from ..critic_network import CriticNetwork
+from ..model_class.MNIST import MNISTModel
+from ..new_train.new_train_MNIST import new_train_MNIST
+from ..policy_network import PolicyNetworkBase
+from ..reward_checker import RewardChecker, get_reward_checker
+from ..utility.MNIST import pre_process_MNIST_data, pre_process_config
+from ..utility.config import MNISTConfig as ParamConfig
+from ..utility.utils import *
 
 __author__ = 'fyabc'
 
 
-def train_raw_MNIST():
+def train_raw_MNIST_template(train_type='raw'):
     model = MNISTModel()
 
     # Load the dataset and config
-    x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size = pre_process_MNIST_data()
+    x_train, y_train, x_validate, y_validate, x_test, y_test,\
+        train_size, validate_size, test_size = pre_process_MNIST_data()
     patience, patience_increase, improvement_threshold, validation_frequency = pre_process_config(model, train_size)
 
-    updater = RawUpdater(model, [x_train, y_train])
+    #####################################
+    # Train type specific configuration #
+    #####################################
+
+    epoch_shuffle = True
+
+    if train_type == 'raw':
+        updater = RawUpdater(model, [x_train, y_train])
+        epoch_shuffle = ParamConfig['raw_shuffle']
+    elif train_type == 'spl':
+        updater = SPLUpdater(model, [x_train, y_train], ParamConfig['epoch_per_episode'])
+    elif train_type == 'deterministic':
+        raise NotImplementedError('Deterministic test policy is not implemented in MNIST')
+    elif train_type == 'random_drop':
+        updater = RandomDropUpdater(model, [x_train, y_train], PolicyConfig['random_drop_number_file'],
+                                    drop_num_type='vp', valid_freq=ParamConfig['valid_freq'])
+    elif train_type == 'stochastic':
+        input_size = MNISTModel.get_policy_input_size()
+        message('Input size of policy network:', input_size)
+
+        # Build policy
+        policy = PolicyNetworkBase.get_by_name(PolicyConfig['policy_model_type'])(input_size=input_size)
+        # policy = LRPolicyNetwork(input_size=input_size)
+        policy.load_policy()
+        policy.message_parameters()
+        updater = TestPolicyUpdater(model, [x_train, y_train], policy)
+    else:
+        raise KeyError('Unknown train type {}'.format(train_type))
+
+    #####################
+    # Configuration end #
+    #####################
 
     # Train the network
     # Some variables
@@ -40,7 +73,7 @@ def train_raw_MNIST():
     for epoch in range(ParamConfig['epoch_per_episode']):
         epoch_start_time = start_new_epoch(updater, epoch)
 
-        kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=ParamConfig['raw_shuffle'])
+        kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=epoch_shuffle)
 
         for _, train_index in kf:
             part_train_cost = updater.add_batch(train_index)
@@ -58,74 +91,6 @@ def train_raw_MNIST():
                     # validate_size=validate_size,  # Use part validation set in baseline
                     run_test=True,
                 )
-                
-                if validate_acc > best_validate_acc:
-                    # improve patience if loss improvement is good enough
-                    if (1. - validate_acc) < (1. - best_validate_acc) * improvement_threshold:
-                        patience = max(patience, updater.total_train_batches * patience_increase)
-                    best_validate_acc = validate_acc
-                    best_iteration = updater.total_train_batches
-                    test_score = test_acc
-
-            if updater.total_train_batches >= patience:
-                break
-
-        message("Epoch {} of {} took {:.3f}s".format(
-            epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
-        if updater.total_train_batches >= patience:
-            message('Early Stop!')
-            break
-
-    episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
-
-    if ParamConfig['save_model']:
-        model.save_model()
-
-
-def train_SPL_MNIST():
-    model = MNISTModel()
-
-    if ParamConfig['warm_start']:
-        model.load_model()
-
-    # Load the dataset and config
-    x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size = pre_process_MNIST_data()
-    patience, patience_increase, improvement_threshold, validation_frequency = pre_process_config(model, train_size)
-
-    updater = SPLUpdater(model, [x_train, y_train], ParamConfig['epoch_per_episode'])
-
-    # Train the network
-    # Some variables
-
-    # To prevent the double validate point
-    last_validate_point = -1
-
-    best_validate_acc = -np.inf
-    best_iteration = 0
-    test_score = 0.0
-    start_time = time.time()
-
-    for epoch in range(ParamConfig['epoch_per_episode']):
-        epoch_start_time = start_new_epoch(updater, epoch)
-
-        kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
-
-        for _, train_index in kf:
-            part_train_cost = updater.add_batch(train_index)
-
-            # Log training loss of each batch in test process
-            if part_train_cost is not None:
-                message("tL {}: {:.6f}".format(updater.epoch_train_batches, part_train_cost.tolist()))
-
-            if updater.total_train_batches > 0 and \
-                    updater.total_train_batches != last_validate_point and \
-                    updater.total_train_batches % validation_frequency == 0:
-                last_validate_point = updater.total_train_batches
-
-                validate_acc, test_acc = validate_point_message(
-                    model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater,
-                    run_test=True,
-                )
 
                 if validate_acc > best_validate_acc:
                     # improve patience if loss improvement is good enough
@@ -145,6 +110,16 @@ def train_SPL_MNIST():
             break
 
     episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
+
+    if train_type == 'raw':
+        if ParamConfig['save_model']:
+            model.save_model()
+
+train_raw_MNIST = partial(train_raw_MNIST_template, 'raw')
+train_SPL_MNIST = partial(train_raw_MNIST_template, 'spl')
+test_stochastic_MNIST = partial(train_raw_MNIST_template, 'stochastic')
+test_deterministic_MNIST = partial(train_raw_MNIST_template, 'deterministic')
+test_random_drop_MNIST = partial(train_raw_MNIST_template, 'random_drop')
 
 
 def train_policy_MNIST():
@@ -373,82 +348,6 @@ def train_actor_critic_MNIST():
             actor.save_policy(PolicyConfig['policy_save_file'], episode)
 
 
-def test_policy_MNIST():
-    if Config['train_type'] == 'deterministic':
-        raise NotImplementedError('Deterministic test policy is not implemented in MNIST')
-
-    model = MNISTModel()
-
-    input_size = MNISTModel.get_policy_input_size()
-    message('Input size of policy network:', input_size)
-
-    # Load the dataset and config
-    x_train, y_train, x_validate, y_validate, x_test, y_test, train_size, validate_size, test_size = pre_process_MNIST_data()
-    patience, patience_increase, improvement_threshold, validation_frequency = pre_process_config(model, train_size)
-
-    if Config['train_type'] == 'random_drop':
-        updater = RandomDropUpdater(model, [x_train, y_train], PolicyConfig['random_drop_number_file'],
-                                    drop_num_type='vp', valid_freq=ParamConfig['valid_freq'])
-    else:
-        # Build policy
-        policy = PolicyNetworkBase.get_by_name(PolicyConfig['policy_model_type'])(input_size=input_size)
-        # policy = LRPolicyNetwork(input_size=input_size)
-        policy.load_policy()
-        policy.message_parameters()
-        updater = TestPolicyUpdater(model, [x_train, y_train], policy)
-
-    # Train the network
-    # Some variables
-
-    # To prevent the double validate point
-    last_validate_point = -1
-
-    best_validate_acc = -np.inf
-    best_iteration = 0
-    test_score = 0.0
-    start_time = time.time()
-
-    for epoch in range(ParamConfig['epoch_per_episode']):
-        epoch_start_time = start_new_epoch(updater, epoch)
-
-        kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
-
-        for _, train_index in kf:
-            part_train_cost = updater.add_batch(train_index)
-
-            # Log training loss of each batch in test process
-            if part_train_cost is not None:
-                message("tL {}: {:.6f}".format(updater.epoch_train_batches, part_train_cost.tolist()))
-
-            if updater.total_train_batches > 0 and \
-                    updater.total_train_batches != last_validate_point and \
-                    updater.total_train_batches % validation_frequency == 0:
-                last_validate_point = updater.total_train_batches
-                validate_acc, test_acc = validate_point_message(
-                    model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater,
-                    run_test=True,
-                )
-                
-                if validate_acc > best_validate_acc:
-                    # improve patience if loss improvement is good enough
-                    if (1. - validate_acc) < (1. - best_validate_acc) * improvement_threshold:
-                        patience = max(patience, updater.total_train_batches * patience_increase)
-                    best_validate_acc = validate_acc
-                    best_iteration = updater.total_train_batches
-                    test_score = test_acc
-
-            if updater.total_train_batches >= patience:
-                break
-
-        message("Epoch {} of {} took {:.3f}s".format(
-            epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
-        if updater.total_train_batches >= patience:
-            message('Early Stop!')
-            break
-
-    episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
-
-
 def main():
     dataset_main({
         'raw': train_raw_MNIST,
@@ -463,13 +362,9 @@ def main():
         'ac': train_actor_critic_MNIST,
 
         # 'test': test_policy_MNIST,
-        'deterministic': test_policy_MNIST,
-        'stochastic': test_policy_MNIST,
-        'random_drop': test_policy_MNIST,
+        'deterministic': test_deterministic_MNIST,
+        'stochastic': test_stochastic_MNIST,
+        'random_drop': test_random_drop_MNIST,
 
         'new_train': new_train_MNIST,
     })
-
-
-if __name__ == '__main__':
-    main()

@@ -3,13 +3,13 @@
 
 from __future__ import print_function, unicode_literals
 
-from batch_updater import TrainPolicyUpdater
-from config import MNISTConfig as ParamConfig
-from model_MNIST import MNISTModel
-from policy_network import LRPolicyNetwork, MLPPolicyNetwork
-from reward_checker import SpeedRewardChecker
-from utils import *
-from utils_MNIST import pre_process_MNIST_data
+from ..batch_updater import TrainPolicyUpdater
+from ..model_class.MNIST import MNISTModel
+from ..policy_network import LRPolicyNetwork, MLPPolicyNetwork
+from ..reward_checker import SpeedRewardChecker
+from ..utility.MNIST import pre_process_MNIST_data
+from ..utility.config import MNISTConfig as ParamConfig
+from ..utility.utils import *
 
 __author__ = 'fyabc'
 
@@ -126,10 +126,7 @@ def train_episode():
 
 
 def just_ref():
-    """
-    This function is just refer some names to prevent them from being optimized by Pycharm.
-    """
-
+    # Just ref them, or they may be optimized out by PyCharm.
     _ = LRPolicyNetwork, MLPPolicyNetwork
 
 

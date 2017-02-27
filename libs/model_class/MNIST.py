@@ -21,17 +21,17 @@ from lasagne.layers import NonlinearityLayer
 from lasagne.nonlinearities import softmax, rectify, tanh
 from lasagne.layers import batch_norm
 from lasagne.layers.helper import get_all_param_values, set_all_param_values
+from lasagne.nonlinearities import softmax, tanh
 
 # For vanilia model
 from lasagne.layers import LocalResponseNormalization2DLayer, MaxPool2DLayer
 
-from config import Config, MNISTConfig as ParamConfig, PolicyConfig
-from utils import fX, floatX, average, get_rank, get_minibatches_idx
-from logging_utils import message, logging
+from ..utility.config import Config, MNISTConfig as ParamConfig, PolicyConfig
+from ..utility.utils import fX, floatX, average, get_rank, get_minibatches_idx
+from ..utility.my_logging import message, logging
 
 
 class MNISTModelBase(object):
-
     output_size = 10
 
     def __init__(self,

@@ -2,15 +2,14 @@
 
 from __future__ import print_function, unicode_literals
 
-from batch_updater import *
-from config import CifarConfig as ParamConfig
-from critic_network import CriticNetwork
-from model_CIFAR10 import CIFARModelBase, CIFARModel
-from policy_network import PolicyNetworkBase
-from reward_checker import RewardChecker, get_reward_checker
-from utils import *
-from utils_CIFAR10 import load_cifar10_data, split_cifar10_data, pre_process_CIFAR10_data, \
-    prepare_CIFAR10_data
+from ..batch_updater import *
+from ..critic_network import CriticNetwork
+from ..model_class.CIFAR10 import CIFARModelBase, CIFARModel
+from ..policy_network import PolicyNetworkBase
+from ..reward_checker import RewardChecker, get_reward_checker
+from ..utility.CIFAR10 import pre_process_CIFAR10_data, prepare_CIFAR10_data
+from ..utility.config import CifarConfig as ParamConfig
+from ..utility.utils import *
 
 __author__ = 'fyabc'
 
@@ -506,7 +505,3 @@ def main():
 
         'new_train': new_train_CIFAR10,
     })
-
-
-if __name__ == '__main__':
-    main()

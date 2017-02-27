@@ -2,18 +2,15 @@
 
 from __future__ import print_function, unicode_literals
 
-import heapq
-from collections import deque
-
-from config import IMDBConfig as ParamConfig
-from critic_network import CriticNetwork
-from model_IMDB import IMDBModel
-from policy_network import PolicyNetworkBase
-from utils import *
-from utils_IMDB import pre_process_IMDB_data, pre_process_config
-from utils_IMDB import prepare_imdb_data as prepare_data
-from batch_updater import *
-from reward_checker import get_reward_checker, RewardChecker
+from ..batch_updater import *
+from ..critic_network import CriticNetwork
+from ..model_class.IMDB import IMDBModel
+from ..policy_network import PolicyNetworkBase
+from ..reward_checker import get_reward_checker, RewardChecker
+from ..utility.IMDB import pre_process_IMDB_data, pre_process_config
+from ..utility.IMDB import prepare_imdb_data as prepare_data
+from ..utility.config import IMDBConfig as ParamConfig
+from ..utility.utils import *
 
 __author__ = 'fyabc'
 
@@ -27,7 +24,7 @@ __author__ = 'fyabc'
 
 
 def save_parameters(model, best_parameters, save_to, history_errs):
-    message('Saving model parameters...')
+    message('Saving model parameters...', end=' ')
 
     if best_parameters:
         params = best_parameters
@@ -613,7 +610,3 @@ def main():
 
         'new_train': new_train_IMDB,
     })
-
-
-if __name__ == '__main__':
-    main()
