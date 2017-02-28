@@ -123,6 +123,8 @@ result_analysis/curve/
 *.png
 *.bmp
 
+!doc/*.png
+
 # Data in result analysis
 result_analysis/data/
 result_analysis/drop_num/
