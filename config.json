@@ -322,5 +322,9 @@
 
         "save_model": false,
         "save_model_file": "~/warm_start_model.npz"
+    },
+
+    "nmt": {
+
     }
 }

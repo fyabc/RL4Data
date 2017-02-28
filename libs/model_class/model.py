@@ -15,3 +15,10 @@ class ModelBase(object):
 
     def validate_or_test(self, x_test, y_test):
         raise NotImplementedError()
+
+    @staticmethod
+    def get_policy_input_size():
+        raise NotImplementedError()
+
+    def get_policy_input(self, *args):
+        raise NotImplementedError()

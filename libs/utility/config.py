@@ -22,10 +22,12 @@ for _i, line in enumerate(_lines):
     _lines[_i] = re.sub(r'//.*\n', '\n', line)
 
 Config = json.loads(''.join(_lines))
+PolicyConfig = Config['policy']
+
 CifarConfig = Config['cifar10']
 IMDBConfig = Config['imdb']
 MNISTConfig = Config['mnist']
-PolicyConfig = Config['policy']
+NMTConfig = Config['nmt']
 
 # All train types.
 TrainTypes = {

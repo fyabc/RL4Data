@@ -133,3 +133,11 @@ def sgd(learning_rate, parameters, grads, inputs, cost):
     f_update = theano.function([learning_rate], [], updates=p_up, profile=False)
 
     return f_grad_shared, f_update
+
+
+__all__ = [
+    'sgd',
+    'adam',
+    'adadelta',
+    'rmsprop',
+]

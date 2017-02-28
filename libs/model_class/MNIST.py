@@ -29,9 +29,10 @@ from lasagne.layers import LocalResponseNormalization2DLayer, MaxPool2DLayer
 from ..utility.config import Config, MNISTConfig as ParamConfig, PolicyConfig
 from ..utility.utils import fX, floatX, average, get_rank, get_minibatches_idx
 from ..utility.my_logging import message, logging
+from .model import ModelBase
 
 
-class MNISTModelBase(object):
+class MNISTModelBase(ModelBase):
     output_size = 10
 
     def __init__(self,
