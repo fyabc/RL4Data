@@ -7,7 +7,7 @@ import os
 import numpy as np
 
 from config import CifarConfig as ParamConfig, Config
-from utils import unpickle, floatX, fX, get_part_data
+from utils import f_open, floatX, fX, get_part_data
 from my_logging import message, logging
 
 __author__ = 'fyabc'
@@ -52,7 +52,7 @@ def load_cifar10_data(data_dir=None, one_file=None):
     train_size = 50000
 
     if one_file:
-        train, test = unpickle(data_dir)
+        train, test = f_open(data_dir)
         x_train, y_train = train
         x_test, y_test = test
 
@@ -62,11 +62,11 @@ def load_cifar10_data(data_dir=None, one_file=None):
         xs = []
         ys = []
         for j in range(5):
-            d = unpickle(data_dir + '/data_batch_%d' % (j + 1))
+            d = f_open(data_dir + '/data_batch_%d' % (j + 1))
             xs.append(d['data'])
             ys.append(d['labels'])
 
-        d = unpickle(data_dir + '/test_batch')
+        d = f_open(data_dir + '/test_batch')
         xs.append(d['data'])
         ys.append(d['labels'])
 

@@ -46,14 +46,17 @@ def init_norm(*dims, **kwargs):
     return result
 
 
-def unpickle(filename):
+def f_open(filename, mode='rb', unpickle=True):
     if filename.endswith('.gz'):
         _open = gzip.open
     else:
         _open = open
 
-    with _open(filename, 'rb') as f:
-        return pkl.load(f)
+    if unpickle:
+        with _open(filename, 'rb') as f:
+            return pkl.load(f)
+    else:
+        return open(filename, mode)
 
 
 def average(sequence):

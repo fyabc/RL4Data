@@ -43,6 +43,11 @@ class NMTModel(NMTModelBase):
 
             self.init_parameters()
 
+            self.build_train_function()
+            self.build_validate_function()
+        else:
+            pass
+
     def init_np_parameters(self):
         """Initialize numpy parameters."""
 
