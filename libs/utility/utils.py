@@ -27,6 +27,7 @@ Datasets = {
     'cifar10': DatasetAttributes('cifar10', CifarConfig, 'CIFAR10.main'),
     'mnist': DatasetAttributes('mnist', MNISTConfig, 'MNIST.main'),
     'imdb': DatasetAttributes('imdb', IMDBConfig, 'IMDB.main'),
+    'nmt': DatasetAttributes('nmt', NMTConfig, 'NMT.main'),
 }
 
 # The float type of Theano. Default to 'float32'.
@@ -248,8 +249,9 @@ def process_before_train2(args=None):
     log_path = get_path(LogPath, dataset_attr.name)
     PolicyConfig['baseline_accuracy_file'] = PolicyConfig['baseline_accuracy_file'].replace(Tilde, ReservedDataPath)
     PolicyConfig['random_drop_number_file'] = PolicyConfig['random_drop_number_file'].replace(Tilde, data_path)
-    ParamConfig['data_dir'] = ParamConfig['data_dir'].replace(Tilde, data_path)
 
+    if 'data_dir' in ParamConfig:
+        ParamConfig['data_dir'] = ParamConfig['data_dir'].replace(Tilde, data_path)
     if 'warm_start_model_file' in ParamConfig:
         ParamConfig['warm_start_model_file'] = ParamConfig['warm_start_model_file'].replace(Tilde, model_path)
     if 'save_model_file' in ParamConfig:
@@ -258,6 +260,12 @@ def process_before_train2(args=None):
     PolicyConfig['policy_save_file'] = PolicyConfig['policy_save_file'].replace(Tilde, model_path)
     PolicyConfig['policy_load_file'] = PolicyConfig['policy_load_file'].replace(Tilde, model_path)
     Config['logging_file'] = Config['logging_file'].replace(Tilde, log_path)
+
+    if dataset_attr.name == 'nmt':
+        ParamConfig['data_src'] = ParamConfig['data_src'].replace(Tilde, data_path)
+        ParamConfig['data_tgt'] = ParamConfig['data_tgt'].replace(Tilde, data_path)
+        ParamConfig['vocab_src_filename'] = ParamConfig['vocab_src_filename'].replace(Tilde, data_path)
+        ParamConfig['vocab_tgt_filename'] = ParamConfig['vocab_tgt_filename'].replace(Tilde, data_path)
 
     # [NOTE] The train action.
     train_action = Config['action'].lower()

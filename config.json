@@ -325,6 +325,22 @@
     },
 
     "nmt": {
+        /// Training data filenames
+        "data_src": "~/train/edit_dis_top1M.en",
+        "data_tgt": "~/train/edit_dis_top1M.fr",
 
+        // Vocabulary filenames
+        "vocab_src_filename": "~/dic/en2fr_en_vocabs_top1M.pkl",
+        "vocab_tgt_filename": "~/dic/en2fr_fr_vocabs_top1M.pkl",
+
+        // Discount learning rate after ? iterations
+        "lr_discount_freq": 80000,
+
+        // Vocabulary size
+        "n_words": 30000,
+        "n_words_src": 30000,
+
+        "batch_size": 128,
+        "maxlen": 1000
     }
 }
