@@ -101,6 +101,9 @@ ENV/
 !/log/cifar10/stub.txt
 !/log/imdb/stub.txt
 !/log/mnist/stub.txt
+!/output/cifar10/stub.txt
+!/output/imdb/stub.txt
+!/output/mnist/stub.txt
 
 # data
 data/
@@ -110,6 +113,9 @@ model/
 
 # log
 log/
+
+# output (include log and model)
+output/
 
 # numpy saved models
 *.npz

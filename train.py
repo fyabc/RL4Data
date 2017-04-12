@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
+"""The main entry of training."""
+
 from __future__ import print_function, unicode_literals
 
 from libs.train import MNIST, CIFAR10, IMDB, NMT
-from libs.utility.utils import process_before_train2
+from libs.utility.utils import process_before_train
 
 __author__ = 'fyabc'
 
@@ -13,7 +15,7 @@ def main():
     _ = CIFAR10, IMDB, MNIST, NMT
 
     # Set the configs (include dataset specific config), and return the dataset attributes.
-    dataset_attr = process_before_train2()
+    dataset_attr = process_before_train()
 
     # Call the dataset main entry.
     eval('{}()'.format(dataset_attr.main_entry))

@@ -154,37 +154,7 @@ def simple_parse_args(args, param_config=CifarConfig):
     return args_dict, policy_args_dict, param_args_dict
 
 
-def process_before_train(args=None, param_config=CifarConfig, policy_config=PolicyConfig, append=None):
-    args = args or sys.argv
-
-    import pprint
-
-    if '-h' in args or '--help' in args:
-        # TODO add more help message
-        exit()
-
-    args_dict, policy_args_dict, param_args_dict = simple_parse_args(args, param_config)
-    Config.update(args_dict)
-    param_config.update(param_args_dict)
-    policy_config.update(policy_args_dict)
-
-    check_config(param_config, policy_config)
-
-    if append is None:
-        append = Config['append_logging_file']
-
-    init_logging_file(append=append)
-
-    message('Start Time: {}'.format(time.ctime()))
-    message('The configures and hyperparameters are:')
-    pprint.pprint(Config, stream=sys.stderr)
-
-    logging_file = get_logging_file()
-    if logging_file != sys.stderr:
-        pprint.pprint(Config, stream=logging_file)
-
-
-def process_before_train2(args=None):
+def process_before_train(args=None):
     """
 
     Parameters
@@ -535,7 +505,7 @@ def episode_final_message(best_validate_acc, best_iteration, test_score, start_t
 
 
 def _test_initialize():
-    process_before_train2()
+    process_before_train()
 
 
 def _test():
