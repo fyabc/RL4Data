@@ -22,7 +22,10 @@ for _i, line in enumerate(_lines):
     _lines[_i] = re.sub(r'//.*\n', '\n', line)
 
 Config = json.loads(''.join(_lines))
+C = Config
+
 PolicyConfig = Config['policy']
+PC = PolicyConfig
 
 CifarConfig = Config['cifar10']
 IMDBConfig = Config['imdb']

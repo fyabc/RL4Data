@@ -13,7 +13,7 @@ _KeyValueSeparator = '='
 Tilde = '~'
 
 
-def simple_parse_args2(args):
+def simple_parse_args(args):
     global_args_dict = {}
     policy_args_dict = {}
     param_args_dict = {}

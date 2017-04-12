@@ -4,7 +4,7 @@
 
 from __future__ import print_function, unicode_literals
 
-from libs.train import MNIST, CIFAR10, IMDB, NMT
+from libs.train import *
 from libs.utility.utils import process_before_train
 
 __author__ = 'fyabc'
@@ -12,7 +12,7 @@ __author__ = 'fyabc'
 
 def main():
     # Just ref them, or they may be optimized out by PyCharm.
-    _ = CIFAR10, IMDB, MNIST, NMT
+    _ = CIFAR10
 
     # Set the configs (include dataset specific config), and return the dataset attributes.
     dataset_attr = process_before_train()

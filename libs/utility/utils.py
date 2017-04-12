@@ -15,7 +15,7 @@ import numpy as np
 from config import *
 from my_logging import init_logging_file, finalize_logging_file, message, get_logging_file
 from path import get_path, split_policy_name, find_newest
-from preprocess import Tilde, simple_parse_args2, check_config, strict_update
+from preprocess import Tilde, simple_parse_args, check_config, strict_update
 
 __author__ = 'fyabc'
 
@@ -121,39 +121,6 @@ def shuffle_data(x_train, y_train):
     return x_train[shuffled_indices], y_train[shuffled_indices]
 
 
-########################################
-# Simple command line arguments parser #
-########################################
-
-def simple_parse_args(args, param_config=CifarConfig):
-    args_dict = {}
-    policy_args_dict = {}
-    param_args_dict = {}
-
-    for arg in args:
-        arg = arg.replace('@', '"')
-
-        if '=' in arg:
-            if arg.startswith('G.'):
-                arg = arg[2:]
-                the_dict = args_dict
-                target_dict = Config
-            elif arg.startswith('P.'):
-                arg = arg[2:]
-                the_dict = policy_args_dict
-                target_dict = PolicyConfig
-            else:
-                the_dict = param_args_dict
-                target_dict = param_config
-            key, value = arg.split('=')
-            if key not in target_dict:
-                raise Exception('The key {} is not in the parameters.'.format(key))
-
-            the_dict[key] = eval(value)
-
-    return args_dict, policy_args_dict, param_args_dict
-
-
 def process_before_train(args=None):
     """
 
@@ -175,7 +142,7 @@ def process_before_train(args=None):
         print('See comments of file "config.json" to know how to set arguments.')
         exit(0)
 
-    global_args_dict, policy_args_dict, param_args_dict = simple_parse_args2(args)
+    global_args_dict, policy_args_dict, param_args_dict = simple_parse_args(args)
 
     strict_update(Config, global_args_dict)
     strict_update(PolicyConfig, policy_args_dict)
@@ -502,6 +469,28 @@ def episode_final_message(best_validate_acc, best_iteration, test_score, start_t
     message('$  best validation accuracy: {}'.format(best_validate_acc))
     message('$  obtained at iteration {}'.format(best_iteration))
     message('$  Time passed: {:.2f}s'.format(time.time() - start_time))
+
+
+def preprocess_v2(args):
+    """Preprocessor of train v2.
+
+    Parse arguments
+    Create directory if not exists, copy config files
+    Set some paths
+    etc.
+
+    Parameters
+    ----------
+    args: arguments from argument parser.
+
+    Returns
+    -------
+    A 2-elements tuple.
+    Current config and A `DatasetAttributes` instance, indicates the dataset information.
+    """
+
+    # todo
+    return None, None
 
 
 def _test_initialize():
