@@ -3,7 +3,7 @@
 
 """Some layers used in NMT model."""
 
-from __future__ import print_function, unicode_literals
+from __future__ import print_function
 
 import numpy as np
 import theano

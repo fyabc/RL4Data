@@ -1,6 +1,6 @@
 #! /usr/bin/python
 
-from __future__ import print_function, unicode_literals
+from __future__ import print_function
 
 from ..batch_updater import *
 from ..critic_network import CriticNetwork

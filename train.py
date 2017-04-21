@@ -2,7 +2,7 @@
 
 """The main entry of training."""
 
-from __future__ import print_function, unicode_literals
+from __future__ import print_function
 
 from libs.train import *
 from libs.utility.utils import process_before_train
