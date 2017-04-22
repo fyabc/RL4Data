@@ -161,7 +161,8 @@ class BatchUpdater(object):
         elif Config['temp_job'] == 'train_analysis':
             probability = self.model.get_policy_input(*(selected_batch_data + [self, self.history_accuracy]))
             message('Loss', part_train_cost)
-            message(probability)
+            for line in probability:
+                message(' '.join('{:.6f}'.format(e) for e in line))
 
         self.epoch_history_train_loss += part_train_cost
 
