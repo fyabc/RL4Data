@@ -301,8 +301,9 @@ def train_actor_critic_MNIST():
 
                     if PolicyConfig['AC_update_freq'] >= ParamConfig['display_freq'] or \
                        updater.total_train_batches % ParamConfig['display_freq'] == 0:
-                        message('E {} TB {} Cost {:.6f} Critic loss {:.6f} Actor loss {:.6f}'
-                                .format(epoch, updater.total_train_batches, part_train_cost, Q_loss, actor_loss))
+                        message('E {} TB {} Cost {} Critic loss {:.6f} Actor loss {:.6f}'
+                                .format(epoch, updater.total_train_batches, part_train_cost,
+                                        float(Q_loss), float(actor_loss)))
 
                 if updater.total_train_batches > 0 and \
                         updater.total_train_batches != last_validate_point and \

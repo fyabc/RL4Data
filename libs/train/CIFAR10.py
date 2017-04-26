@@ -333,8 +333,9 @@ def train_actor_critic_CIFAR10():
 
                     if PolicyConfig['AC_update_freq'] >= ParamConfig['display_freq'] or \
                             updater.total_train_batches % ParamConfig['display_freq'] == 0:
-                        message('E {} TB {} Cost {:.6f} Critic loss {:.6f} Actor loss {:.6f}'
-                                .format(epoch, updater.total_train_batches, part_train_cost, Q_loss, actor_loss))
+                        message('E {} TB {} Cost {} Critic loss {:.6f} Actor loss {:.6f}'
+                                .format(epoch, updater.total_train_batches, part_train_cost,
+                                        float(Q_loss), float(actor_loss)))
 
             if isinstance(model, CIFARModel):
                 if (epoch + 1) in (41, 61):
