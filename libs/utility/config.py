@@ -6,8 +6,6 @@ import os
 import json
 import re
 
-__author__ = 'fyabc'
-
 # Paths
 ProjectRootPath = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DataPath = os.path.join(ProjectRootPath, 'data')

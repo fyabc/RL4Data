@@ -10,13 +10,11 @@ import theano
 import theano.tensor as T
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
-from utility.config import Config, PolicyConfig
-from utility.my_logging import message, logging
-from utility.name_register import NameRegister
-from utility.utils import fX, floatX, init_norm
-from utility.optimizers import sgd, adadelta, adam, rmsprop
-
-__author__ = 'fyabc'
+from .utility.config import Config, PolicyConfig
+from .utility.my_logging import message, logging
+from .utility.name_register import NameRegister
+from .utility.utils import fX, floatX, init_norm
+from .utility.optimizers import get_optimizer
 
 
 class PolicyNetworkBase(NameRegister):
@@ -112,8 +110,8 @@ class PolicyNetworkBase(NameRegister):
         for parameter in self.parameters:
             param_dict[parameter.name] = parameter
 
-        self.f_grad_shared, self.f_update = eval(self.optimizer)(
-            lr, param_dict, grads, [self.batch_input, batch_action, batch_reward], cost)
+        self.f_grad_shared, self.f_update = get_optimizer(
+            self.optimizer, lr, param_dict, grads, [self.batch_input, batch_action, batch_reward], cost)
 
     def take_action(self, inputs, log_replay=True):
         actions = self.f_batch_output_sample(inputs).astype(bool)
@@ -350,14 +348,3 @@ class MLPPolicyNetwork(PolicyNetworkBase):
         return T.nnet.sigmoid(T.dot(hidden_layer, self.W1) + self.b1)
 
 MLPPolicyNetwork.register_class(['mlp'])
-
-
-def test():
-    print(PolicyNetworkBase.get_by_name('mlp'))
-
-    # Just ref them, or they may be optimized out by PyCharm.
-    _ = sgd, adam, adadelta, rmsprop
-
-
-if __name__ == '__main__':
-    test()

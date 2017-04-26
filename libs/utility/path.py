@@ -5,8 +5,6 @@ from __future__ import print_function
 import os
 import fnmatch
 
-__author__ = 'fyabc'
-
 
 def get_path(base_path, dataset_name, filename=None):
     """Get the dataset specific path.

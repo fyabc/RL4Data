@@ -7,8 +7,6 @@ from __future__ import print_function
 from libs.train import *
 from libs.utility.utils import process_before_train
 
-__author__ = 'fyabc'
-
 
 def main():
     # Just ref them, or they may be optimized out by PyCharm.

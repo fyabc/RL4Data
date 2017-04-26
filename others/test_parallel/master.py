@@ -8,8 +8,6 @@ import psutil
 import subprocess
 import time
 
-__author__ = 'fyabc'
-
 
 def main():
     process_size = 4

@@ -10,8 +10,6 @@ from config import CifarConfig as ParamConfig, Config
 from utils import f_open, floatX, fX, get_part_data
 from my_logging import message, logging
 
-__author__ = 'fyabc'
-
 
 @logging
 def load_cifar10_data(data_dir=None, one_file=None):

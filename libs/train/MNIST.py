@@ -8,14 +8,11 @@ from functools import partial
 from ..batch_updater import *
 from ..critic_network import CriticNetwork
 from ..model_class.MNIST import MNISTModel
-from ..new_train.new_train_MNIST import new_train_MNIST
 from ..policy_network import PolicyNetworkBase
 from ..reward_checker import RewardChecker, get_reward_checker
 from ..utility.MNIST import pre_process_MNIST_data, pre_process_config
-from ..utility.config import MNISTConfig as ParamConfig
 from ..utility.utils import *
-
-__author__ = 'fyabc'
+from ..utility.config import MNISTConfig as ParamConfig, Config
 
 
 def train_raw_MNIST_template(train_type='raw'):
@@ -132,7 +129,6 @@ def train_policy_MNIST():
     input_size = MNISTModel.get_policy_input_size()
     message('Input size of policy network:', input_size)
     policy = PolicyNetworkBase.get_by_name(PolicyConfig['policy_model_type'])(input_size=input_size)
-    # policy = LRPolicyNetwork(input_size=input_size)
 
     policy.check_load()
 
@@ -153,10 +149,11 @@ def train_policy_MNIST():
         # To prevent the double validate point
         last_validate_point = -1
 
-        # get small training data
-        # x_train_small, y_train_small = get_part_data(x_train, y_train, ParamConfig['train_small_size'])
-        # [WARNING] Do NOT shuffle here!!!
-        x_train_small, y_train_small = x_train, y_train
+        if Config['temp_job'] in RemainOrderJobs:
+            x_train_small, y_train_small = x_train, y_train
+        else:
+            # get small training data
+            x_train_small, y_train_small = get_part_data(x_train, y_train, ParamConfig['train_small_size'])
 
         train_small_size = len(x_train_small)
         message('Training small size:', train_small_size)
@@ -227,7 +224,6 @@ def train_actor_critic_MNIST():
 
     actor.check_load()
 
-    # actor = LRPolicyNetwork(input_size=input_size)
     critic = CriticNetwork(feature_size=input_size, batch_size=model.train_batch_size)
 
     # Load the dataset and config
@@ -246,10 +242,11 @@ def train_actor_critic_MNIST():
         last_validate_point = -1
         last_AC_update_point = -1
 
-        # get small training data
-        # x_train_small, y_train_small = get_part_data(x_train, y_train, ParamConfig['train_small_size'])
-        # [WARNING] Do NOT shuffle here!!!
-        x_train_small, y_train_small = x_train, y_train
+        if Config['temp_job'] in RemainOrderJobs:
+            x_train_small, y_train_small = x_train, y_train
+        else:
+            # get small training data
+            x_train_small, y_train_small = get_part_data(x_train, y_train, ParamConfig['train_small_size'])
         train_small_size = len(x_train_small)
         message('Training small size:', train_small_size)
 
@@ -280,12 +277,6 @@ def train_actor_critic_MNIST():
                     actions = updater.last_action
 
                     # Get immediate reward
-                    # [NOTE]: Cost gap reward is removed
-                    # if PolicyConfig['cost_gap_AC_reward']:
-                    #     cost_old = part_train_cost
-                    #
-                    #     cost_new = model.f_cost_without_decay(inputs, targets)
-                    #     imm_reward = cost_old - cost_new
                     valid_part_x, valid_part_y = get_part_data(
                         np.asarray(x_validate), np.asarray(y_validate), PolicyConfig['immediate_reward_sample_size'])
                     _, valid_acc, validate_batches = model.validate_or_test(valid_part_x, valid_part_y)
@@ -310,7 +301,7 @@ def train_actor_critic_MNIST():
 
                     if PolicyConfig['AC_update_freq'] >= ParamConfig['display_freq'] or \
                        updater.total_train_batches % ParamConfig['display_freq'] == 0:
-                        message('Epoch {}\tTotalBatches {}\tCost {}\tCritic loss {}\tActor loss {}'
+                        message('E {} TB {} Cost {:.6f} Critic loss {:.6f} Actor loss {:.6f}'
                                 .format(epoch, updater.total_train_batches, part_train_cost, Q_loss, actor_loss))
 
                 if updater.total_train_batches > 0 and \
@@ -340,10 +331,6 @@ def train_actor_critic_MNIST():
 
         episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
 
-        # [NOTE]: Remove update of terminal reward in AC.
-        # validate_acc = model.get_test_acc(x_validate, y_validate)
-        # actor.update(validate_acc)
-
         if PolicyConfig['policy_save_freq'] > 0 and episode % PolicyConfig['policy_save_freq'] == 0:
             actor.save_policy(PolicyConfig['policy_save_file'], episode)
 
@@ -365,6 +352,4 @@ def main():
         'deterministic': test_deterministic_MNIST,
         'stochastic': test_stochastic_MNIST,
         'random_drop': test_random_drop_MNIST,
-
-        'new_train': new_train_MNIST,
     })

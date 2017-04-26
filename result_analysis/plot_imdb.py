@@ -6,8 +6,6 @@ from __future__ import print_function
 import matplotlib.pyplot as plt
 from utils import init, legend, plot_acc_line, Curves, get_data
 
-__author__ = 'fyabc'
-
 test_acc = get_data('tests_accuracy', 'imdb')
 drop_number = get_data('case_numbers', 'imdb')
 

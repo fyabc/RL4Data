@@ -7,8 +7,6 @@ import theano.tensor as T
 
 from utils import floatX
 
-__author__ = 'fyabc'
-
 
 """
 General Optimizer Structure: (adadelta, adam, rmsprop, sgd)
@@ -135,9 +133,14 @@ def sgd(learning_rate, parameters, grads, inputs, cost):
     return f_grad_shared, f_update
 
 
+def get_optimizer(name, learning_rate, parameters, grads, inputs, cost):
+    return eval(name)(learning_rate, parameters, grads, inputs, cost)
+
+
 __all__ = [
     'sgd',
     'adam',
     'adadelta',
     'rmsprop',
+    'get_optimizer',
 ]

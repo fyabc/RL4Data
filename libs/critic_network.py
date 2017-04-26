@@ -9,10 +9,9 @@ import numpy as np
 import theano
 import theano.tensor as T
 
-from libs.utility.optimizers import adam
-from utility.utils import fX, floatX
-
-__author__ = 'fyabc'
+from .utility.optimizers import get_optimizer
+from .utility.utils import fX, floatX
+from .utility.config import PolicyConfig
 
 
 class CriticNetwork(object):
@@ -53,31 +52,11 @@ class CriticNetwork(object):
         grads = T.grad(loss, list(self.theta.values()))
 
         lr = T.scalar(dtype=fX)
-        self.f_grad_shared, self.f_update = adam(
-            lr, self.theta, grads, [self.state_ph, self.action_ph, self.label], loss)
+        self.f_grad_shared, self.f_update = get_optimizer(
+            PolicyConfig['critic_optimizer'], lr, self.theta, grads, [self.state_ph, self.action_ph, self.label], loss)
 
     def update(self, state, action, label):
         loss = self.f_grad_shared(state, action, label)
         self.f_update(0.01)
 
         return loss
-
-
-def test():
-    B = 16
-    F = 7
-
-    theano.config.exception_verbosity = 'high'
-
-    critic = CriticNetwork(F, B)
-
-    state = np.zeros((B, F), dtype=fX)
-    action = np.zeros((B,), dtype=fX)
-    label = floatX(0.)
-
-    print(critic.Q_function(state, action))
-    print(critic.update(state, action, label))
-
-
-if __name__ == '__main__':
-    test()

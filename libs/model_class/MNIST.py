@@ -23,7 +23,7 @@ from lasagne.layers import batch_norm
 from lasagne.layers.helper import get_all_param_values, set_all_param_values
 from lasagne.nonlinearities import softmax, tanh
 
-# For vanilia model
+# For Vanilla model
 from lasagne.layers import LocalResponseNormalization2DLayer, MaxPool2DLayer
 
 from ..utility.config import Config, MNISTConfig as ParamConfig, PolicyConfig

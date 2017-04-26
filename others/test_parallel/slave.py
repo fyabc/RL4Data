@@ -8,8 +8,6 @@ import theano
 import time
 import random
 
-__author__ = 'fyabc'
-
 sleep_time = random.uniform(0, 3)
 
 time.sleep(sleep_time)

@@ -8,44 +8,13 @@ from ..model_class.CIFAR10 import CIFARModelBase, CIFARModel
 from ..policy_network import PolicyNetworkBase
 from ..reward_checker import RewardChecker, get_reward_checker
 from ..utility.CIFAR10 import pre_process_CIFAR10_data, prepare_CIFAR10_data
-from ..utility.config import CifarConfig as ParamConfig
 from ..utility.utils import *
-
-__author__ = 'fyabc'
-
-
-# [NOTE]: In CIFAR10, validate point at end of each epoch.
-def epoch_message(model, x_train, y_train, x_validate, y_validate, x_test, y_test,
-                  updater, history_train_loss,
-                  epoch, start_time, train_batches, total_accepted_cases):
-    # Get training loss
-    train_loss = model.get_training_loss(x_train, y_train)
-
-    # Get validation loss and accuracy
-    validate_loss, validate_acc, validate_batches = model.validate_or_test(x_validate, y_validate)
-    validate_loss /= validate_batches
-    validate_acc /= validate_batches
-    updater.history_accuracy.append(validate_acc)
-
-    # Get test loss and accuracy
-    test_loss, test_acc, test_batches = model.validate_or_test(x_test, y_test)
-    test_loss /= test_batches
-    test_acc /= test_batches
-
-    message("Epoch {} of {} took {:.3f}s".format(epoch, ParamConfig['epoch_per_episode'], time.time() - start_time))
-    message('Training Loss:', train_loss)
-    message('History Training Loss:', history_train_loss / train_batches)
-    message('Validate Loss:', validate_loss)
-    message('#Validate accuracy:', validate_acc)
-    message('Test Loss:', test_loss),
-    message('#Test accuracy:', test_acc)
-    message('Number of accepted cases: {} of {} total'.format(total_accepted_cases, x_train.shape[0]))
+from ..utility.config import CifarConfig as ParamConfig, Config
 
 
 def train_raw_CIFAR10():
     # Create neural network model
     model = CIFARModelBase.get_by_name(ParamConfig['model_name'])()
-    # model = VaniliaCNNModel()
 
     # Load the dataset
     x_train, y_train, x_validate, y_validate, x_test, y_test, \
@@ -117,7 +86,7 @@ def train_raw_CIFAR10():
 def train_SPL_CIFAR10():
     # Create neural network model
     model = CIFARModelBase.get_by_name(ParamConfig['model_name'])()
-    # model = VaniliaCNNModel()
+    # model = VanillaCNNModel()
 
     # Load the dataset
     x_train, y_train, x_validate, y_validate, x_test, y_test, \
@@ -186,13 +155,11 @@ def train_SPL_CIFAR10():
 def train_policy_CIFAR10():
     # Create neural network model
     model = CIFARModelBase.get_by_name(ParamConfig['model_name'])()
-    # model = VaniliaCNNModel()
 
     # Create the policy network
     input_size = CIFARModelBase.get_policy_input_size()
     message('Input size of policy network:', input_size)
     policy = PolicyNetworkBase.get_by_name(PolicyConfig['policy_model_type'])(input_size=input_size)
-    # policy = LRPolicyNetwork(input_size=input_size)
 
     policy.check_load()
 
@@ -217,10 +184,11 @@ def train_policy_CIFAR10():
         # To prevent the double validate point
         last_validate_point = -1
 
-        # get small training data
-        # x_train_small, y_train_small = get_part_data(x_train, y_train, ParamConfig['train_small_size'])
-        # [WARNING] Do NOT shuffle here!!!
-        x_train_small, y_train_small = x_train, y_train
+        if Config['temp_job'] in RemainOrderJobs:
+            x_train_small, y_train_small = x_train, y_train
+        else:
+            # get small training data
+            x_train_small, y_train_small = get_part_data(x_train, y_train, ParamConfig['train_small_size'])
         train_small_size = len(x_train_small)
         message('Training small size:', train_small_size)
 
@@ -281,13 +249,11 @@ def train_policy_CIFAR10():
 def train_actor_critic_CIFAR10():
     # Create neural network model
     model = CIFARModelBase.get_by_name(ParamConfig['model_name'])()
-    # model = VaniliaCNNModel()
 
     # Create the actor network
     input_size = CIFARModelBase.get_policy_input_size()
     print('Input size of actor network:', input_size)
     actor = PolicyNetworkBase.get_by_name(PolicyConfig['policy_model_type'])(input_size=input_size)
-    # actor = LRPolicyNetwork(input_size=input_size)
     critic = CriticNetwork(feature_size=input_size, batch_size=model.train_batch_size)
 
     actor.check_load()
@@ -311,13 +277,13 @@ def train_actor_critic_CIFAR10():
         model.reset_learning_rate()
 
         # To prevent the double validate / AC update point
-        # last_validate_point = -1
         last_AC_update_point = -1
 
-        # get small training data
-        # x_train_small, y_train_small = get_part_data(x_train, y_train, ParamConfig['train_small_size'])
-        # [WARNING] Do NOT shuffle here!!!
-        x_train_small, y_train_small = x_train, y_train
+        if Config['temp_job'] in RemainOrderJobs:
+            x_train_small, y_train_small = x_train, y_train
+        else:
+            # get small training data
+            x_train_small, y_train_small = get_part_data(x_train, y_train, ParamConfig['train_small_size'])
         train_small_size = len(x_train_small)
         message('Training small size:', train_small_size)
 
@@ -343,12 +309,6 @@ def train_actor_critic_CIFAR10():
                     actions = updater.last_action
 
                     # Get immediate reward
-                    # [NOTE]: Cost gap reward is removed
-                    # if PolicyConfig['cost_gap_AC_reward']:
-                    #     cost_old = part_train_cost
-                    #
-                    #     cost_new = model.f_cost_without_decay(inputs, targets)
-                    #     imm_reward = cost_old - cost_new
                     valid_part_x, valid_part_y = get_part_data(
                         np.asarray(x_validate), np.asarray(y_validate), PolicyConfig['immediate_reward_sample_size'])
                     _, valid_acc, validate_batches = model.validate_or_test(valid_part_x, valid_part_y)
@@ -373,7 +333,7 @@ def train_actor_critic_CIFAR10():
 
                     if PolicyConfig['AC_update_freq'] >= ParamConfig['display_freq'] or \
                             updater.total_train_batches % ParamConfig['display_freq'] == 0:
-                        message('Epoch {}\tTotalBatches {}\tCost {}\tCritic loss {}\tActor loss {}'
+                        message('E {} TB {} Cost {:.6f} Critic loss {:.6f} Actor loss {:.6f}'
                                 .format(epoch, updater.total_train_batches, part_train_cost, Q_loss, actor_loss))
 
             if isinstance(model, CIFARModel):
@@ -388,11 +348,6 @@ def train_actor_critic_CIFAR10():
 
         model.test(x_test, y_test)
 
-        # [NOTE]: Remove update of terminal reward in AC.
-        # validate_loss, validate_acc, validate_batches = model.validate_or_test(x_validate, y_validate)
-        # validate_acc /= validate_batches
-        # actor.update(validate_acc)
-
         if PolicyConfig['policy_save_freq'] > 0 and episode % PolicyConfig['policy_save_freq'] == 0:
             actor.save_policy(PolicyConfig['policy_save_file'], episode)
 
@@ -400,7 +355,6 @@ def train_actor_critic_CIFAR10():
 def test_policy_CIFAR10():
     # Create neural network model
     model = CIFARModelBase.get_by_name(ParamConfig['model_name'])()
-    # model = VaniliaCNNModel()
 
     input_size = CIFARModelBase.get_policy_input_size()
     message('Input size of policy network:', input_size)
@@ -479,10 +433,6 @@ def test_policy_CIFAR10():
     episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
 
     model.test(x_test, y_test)
-
-
-def new_train_CIFAR10():
-    pass
         
         
 def main():
@@ -502,6 +452,4 @@ def main():
         'deterministic': test_policy_CIFAR10,
         'stochastic': test_policy_CIFAR10,
         'random_drop': test_policy_CIFAR10,
-
-        'new_train': new_train_CIFAR10,
     })

@@ -16,8 +16,6 @@ import matplotlib.pyplot as plt
 
 from libs.utility.config import LogPath
 
-__author__ = 'fyabc'
-
 
 def get_reward_list(filename, dataset='mnist'):
     abs_filename = os.path.join(LogPath, dataset, filename)

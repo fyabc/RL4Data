@@ -8,8 +8,6 @@ from itertools import count
 
 from utils import load_list, save_list
 
-__author__ = 'fyabc'
-
 
 # TODO: Change this hard code!
 LogPath = 'D:/Others/JobResults/mnist/corrupted'

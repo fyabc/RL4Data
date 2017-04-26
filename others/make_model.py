@@ -13,8 +13,6 @@ import numpy as np
 from libs.utility.config import ModelPath
 from libs.utility.utils import floatX, fX
 
-__author__ = 'fyabc'
-
 
 def make_lr_model(filename, W, b, dataset='mnist'):
     np.savez(os.path.join(ModelPath, dataset, filename), W, b)

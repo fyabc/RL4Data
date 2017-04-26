@@ -3,8 +3,6 @@
 
 from __future__ import print_function
 
-__author__ = 'fyabc'
-
 # The escaped string double quote.
 _StringDoubleQuote = '@'
 _GlobalPrefix = 'G.'
@@ -41,6 +39,8 @@ def simple_parse_args(args):
 
 
 def check_config(param_config, policy_config):
+    """Check conflict config. Do nothing now."""
+
     pass
 
 

@@ -17,8 +17,6 @@ from my_logging import init_logging_file, finalize_logging_file, message, get_lo
 from path import get_path, split_policy_name, find_newest
 from preprocess import Tilde, simple_parse_args, check_config, strict_update
 
-__author__ = 'fyabc'
-
 
 DatasetAttributes = namedtuple('DatasetAttributes', ['name', 'config', 'main_entry'])
 
@@ -33,6 +31,10 @@ Datasets = {
 # The float type of Theano. Default to 'float32'.
 # fX = config.floatX
 fX = Config['floatX']
+
+
+# Temp jobs that need to remain the order of data
+RemainOrderJobs = ('log_data', 'check_part_loss',)
 
 
 def floatX(value):

@@ -10,8 +10,6 @@ from functools import wraps
 
 from config import Config
 
-__author__ = 'fyabc'
-
 # Logging settings
 logging_file = sys.stderr
 _depth = 0

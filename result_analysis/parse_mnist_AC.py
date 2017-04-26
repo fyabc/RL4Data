@@ -6,8 +6,6 @@ from __future__ import print_function
 import os
 import math
 
-__author__ = 'fyabc'
-
 LogPath = 'D:/Others/JobResults/mnist/corrupted'
 
 

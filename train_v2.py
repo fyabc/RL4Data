@@ -1,6 +1,8 @@
 #! /usr/bin/python
 # -*- encoding: utf-8 -*-
 
+# TODO
+
 """The new version of training file."""
 
 from __future__ import print_function
@@ -9,8 +11,6 @@ import argparse
 
 from libs.train import *
 from libs.utility.utils import preprocess_v2
-
-__author__ = 'fyabc'
 
 
 def main():

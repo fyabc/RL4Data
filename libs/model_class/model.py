@@ -3,8 +3,6 @@
 
 from __future__ import print_function
 
-__author__ = 'fyabc'
-
 
 class ModelBase(object):
     def build_train_function(self):

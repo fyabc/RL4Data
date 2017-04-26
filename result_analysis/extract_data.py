@@ -9,8 +9,6 @@ import argparse
 
 import numpy as np
 
-__author__ = 'fyabc'
-
 
 def get_line_data(line, data_list=((float, -1),)):
     words = line.split()

@@ -454,16 +454,16 @@ class CIFARModel(CIFARModelBase):
 CIFARModel.register_class(['resnet'])
 
 
-class VaniliaCNNModel(CIFARModelBase):
+class VanillaCNNModel(CIFARModelBase):
     """
-    The CIFAR-10 neural network model (Vanilia CNN).
+    The CIFAR-10 neural network model (Vanilla CNN).
     """
 
     def __init__(self,
                  train_batch_size=None,
                  valid_batch_size=None
                  ):
-        super(VaniliaCNNModel, self).__init__(train_batch_size, valid_batch_size)
+        super(VanillaCNNModel, self).__init__(train_batch_size, valid_batch_size)
 
         # Prepare Theano variables for inputs and targets
         self.input_var = T.tensor4('inputs')
@@ -578,4 +578,4 @@ class VaniliaCNNModel(CIFARModelBase):
     def update_learning_rate(self):
         self.learning_rate.set_value(floatX(self.learning_rate.get_value() * 0.1))
 
-VaniliaCNNModel.register_class(['vanilia'])
+VanillaCNNModel.register_class(['vanilla'])

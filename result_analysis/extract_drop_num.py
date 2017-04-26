@@ -18,8 +18,6 @@ import matplotlib.pyplot as plt
 from libs.utility.config import LogPath, DataPath
 from utils import save_list, move_avg, CFG, pick_interval
 
-__author__ = 'fyabc'
-
 
 def get_drop_number(filename, dataset='mnist'):
     abs_filename = os.path.join(LogPath, dataset, filename)

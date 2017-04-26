@@ -7,8 +7,6 @@ import os
 
 from utils import load_list, save_list
 
-__author__ = 'fyabc'
-
 
 DropNumPath = './drop_num'
 

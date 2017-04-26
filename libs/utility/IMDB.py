@@ -10,8 +10,6 @@ from config import IMDBConfig as ParamConfig
 from utils import fX, get_minibatches_idx
 from my_logging import logging, message
 
-__author__ = 'fyabc'
-
 
 @logging
 def load_imdb_data(data_dir=None, n_words=100000, valid_portion=0.1, maxlen=None, sort_by_len=True):
@@ -125,7 +123,7 @@ def preprocess_imdb_data(train_data, valid_data, test_data):
     return train_data, valid_data, test_data
 
 
-def prepare_imdb_data(seqs, labels, maxlen=None):
+def prepare_imdb_data(seqs, labels, **kwargs):
     """Create the matrices from the datasets.
 
     This pad each sequence to the same length: the length of the
@@ -136,6 +134,8 @@ def prepare_imdb_data(seqs, labels, maxlen=None):
 
     This swap the axis!
     """
+
+    maxlen = kwargs.pop('maxlen', ParamConfig['maxlen'])
 
     # x: a list of sentences
     lengths = [len(s) for s in seqs]

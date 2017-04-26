@@ -8,8 +8,6 @@ import gzip
 import cPickle as pkl
 import matplotlib.pyplot as plt
 
-__author__ = 'fyabc'
-
 DataPath = 'C:/Users/v-yanfa/PycharmProjects/PG4NN_cifar/data'
 
 

@@ -12,8 +12,6 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy.interpolate import spline
 
-__author__ = 'fyabc'
-
 DataSet = 'imdb'
 
 Curve = namedtuple('Curve', ['raw_name', 'title'])

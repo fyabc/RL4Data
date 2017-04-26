@@ -18,8 +18,6 @@ import matplotlib.pyplot as plt
 from libs.utility.config import LogPath
 from utils import Curves, legend, average_list, move_avg, CFG, pick_interval
 
-__author__ = 'fyabc'
-
 
 Interval = 4
 

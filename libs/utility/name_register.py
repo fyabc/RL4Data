@@ -2,8 +2,6 @@
 
 from __future__ import print_function
 
-__author__ = 'fyabc'
-
 
 class NameRegister(object):
     """A helper class to select different class by string names or aliases in options."""

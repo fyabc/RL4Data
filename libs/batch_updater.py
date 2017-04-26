@@ -474,3 +474,13 @@ class RandomDropUpdater(BatchUpdater):
         ).astype(bool)
 
         return [index for i, index in enumerate(batch_index) if action[i]]
+
+
+__all__ = [
+    'RawUpdater',
+    'SPLUpdater',
+    'TrainPolicyUpdater',
+    'ACUpdater',
+    'TestPolicyUpdater',
+    'RandomDropUpdater',
+]

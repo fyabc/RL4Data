@@ -1,19 +1,15 @@
 # -*- coding: utf-8 -*-
 
+"""Speed reward checkers."""
+
 from __future__ import print_function
 
 import numpy as np
 
-from utility.config import PolicyConfig
-from utility.my_logging import message
-from utility.name_register import NameRegister
-from utility.utils import load_list
-
-__author__ = 'fyabc'
-
-####################################
-# Speed reward REINFORCE utilities #
-####################################
+from .utility.config import PolicyConfig
+from .utility.my_logging import message
+from .utility.name_register import NameRegister
+from .utility.utils import load_list
 
 
 class RewardChecker(NameRegister):
@@ -119,7 +115,7 @@ class DeltaAccuracyRewardChecker(RewardChecker):
 DeltaAccuracyRewardChecker.register_class(['delta_acc', 'delta_accuracy'])
 
 
-def get_reward_checker(checker_type, expected_total_cases):
+def get_reward_checker(checker_type, expected_total_cases=None):
     if checker_type == SpeedRewardChecker:
         return checker_type(PolicyConfig['speed_reward_config'], expected_total_cases)
     elif checker_type == AccuracyRewardChecker:

@@ -1,4 +1,10 @@
 {
+    /// Training command line format:
+    /// $ python train.py [config1] [config2] ...
+    /// Example:
+    /// $ python train.py G.job_name=@imdb-ac-lr@
+    ///
+    ///
     /// How to set configures in command line
     /// When set global configures:
     ///  G.key=exp
@@ -16,12 +22,12 @@
 
     /// Job name, includes some options.
     // "{G.dataset}-{G.train_type}-{P.policy_model_type}?-{P.reward_checker}?-{unique name}"
-    // These options will be set by job_name.
+    // Options above will be set by job_name.
     // {P.policy_save/load_file}, {G.logging_file} will also be set if they are null.
     // Examples:
     //     "mnist-raw-flip1"
     //     "mnist-deterministic-mlp-1"
-    //     "cifar10-reinforce-lr-speed-gaussian2"
+    //     "cifar10-reinforce-lr-speed-Job01"
     "job_name": null,
 
     /// Dataset.
@@ -49,14 +55,23 @@
 
     /// Train types.
     // Candidates:
-    //     'raw':           train ResNet directly.
-    //     'policy':        train policy.
-    //     'deterministic': run deterministic policy (alpha loss)
-    //     'stochastic':    run stochastic policy (randomly drop data)
+    //     'raw':
+    //          train model without policy.
+    //     'self_paced'/'spl':
+    //          train model with SPL algorithm.
+    //     'policy'/'reinforce'/'speed':
+    //          train policy (REINFORCE).
+    //     'actor_critic'/'ac':
+    //          train policy (Actor-Critic).
+    //     'deterministic':
+    //          run deterministic policy (alpha loss)
+    //     'stochastic':
+    //          run stochastic policy (randomly drop data)
+    //     'random_drop':
+    //          Give a file of total seen data list (2nd number of 'NAC' in output) in each valid point,
+    //          drop data randomly with ratios given by the seen data list.
+    //          This train type is to compare with policy.
     "train_type": null,
-
-    /// TODO: Configuration to be moved into "cifar10"
-    "model": null,
 
     /// Set this flag to some string to run some temp jobs.
     // Temp job code must be in this flag, such as:
@@ -67,6 +82,7 @@
     //     "check_selected_data_label": log the number of selected data in each label
     //     "check_part_loss": check the loss and margin of different parts in corrupted data
     //     "log_dropped_data": log the features of dropped data (only used in test policy process)
+    //     "train_analysis": log the features of training data
     "temp_job": "",
 
     // Get filtered data?
@@ -79,7 +95,6 @@
         //     MLPPolicyNetwork (mlp)
         "policy_model_type": "lr",
 
-        // TODO: (only for 'reload' train action)
         // Start at episode ?
         "start_episode": -1,
 
@@ -189,6 +204,9 @@
         // Update actor and critic frequency
         "AC_update_freq": 100,
 
+        // Critic optimizer
+        "critic_optimizer": "adam",
+
         /// Self-paced learning configurations
         // Start and end loss threshold
         "start_cost": 0.6,
@@ -205,7 +223,7 @@
         /// Model name.
         // Candidates:
         //     CIFARModel (resnet)
-        //     VaniliaCNNModel (vanilia)
+        //     VanillaCNNModel (Vanilla)
         "model_name": "resnet",
 
         // Save the model to "model_file"
@@ -322,25 +340,5 @@
 
         "save_model": false,
         "save_model_file": "~/warm_start_model.npz"
-    },
-
-    "nmt": {
-        /// Training data filenames
-        "data_src": "~/train/edit_dis_top1M.en",
-        "data_tgt": "~/train/edit_dis_top1M.fr",
-
-        // Vocabulary filenames
-        "vocab_src_filename": "~/dic/en2fr_en_vocabs_top1M.pkl",
-        "vocab_tgt_filename": "~/dic/en2fr_fr_vocabs_top1M.pkl",
-
-        // Discount learning rate after ? iterations
-        "lr_discount_freq": 80000,
-
-        // Vocabulary size
-        "n_words": 30000,
-        "n_words_src": 30000,
-
-        "batch_size": 128,
-        "maxlen": 1000
     }
 }

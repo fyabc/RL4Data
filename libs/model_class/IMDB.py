@@ -13,9 +13,7 @@ from ..utility.config import IMDBConfig as ParamConfig, PolicyConfig, Config
 from ..utility.my_logging import logging
 from ..utility.utils import fX, floatX, average, get_minibatches_idx, get_rank
 from ..utility.IMDB import prepare_imdb_data as prepare_data, pr, ortho_weight
-from ..utility.optimizers import sgd, adam, adadelta, rmsprop
-
-__author__ = 'fyabc'
+from ..utility.optimizers import get_optimizer
 
 
 class IMDBModelBase(object):
@@ -354,14 +352,14 @@ class IMDBModel(IMDBModelBase):
         self.f_grad = theano.function([self.inputs, self.mask, self.targets], grads, name='f_grad')
 
         lr = T.scalar('lr', dtype=fX)
-        self.f_grad_shared, self.f_update = eval(ParamConfig['optimizer'])(
-            lr, self.parameters, grads, [self.inputs, self.mask, self.targets], cost)
+        self.f_grad_shared, self.f_update = get_optimizer(
+            ParamConfig['optimizer'], lr, self.parameters, grads, [self.inputs, self.mask, self.targets], cost)
 
         # Build validate function.
         test_acc = T.mean(T.eq(T.argmax(predict, axis=1), self.targets), dtype=theano.config.floatX)
         self.f_validate = theano.function([self.inputs, self.mask, self.targets], [cost, test_acc])
 
-    def build_validate_funcion(self):
+    def build_validate_function(self):
         pass
 
     def f_train(self, x, mask, y):
@@ -421,8 +419,3 @@ class IMDBModel(IMDBModelBase):
             sum_loss += self.f_cost(x, mask, y)
 
         return sum_loss / len(kf)
-
-
-def just_ref():
-    # Just ref them, or they may be optimized out by PyCharm.
-    _ = sgd, adam, adadelta, rmsprop
