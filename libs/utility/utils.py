@@ -25,7 +25,6 @@ Datasets = {
     'cifar10': DatasetAttributes('cifar10', CifarConfig, 'CIFAR10.main'),
     'mnist': DatasetAttributes('mnist', MNISTConfig, 'MNIST.main'),
     'imdb': DatasetAttributes('imdb', IMDBConfig, 'IMDB.main'),
-    'nmt': DatasetAttributes('nmt', NMTConfig, 'NMT.main'),
 }
 
 # The float type of Theano. Default to 'float32'.

@@ -28,7 +28,6 @@ PC = PolicyConfig
 CifarConfig = Config['cifar10']
 IMDBConfig = Config['imdb']
 MNISTConfig = Config['mnist']
-NMTConfig = Config['nmt']
 
 # All train types.
 TrainTypes = {
