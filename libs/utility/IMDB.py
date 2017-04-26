@@ -153,6 +153,8 @@ def prepare_imdb_data(seqs, labels, **kwargs):
         labels = new_labels
         seqs = new_seqs
 
+        labels = np.asarray(labels)
+
         if len(lengths) < 1:
             return None, None, None
 

@@ -357,6 +357,7 @@ def train_actor_critic_IMDB():
             kf = get_minibatches_idx(train_small_size, model.train_batch_size, shuffle=True)
 
             for _, train_index in kf:
+                model.use_noise.set_value(floatX(1.))
                 part_train_cost = updater.add_batch(train_index)
 
                 if updater.total_train_batches > 0 and \
