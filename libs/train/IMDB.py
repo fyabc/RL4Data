@@ -13,14 +13,6 @@ from ..utility.utils import *
 from ..utility.config import IMDBConfig as ParamConfig, Config
 
 
-# TODO: Change code into updaters
-# raw: Done
-# spl: Done
-# REINFORCE: Done
-# A-C: X
-# Test: Done
-
-
 def save_parameters(model, best_parameters, save_to, history_errs):
     message('Saving model parameters...', end=' ')
 
@@ -62,14 +54,14 @@ def train_raw_IMDB():
     # Loading data
     # [NOTE] This must before the build of model, because the ParamConfig['ydim'] should be set.
     x_train, y_train, x_validate, y_validate, x_test, y_test, \
-    train_size, valid_size, test_size = pre_process_IMDB_data()
+        train_size, valid_size, test_size = pre_process_IMDB_data()
 
     model = IMDBModel()
 
     # Loading configure settings
     kf_valid, kf_test, \
-    valid_freq, save_freq, display_freq, \
-    save_to, patience = pre_process_config(model, train_size, valid_size, test_size)
+        valid_freq, save_freq, display_freq, \
+        save_to, patience = pre_process_config(model, train_size, valid_size, test_size)
 
     updater = RawUpdater(model, [x_train, y_train], prepare_data=prepare_data)
 
@@ -99,8 +91,8 @@ def train_raw_IMDB():
                 message("tL {}: {:.6f}".format(updater.epoch_train_batches, part_train_cost.tolist()))
 
             if updater.total_train_batches > 0 and \
-                            updater.total_train_batches != last_validate_point and \
-                                    updater.total_train_batches % valid_freq == 0:
+                    updater.total_train_batches != last_validate_point and \
+                    updater.total_train_batches % valid_freq == 0:
                 last_validate_point = updater.total_train_batches
 
                 model.use_noise.set_value(floatX(0.))
@@ -117,7 +109,7 @@ def train_raw_IMDB():
                     bad_counter = 0
 
                 if len(updater.history_accuracy) > patience and \
-                                validate_acc <= max(updater.history_accuracy[:-patience]):
+                        validate_acc <= max(updater.history_accuracy[:-patience]):
                     bad_counter += 1
                     if bad_counter > patience:
                         early_stop = True
@@ -136,14 +128,14 @@ def train_SPL_IMDB():
     # Loading data
     # [NOTE] This must before the build of model, because the ParamConfig['ydim'] should be set.
     x_train, y_train, x_validate, y_validate, x_test, y_test, \
-    train_size, valid_size, test_size = pre_process_IMDB_data()
+        train_size, valid_size, test_size = pre_process_IMDB_data()
 
     model = IMDBModel()
 
     # Loading configure settings
     kf_valid, kf_test, \
-    valid_freq, save_freq, display_freq, \
-    save_to, patience = pre_process_config(model, train_size, valid_size, test_size)
+        valid_freq, save_freq, display_freq, \
+        save_to, patience = pre_process_config(model, train_size, valid_size, test_size)
 
     updater = SPLUpdater(model, [x_train, y_train], ParamConfig['epoch_per_episode'], prepare_data=prepare_data)
 
@@ -173,8 +165,8 @@ def train_SPL_IMDB():
                 message("tL {}: {:.6f}".format(updater.epoch_train_batches, part_train_cost.tolist()))
 
             if updater.total_train_batches > 0 and \
-                            updater.total_train_batches != last_validate_point and \
-                                    updater.total_train_batches % valid_freq == 0:
+                    updater.total_train_batches != last_validate_point and \
+                    updater.total_train_batches % valid_freq == 0:
                 last_validate_point = updater.total_train_batches
 
                 model.use_noise.set_value(floatX(0.))
@@ -191,7 +183,7 @@ def train_SPL_IMDB():
                     bad_counter = 0
 
                 if len(updater.history_accuracy) > patience and \
-                                validate_acc <= max(updater.history_accuracy[:-patience]):
+                        validate_acc <= max(updater.history_accuracy[:-patience]):
                     bad_counter += 1
                     if bad_counter > patience:
                         early_stop = True
@@ -309,7 +301,7 @@ def train_policy_IMDB():
             policy.save_policy(PolicyConfig['policy_save_file'], episode)
 
 
-def train_actor_critic_IMDB_old():
+def train_actor_critic_IMDB():
     # Loading data
     x_train, y_train, x_valid, y_valid, x_test, y_test, \
         train_size, valid_size, test_size = pre_process_IMDB_data()
@@ -440,22 +432,18 @@ def train_actor_critic_IMDB_old():
             actor.save_policy(PolicyConfig['policy_save_file'], episode)
 
 
-def train_actor_critic_IMDB():
-    pass
-
-
 def test_policy_IMDB():
     # Loading data
     # [NOTE] This must before the build of model, because the ParamConfig['ydim'] should be set.
     x_train, y_train, x_validate, y_validate, x_test, y_test, \
-    train_size, valid_size, test_size = pre_process_IMDB_data()
+        train_size, valid_size, test_size = pre_process_IMDB_data()
 
     model = IMDBModel()
 
     # Loading configure settings
     kf_valid, kf_test, \
-    valid_freq, save_freq, display_freq, \
-    save_to, patience = pre_process_config(model, train_size, valid_size, test_size)
+        valid_freq, save_freq, display_freq, \
+        save_to, patience = pre_process_config(model, train_size, valid_size, test_size)
 
     if Config['train_type'] == 'random_drop':
         updater = RandomDropUpdater(model, [x_train, y_train],
@@ -498,8 +486,8 @@ def test_policy_IMDB():
                 message("tL {}: {:.6f}".format(updater.epoch_train_batches, part_train_cost.tolist()))
 
             if updater.total_train_batches > 0 and \
-                            updater.total_train_batches != last_validate_point and \
-                                    updater.total_train_batches % valid_freq == 0:
+                    updater.total_train_batches != last_validate_point and \
+                    updater.total_train_batches % valid_freq == 0:
                 last_validate_point = updater.total_train_batches
 
                 model.use_noise.set_value(floatX(0.))
@@ -516,7 +504,7 @@ def test_policy_IMDB():
                     bad_counter = 0
 
                 if len(updater.history_accuracy) > patience and \
-                                validate_acc <= max(updater.history_accuracy[:-patience]):
+                        validate_acc <= max(updater.history_accuracy[:-patience]):
                     bad_counter += 1
                     if bad_counter > patience:
                         early_stop = True

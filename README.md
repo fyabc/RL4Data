@@ -31,11 +31,11 @@ See [config.json](./config.json) to know how to set configurations.
 
 2. Train policy with REINFORCE
 
-`python train.py G.job_name=@cifar10-policy-lr-speed-Xxx@`
+`python train.py G.job_name=@cifar10-policy-lr-speed-Xxx@ G.action=@reload@`
 
 3. Train policy with Actor-Critic
 
-`python train.py G.job_name=@cifar10-ac-lr-Xxx@`
+`python train.py G.job_name=@cifar10-ac-lr-Xxx@ G.action=@reload@`
 
 4. Test policy
 
