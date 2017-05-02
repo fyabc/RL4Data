@@ -115,6 +115,7 @@
         /// Policy input features
         // Policy input size:
         // model.output_size (10 in MNIST, CIFAR-10; 2 in IMDB)
+        "add_output": true,
         "add_label_input": true,                    // 1
         "add_label": false,                         // 1
         "use_first_layer_output": false,            // ? >> 1

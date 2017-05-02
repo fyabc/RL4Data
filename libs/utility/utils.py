@@ -259,6 +259,9 @@ def process_before_train(args=None):
     # Set random seed.
     np.random.seed(Config['seed'])
 
+    # Set this for deep ResNet.
+    sys.setrecursionlimit(10000)
+
     message('[Message before train]')
     message('Job name: {}'.format(job_name))
     message('Running on node: {}'.format(platform.node()))

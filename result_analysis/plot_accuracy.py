@@ -202,7 +202,7 @@ def plot_for_paper_all(*filenames, **kwargs):
 
     # The color should be fixed.
     spl_colors = ['g', 'm', 'y']
-    reinforce_colors = ['c', 'm', 'y', 'g', 'k', 'w']
+    reinforce_colors = ['c', 'm', 'y', 'g', 'k', 'b']
 
     for i, reinforce in enumerate(reinforces):
         plot_accuracy_curve(r'$NDF-{}$'.format(speed_cfg[i]),
@@ -295,7 +295,9 @@ def plot_for_paper_mnist():
         'log-mnist-stochastic-lr-speed-NonC7Best.txt',
         'log-mnist-stochastic-lr-speed-NonC8Best.txt',
         'log-mnist-stochastic-lr-speed-NonC10Best.txt',
-        # 'log-mnist-stochastic-lr-speed-NonC11Best.txt',
+        'log-mnist-stochastic-lr-speed-Cifar10NonC2Best.txt',
+        'log-mnist-stochastic-lr-speed-Cifar10NonC3Best.txt',
+        'log-mnist-stochastic-lr-speed-Cifar10NonC4Best.txt',
 
         xmin=125,
         xmax=595,
@@ -312,7 +314,8 @@ def plot_for_paper_mnist():
 
         spl_cfg=[80, 120, 160],
         # speed_cfg=['0.94', '.89\ .92\ .94', '.80\ .88\ .96'],
-        speed_cfg=['0.94', '0.96', '0.98'],
+        speed_cfg=['0.94', '0.96', '0.98',
+                   'C1', 'C2', 'C3'],
     )
 
 
@@ -338,6 +341,9 @@ def plot_for_paper_cifar():
         'log-cifar10-stochastic-lr-speed-NonC2Best_1.txt',
         'log-cifar10-stochastic-lr-speed-NonC3Best.txt',
         'log-cifar10-stochastic-lr-speed-NonC4Best.txt',
+        'log-cifar10-stochastic-lr-speed-MnistNonC7Best.txt',
+        'log-cifar10-stochastic-lr-speed-MnistNonC8Best.txt',
+        'log-cifar10-stochastic-lr-speed-MnistNonC10Best.txt',
 
         dataset='cifar10',
         xmin=0,
@@ -355,7 +361,8 @@ def plot_for_paper_cifar():
 
         spl_cfg=[120, 60, 180],
         # speed_cfg=['.80\ .84\ .865', '.84', '.80'],
-        speed_cfg=['0.80', '0.84', '0.88'],
+        speed_cfg=['0.80', '0.84', '0.88',
+                   'C1', 'C2', 'C3'],
     )
 
 

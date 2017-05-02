@@ -145,9 +145,12 @@ class MNISTModelBase(ModelBase):
     def get_policy_input(self, inputs, targets, updater, history_accuracy=None):
         batch_size = targets.shape[0]
 
+        to_be_stacked = []
+
         probability = self.f_probs(inputs)
 
-        to_be_stacked = [probability]
+        if PolicyConfig['add_output']:
+            to_be_stacked.append(probability)
 
         if PolicyConfig['add_label_input']:
             label_inputs = np.zeros(shape=(batch_size, 1), dtype=fX)

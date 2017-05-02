@@ -89,9 +89,12 @@ class IMDBModelBase(object):
     def get_policy_input(self, x, mask, y, updater, history_accuracy=None):
         batch_size = y.shape[0]
 
+        to_be_stacked = []
+
         probability = self.f_probs(x, mask)
 
-        to_be_stacked = [probability]
+        if PolicyConfig['add_output']:
+            to_be_stacked.append(probability)
 
         if PolicyConfig['add_label_input']:
             label_inputs = np.zeros(shape=(batch_size, 1), dtype=fX)
