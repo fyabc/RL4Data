@@ -582,3 +582,44 @@ class VanillaCNNModel(CIFARModelBase):
         self.learning_rate.set_value(floatX(self.learning_rate.get_value() * 0.1))
 
 VanillaCNNModel.register_class(['vanilla'])
+
+
+class ResNetTFModel(CIFARModelBase):
+    def __init__(self,
+                 n=None,
+                 train_batch_size=None,
+                 validate_batch_size=None):
+        super(ResNetTFModel, self).__init__(train_batch_size, validate_batch_size)
+
+        n = n or ParamConfig['n']
+
+        self.learning_rate = theano.shared(lasagne.utils.floatX(ParamConfig['init_learning_rate']))
+
+        # Prepare Theano variables for inputs and targets
+        self.input_var = T.tensor4('inputs')
+        self.target_var = T.ivector('targets')
+
+        self.network = self.build_cnn(self.input_var, n)
+        message("number of parameters in model: %d" % lasagne.layers.count_params(self.network, trainable=True))
+
+        self.saved_init_parameters_values = get_all_param_values(self.network, trainable=True)
+
+        self.build_train_function()
+        self.build_validate_function()
+
+    @logging
+    def build_cnn(self, input_var=None, n=ParamConfig['n']):
+        pass
+
+    @logging
+    def build_train_function(self):
+        pass
+
+    @logging
+    def build_validate_function(self):
+        pass
+
+    def get_lr(self, iteration):
+        pass
+
+ResNetTFModel.register_class(['tf', 'resnet_tf'])
