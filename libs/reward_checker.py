@@ -115,6 +115,19 @@ class DeltaAccuracyRewardChecker(RewardChecker):
 DeltaAccuracyRewardChecker.register_class(['delta_acc', 'delta_accuracy'])
 
 
+class BestAccuracyRewardChecker(RewardChecker):
+    def __init__(self):
+        self.validate_accuracy = []
+
+    def check(self, validate_acc, updater):
+        self.validate_accuracy.append(validate_acc)
+
+    def get_reward(self, echo=True):
+        return (max(self.validate_accuracy) - 0.884) * 100
+
+BestAccuracyRewardChecker.register_class(['best_acc', 'best_accuracy'])
+
+
 def get_reward_checker(checker_type, expected_total_cases=None):
     if checker_type == SpeedRewardChecker:
         return checker_type(PolicyConfig['speed_reward_config'], expected_total_cases)
