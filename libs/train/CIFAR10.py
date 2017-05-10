@@ -431,7 +431,7 @@ def test_policy_CIFAR10():
         message("Epoch {} of {} took {:.3f}s".format(
             epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
 
-    episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
+    episode_final_message(best_validate_acc, best_iteration, test_score, start_time, updater)
 
     model.test(x_test, y_test)
         
