@@ -131,7 +131,7 @@ BestAccuracyRewardChecker.register_class(['best_acc', 'best_accuracy'])
 def get_reward_checker(checker_type, expected_total_cases=None):
     if checker_type == SpeedRewardChecker:
         return checker_type(PolicyConfig['speed_reward_config'], expected_total_cases)
-    elif checker_type == AccuracyRewardChecker:
-        return checker_type()
     elif checker_type == DeltaAccuracyRewardChecker:
         return checker_type(PolicyConfig['baseline_accuracy_file'])
+    else:
+        return checker_type()
