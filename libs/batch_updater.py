@@ -91,6 +91,8 @@ class BatchUpdater(object):
 
             self.part_avg_loss = [[] for _ in range(ClassNumber)]
             self.avg_loss = [[] for _ in range(ClassNumber)]
+        elif Config['temp_job'] == 'dump_index':
+            self.train_index = []
 
     @property
     def data_size(self):
@@ -132,6 +134,9 @@ class BatchUpdater(object):
 
     def train_batch_buffer(self):
         self.last_update_batch_index = [self.buffer.popleft() for _ in range(self.batch_size)]
+
+        if Config['temp_job'] == 'dump_index':
+            self.train_index.append(self.last_update_batch_index)
 
         # Get x[], mask[], y[], ..., then prepare them
         selected_batch_data = [data[self.last_update_batch_index] for data in self.all_data]

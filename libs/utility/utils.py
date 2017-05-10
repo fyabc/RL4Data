@@ -17,7 +17,6 @@ from my_logging import init_logging_file, finalize_logging_file, message, get_lo
 from path import get_path, split_policy_name, find_newest
 from preprocess import Tilde, simple_parse_args, check_config, strict_update
 
-
 DatasetAttributes = namedtuple('DatasetAttributes', ['name', 'config', 'main_entry'])
 
 # All datasets
@@ -30,7 +29,6 @@ Datasets = {
 # The float type of Theano. Default to 'float32'.
 # fX = config.floatX
 fX = Config['floatX']
-
 
 # Temp jobs that need to remain the order of data
 RemainOrderJobs = ('log_data', 'check_part_loss',)
@@ -279,7 +277,7 @@ def process_before_train(args=None):
     return dataset_attr
 
 
-def call_or_throw(call_dict, key, *args, **kwargs):     # Unused now
+def call_or_throw(call_dict, key, *args, **kwargs):  # Unused now
     func = call_dict.get(key, None)
 
     if func is None:
@@ -323,7 +321,7 @@ def get_minibatches_idx(n, minibatch_size, shuffle=False):
     minibatch_start = 0
     for i in range(n // minibatch_size):
         minibatches.append(idx_list[minibatch_start:
-                                    minibatch_start + minibatch_size])
+        minibatch_start + minibatch_size])
         minibatch_start += minibatch_size
 
     if minibatch_start != n:
@@ -418,7 +416,7 @@ VA: {:.6f}""".format(
             message("TeL: {:.6f}".format(test_loss))
         if test_acc is not None:
             message("TeA: {:.6f}".format(test_acc))
-        message("NAC: {} / {} T".format(updater.total_accepted_cases, updater.total_seen_cases,))
+        message("NAC: {} / {} T".format(updater.total_accepted_cases, updater.total_seen_cases, ))
 
     # Check speed rewards
     if reward_checker is not None:
@@ -467,12 +465,22 @@ def start_new_epoch(updater, epoch):
     return time.time()
 
 
-def episode_final_message(best_validate_acc, best_iteration, test_score, start_time):
+def episode_final_message(best_validate_acc, best_iteration, test_score, start_time, updater=None):
     message('$Final results:')
     message('$  best test accuracy:\t\t{} %'.format((test_score * 100.0) if test_score is not None else None))
     message('$  best validation accuracy: {}'.format(best_validate_acc))
     message('$  obtained at iteration {}'.format(best_iteration))
     message('$  Time passed: {:.2f}s'.format(time.time() - start_time))
+
+    if updater is None:
+        return
+
+    if Config['temp_job'] == 'dump_index':
+        train_index_filename = os.path.join(DataPath, Config['dataset'],
+                                            '{}_train_index.pkl'.format(Config['job_name']))
+        with open(train_index_filename, 'wb') as f:
+            pkl.dump(f, updater.train_index)
+        message("Dump train index to '{}'".format(train_index_filename))
 
 
 def preprocess_v2(args):

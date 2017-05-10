@@ -83,6 +83,7 @@
     //     "check_part_loss": check the loss and margin of different parts in corrupted data
     //     "log_dropped_data": log the features of dropped data (only used in test policy process)
     //     "train_analysis": log the features of training data
+    //     "dump_index": dump the index of all data.
     "temp_job": "",
 
     // Get filtered data?

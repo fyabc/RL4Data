@@ -77,7 +77,7 @@ def train_raw_CIFAR10():
         message("Epoch {} of {} took {:.3f}s".format(
             epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
 
-    episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
+    episode_final_message(best_validate_acc, best_iteration, test_score, start_time, updater)
 
     if ParamConfig['save_model']:
         model.save_model()
