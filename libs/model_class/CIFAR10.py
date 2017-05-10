@@ -116,7 +116,9 @@ class CIFARModelBase(NameRegister):
 
     @staticmethod
     def get_policy_input_size():
-        input_size = CIFARModelBase.output_size
+        input_size = 0
+        if PolicyConfig['add_output']:
+            input_size += CIFARModelBase.output_size
         if PolicyConfig['add_label_input']:
             input_size += 1
         if PolicyConfig['add_label']:

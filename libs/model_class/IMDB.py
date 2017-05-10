@@ -65,7 +65,9 @@ class IMDBModelBase(object):
 
     @staticmethod
     def get_policy_input_size():
-        input_size = IMDBModelBase.output_size
+        input_size = 0
+        if PolicyConfig['add_output']:
+            input_size += IMDBModelBase.output_size
         if PolicyConfig['add_label_input']:
             input_size += 1
         if PolicyConfig['add_label']:
