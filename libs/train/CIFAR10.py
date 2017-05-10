@@ -25,6 +25,10 @@ def train_raw_CIFAR10():
     if ParamConfig['warm_start']:
         model.load_model(Config['model_file'])
 
+    if Config['load_index'] is not None:
+        with open(os.path.join(DataPath, Config['dataset'], Config['load_index']), 'rb') as f:
+            train_index = pkl.load(f)
+
     # Train the network
     # Some variables
 
@@ -42,7 +46,10 @@ def train_raw_CIFAR10():
     for epoch in range(ParamConfig['epoch_per_episode']):
         epoch_start_time = start_new_epoch(updater, epoch)
 
-        kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
+        if Config['load_index'] is not None:
+            kf = list(enumerate(train_index[epoch]))
+        else:
+            kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
 
         for _, train_index in kf:
             part_train_cost = updater.add_batch(train_index)

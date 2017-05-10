@@ -131,12 +131,14 @@ class BatchUpdater(object):
 
         if Config['temp_job'] == 'check_selected_data_label':
             self.epoch_label_count.fill(0)
+        elif Config['temp_job'] == 'dump_index':
+            self.train_index.append([])
 
     def train_batch_buffer(self):
         self.last_update_batch_index = [self.buffer.popleft() for _ in range(self.batch_size)]
 
         if Config['temp_job'] == 'dump_index':
-            self.train_index.append(self.last_update_batch_index)
+            self.train_index[-1].append(self.last_update_batch_index)
 
         # Get x[], mask[], y[], ..., then prepare them
         selected_batch_data = [data[self.last_update_batch_index] for data in self.all_data]

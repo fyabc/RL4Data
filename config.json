@@ -89,6 +89,10 @@
     // Get filtered data?
     "filter_data": false,
 
+    // The loaded training index file (only used in raw job)
+    // Default is null (not load)
+    "load_index": null,
+
     "policy": {
         /// Name of policy network
         // Candidates:
