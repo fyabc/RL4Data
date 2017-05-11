@@ -479,7 +479,7 @@ def episode_final_message(best_validate_acc, best_iteration, test_score, start_t
         train_index_filename = os.path.join(DataPath, Config['dataset'],
                                             '{}_train_index.pkl'.format(Config['job_name']))
         with open(train_index_filename, 'wb') as f:
-            pkl.dump(f, updater.train_index)
+            pkl.dump(updater.train_index, f)
         message("Dump train index to '{}'".format(train_index_filename))
 
 
