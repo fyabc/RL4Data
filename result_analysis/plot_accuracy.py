@@ -23,6 +23,9 @@ Interval = 4
 
 
 def get_data_list(filename, dataset='mnist', interval=Interval, start_tags=('Test accuracy:', 'TeA:')):
+    if filename is None:
+        return None
+
     abs_filename = os.path.join(LogPath, dataset, filename)
 
     filenames = [abs_filename]
@@ -214,8 +217,9 @@ def plot_for_paper_all(*filenames, **kwargs):
                             spl_colors[i] + spl_line_style, spl, vp_size, smooth, interval, maxlen,
                             linewidth=line_width, mv_avg=mv_avg, markersize=CFG['markersize'])
 
-    plot_accuracy_curve(Curves[0].title, 'b' + random_line_style, random_drop, vp_size, smooth, interval, maxlen,
-                        linewidth=line_width - 1, mv_avg=mv_avg, markersize=CFG['markersize'])
+    if random_drop is not None:
+        plot_accuracy_curve(Curves[0].title, 'b' + random_line_style, random_drop, vp_size, smooth, interval, maxlen,
+                            linewidth=line_width - 1, mv_avg=mv_avg, markersize=CFG['markersize'])
 
     plot_accuracy_curve(Curves[3].title, 'r' + raw_line_style, raw, vp_size, smooth, interval, maxlen,
                         linewidth=line_width - 1, mv_avg=mv_avg, markersize=CFG['markersize'])
@@ -366,6 +370,35 @@ def plot_for_paper_cifar():
     )
 
 
+def plot_for_paper_cifar_resnet110():
+    plot_for_paper_all(
+        'log-cifar10-raw-ResNet110.txt',
+
+        None,
+
+        'log-cifar10-stochastic-lr-speed-Cifar10NonC2Best_Resnet110.txt',
+        'log-cifar10-stochastic-lr-speed-Cifar10NonC3Best_Resnet110.txt',
+
+        dataset='cifar10',
+        xmin=0,
+        xmax=97,
+        ymin=0.6,
+        ymax=0.95,
+        interval=10,
+        vp_size=390 * 128,
+        smooth=800,
+        mv_avg=2,
+
+        ymin2=None,
+        ymax2=None,
+        xmax2=40000,
+
+        spl_cfg=[],
+        # speed_cfg=['.80\ .84\ .865', '.84', '.80'],
+        speed_cfg=['0.80-ResNet32', '0.84-ResNet32'],
+    )
+
+
 def plot_for_paper_c_cifar():
     plot_for_paper_all(
         'log-cifar10-raw-Flip1.txt',
@@ -475,11 +508,12 @@ def main(args=None):
             'c-mnist': plot_for_paper_c_mnist,
             'cifar10': plot_for_paper_cifar,
             'c-cifar10': plot_for_paper_c_cifar,
+            'cifar10-110': plot_for_paper_cifar_resnet110,
             'imdb': plot_for_paper_imdb,
         }[options.builtin]()
 
 
 if __name__ == '__main__':
-    # main(['-b', 'imdb'])
-    main()
+    main(['-b', 'cifar10-110'])
+    # main()
     pass
