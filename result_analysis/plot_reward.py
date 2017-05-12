@@ -17,8 +17,11 @@ import matplotlib.pyplot as plt
 from libs.utility.config import LogPath
 
 
-def get_reward_list(filename, dataset='mnist'):
-    abs_filename = os.path.join(LogPath, dataset, filename)
+def get_reward_list(filename, dataset='mnist', abspath=False):
+    if not abspath:
+        abs_filename = os.path.join(LogPath, dataset, filename)
+    else:
+        abs_filename = filename
 
     with open(abs_filename, 'r') as f:
         result = [
@@ -31,7 +34,7 @@ def get_reward_list(filename, dataset='mnist'):
 
 
 def plot_by_args(options):
-    reward_list = get_reward_list(options.filename, options.dataset)
+    reward_list = get_reward_list(options.filename, options.dataset, options.abspath)
 
     if options.ignore_zero:
         reward_list = [e if abs(e) > 1e-6 else None for e in reward_list]
@@ -56,13 +59,15 @@ def main():
 
     parser.add_argument('filename', help='The log filename')
     parser.add_argument('-d', '--dataset', action='store', dest='dataset', default='mnist',
-                        help='The dataset (default is "mnist")')
+                        help='The dataset (default is "%(default)s")')
     parser.add_argument('-I', '--no_ignore_zero', action='store_false', dest='ignore_zero', default=True,
-                        help='Do not ignore the zero reward (default is False)')
+                        help='Do not ignore the zero reward (default is %(default)s)')
     parser.add_argument('-y', '--ymin', action='store', dest='ymin', type=float, default=None,
-                        help='The y min value (default is None)')
+                        help='The y min value (default is %(default)s)')
     parser.add_argument('-Y', '--ymax', action='store', dest='ymax', type=float, default=None,
-                        help='The y max value (default is None)')
+                        help='The y max value (default is %(default)s)')
+    parser.add_argument('-a', '--abspath', action='store_true', dest='abspath', default=False,
+                        help='Filename is absolute path, (default is %(default)s)')
 
     options = parser.parse_args()
 
