@@ -102,9 +102,10 @@ def legend(**kwargs):
     use_ac = kwargs.pop('use_ac', True)
     spl_count = kwargs.pop('spl_count', 1)
     speed_count = kwargs.pop('speed_count', 1)
+    rand_drop_count = kwargs.pop('rand_drop_count', 1)
     n_rows = kwargs.pop('n_rows', 2)
 
-    total_number = 1 + 1 + spl_count + speed_count
+    total_number = 1 + rand_drop_count + spl_count + speed_count
 
     if use_ac:
         total_number += 2

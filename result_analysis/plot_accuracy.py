@@ -172,6 +172,7 @@ def plot_for_paper_all(*filenames, **kwargs):
     spl_cfg = kwargs.pop('spl_cfg', [165])
     speed_cfg = kwargs.pop('speed_cfg', ['-'])
     line_width = kwargs.pop('line_width', CFG['linewidth'])
+    l2t_style = kwargs.pop('l2t_style', False)
 
     spl_count = len(spl_cfg)
     speed_count = len(speed_cfg)
@@ -205,28 +206,38 @@ def plot_for_paper_all(*filenames, **kwargs):
 
     # The color should be fixed.
     spl_colors = ['g', 'm', 'y']
-    reinforce_colors = ['c', 'm', 'y', 'g', 'k', 'b']
+    reinforce_colors = ['c', 'm', 'y', 'g', 'k', 'b', 'r', 'p']
 
+    title = r'$L2T{}$' if l2t_style else r'$NDF-{}$'
     for i, reinforce in enumerate(reinforces):
-        plot_accuracy_curve(r'$NDF-{}$'.format(speed_cfg[i]),
-                            reinforce_colors[i] + reinforce_line_style, reinforce, vp_size, smooth, interval, maxlen,
+        plot_accuracy_curve(title.format(speed_cfg[i]), reinforce_colors[i] + reinforce_line_style,
+                            reinforce, vp_size, smooth, interval, maxlen,
                             linewidth=line_width, mv_avg=mv_avg, markersize=CFG['markersize'])
 
+    title = r'$SPL{}$' if l2t_style else r'$SPL-{}$'
     for i, spl in enumerate(spls):
-        plot_accuracy_curve(r'$SPL-{}$'.format(spl_cfg[i]),
-                            spl_colors[i] + spl_line_style, spl, vp_size, smooth, interval, maxlen,
+        plot_accuracy_curve(title.format(spl_cfg[i]), spl_colors[i] + spl_line_style,
+                            spl, vp_size, smooth, interval, maxlen,
                             linewidth=line_width, mv_avg=mv_avg, markersize=CFG['markersize'])
 
     if random_drop is not None:
-        plot_accuracy_curve(Curves[0].title, 'b' + random_line_style, random_drop, vp_size, smooth, interval, maxlen,
+        title = '$RandTeach$' if l2t_style else Curves[0].title
+        plot_accuracy_curve(title, 'b' + random_line_style, random_drop, vp_size, smooth, interval, maxlen,
                             linewidth=line_width - 1, mv_avg=mv_avg, markersize=CFG['markersize'])
 
-    plot_accuracy_curve(Curves[3].title, 'r' + raw_line_style, raw, vp_size, smooth, interval, maxlen,
+    title = '$NoTeach$' if l2t_style else Curves[3].title
+    plot_accuracy_curve(title, 'r' + raw_line_style, raw, vp_size, smooth, interval, maxlen,
                         linewidth=line_width - 1, mv_avg=mv_avg, markersize=CFG['markersize'])
 
-    legend(use_ac=False, spl_count=spl_count, speed_count=speed_count, n_rows=3)
+    legend(use_ac=False, spl_count=spl_count, speed_count=speed_count, n_rows=3 if l2t_style else 3,
+           rand_drop_count=random_drop is not None)
 
-    plt.xlabel('$Number\ of\ Accepted\ Training\ Instances$', fontsize=30)
+    if l2t_style:
+        x_label = '$Number\ of\ Effective\ Training\ Data$'
+    else:
+        x_label = '$Number\ of\ Accepted\ Training\ Instances$'
+
+    plt.xlabel(x_label, fontsize=30)
     plt.ylabel(r'$Test\ Accuracy$', fontsize=30)
 
     plt.xlim(xmin=xmin * vp_size, xmax=xmax * vp_size)
@@ -291,20 +302,29 @@ def plot_for_paper_all(*filenames, **kwargs):
 def plot_for_paper_mnist():
     plot_for_paper_all(
         'log-mnist-raw-NonC1.txt',
+
         'log-mnist-spl-NonC5.txt',
         'log-mnist-spl-NonC4.txt',
         'log-mnist-spl-NonC6.txt',
+
         'log-mnist-random_drop-speed-NonC3.txt',
+
         # 'log-mnist-stochastic-lr-speed-NonC3Best.txt',
         'log-mnist-stochastic-lr-speed-NonC7Best.txt',
         'log-mnist-stochastic-lr-speed-NonC8Best.txt',
         'log-mnist-stochastic-lr-speed-NonC10Best.txt',
+
         'log-mnist-stochastic-lr-speed-Cifar10NonC2Best.txt',
         'log-mnist-stochastic-lr-speed-Cifar10NonC3Best.txt',
         'log-mnist-stochastic-lr-speed-Cifar10NonC4Best.txt',
 
-        xmin=125,
-        xmax=595,
+        # 'log-mnist-stochastic-lr-speed-Label.txt',
+        # 'log-mnist-stochastic-lr-speed-NoLoss.txt',
+        # 'log-mnist-stochastic-lr-speed-NoOutput.txt',
+        # 'log-mnist-stochastic-lr-speed-NoTrainInfo.txt',
+
+        xmin=0,
+        xmax=600,
         ymin=0.93,
         ymax=0.981,
         interval=15,
@@ -316,10 +336,16 @@ def plot_for_paper_mnist():
         smooth2=200,
         mv_avg2=20,
 
-        spl_cfg=[80, 120, 160],
+        # spl_cfg=[80, 120, 160],
+        spl_cfg=['-80', '-120', '160'],
+
         # speed_cfg=['0.94', '.89\ .92\ .94', '.80\ .88\ .96'],
-        speed_cfg=['0.94', '0.96', '0.98',
-                   'C0.80', 'C0.84', 'C0.88'],
+        speed_cfg=['-0.94', '-0.96', '-0.98',
+                   '-C0.80', '-C0.84', '-C0.88'],
+        #            'Label', 'NoLoss', 'NoOutput', 'NoTrainInfo'],
+        # speed_cfg=['', '-C'],
+
+        l2t_style=True,
     )
 
 
@@ -345,9 +371,12 @@ def plot_for_paper_cifar():
         'log-cifar10-stochastic-lr-speed-NonC2Best_1.txt',
         'log-cifar10-stochastic-lr-speed-NonC3Best.txt',
         'log-cifar10-stochastic-lr-speed-NonC4Best.txt',
+
         'log-cifar10-stochastic-lr-speed-MnistNonC7Best.txt',
         'log-cifar10-stochastic-lr-speed-MnistNonC8Best.txt',
         'log-cifar10-stochastic-lr-speed-MnistNonC10Best.txt',
+        # 'log-cifar10-raw-LoadIndex_32.txt',
+        # 'log-cifar10-stochastic-lr-speed-DumpIndex_32.txt',
 
         dataset='cifar10',
         xmin=0,
@@ -363,10 +392,15 @@ def plot_for_paper_cifar():
         ymax2=None,
         xmax2=40000,
 
-        spl_cfg=[120, 60, 180],
+        # spl_cfg=[120, 60, 180],
+        spl_cfg=['-120', '-60', '-180'],
+
         # speed_cfg=['.80\ .84\ .865', '.84', '.80'],
-        speed_cfg=['0.80', '0.84', '0.88',
-                   'M0.94', 'M0.96', 'M0.98'],
+        speed_cfg=['-0.80', '-0.84', '-0.88',
+                   '-M0.94', '-M0.96', '-M0.98'],
+        # speed_cfg=['', '-M'],
+
+        l2t_style=True,
     )
 
 
@@ -374,10 +408,13 @@ def plot_for_paper_cifar_resnet110():
     plot_for_paper_all(
         'log-cifar10-raw-ResNet110.txt',
 
+        'log-cifar10-spl-ResNet110.txt',
+
         None,
 
-        'log-cifar10-stochastic-lr-speed-Cifar10NonC2Best_Resnet110.txt',
         'log-cifar10-stochastic-lr-speed-Cifar10NonC3Best_Resnet110.txt',
+        # 'log-cifar10-stochastic-lr-speed-Cifar10NonC2Best_Resnet110.txt',
+        # 'log-cifar10-raw-LoadIndex_110.txt',
 
         dataset='cifar10',
         xmin=0,
@@ -393,9 +430,12 @@ def plot_for_paper_cifar_resnet110():
         ymax2=None,
         xmax2=40000,
 
-        spl_cfg=[],
+        spl_cfg=[''],
         # speed_cfg=['.80\ .84\ .865', '.84', '.80'],
-        speed_cfg=['0.80-ResNet32', '0.84-ResNet32'],
+        # speed_cfg=['0.80-ResNet32', '0.84-ResNet32', 'DataPath-Resnet32'],
+        speed_cfg=['-32'],
+
+        l2t_style=True,
     )
 
 
@@ -429,22 +469,25 @@ def plot_for_paper_c_cifar():
 def plot_for_paper_imdb():
     plot_for_paper_all(
         'log-imdb-raw-NonC1s.txt',
+
         # 'log-imdb-spl-NonC1.txt',
         'log-imdb-spl-NonC2.txt',
         'log-imdb-spl-NonC100.txt',
         'log-imdb-spl-NonC120.txt',
+
         'log-imdb-random_drop-lr-speed-NonC_old2_2.txt',
+
         'log-imdb-stochastic-lr-speed-NonC_Old2_1.txt',
         'log-imdb-stochastic-lr-speed-OldNonC2Warm2.txt',
         'log-imdb-stochastic-lr-speed-NonC_Old2_2.txt',
         # 'log-imdb-stochastic-lr-speed-NonC_Old.txt',
+
         # 'log-imdb-stochastic-mlp-speed-NonC1Best.txt',
         # 'log-imdb-stochastic-mlp-speed-NonC2Best.txt',
-        # 'log-imdb-raw-NonC1_3.txt',
 
         dataset='imdb',
         xmin=0,
-        xmax=37.5 * 7 / 6,
+        xmax=37.0 * 7 / 6,
         # xmax=90,
         ymin=0.45,
         ymax=0.90,
@@ -461,8 +504,13 @@ def plot_for_paper_imdb():
         mv_avg2=5,
 
         # speed_cfg=['.80\ .83\ .86', '.70\ .80\ .85', '.80\ .83\ .86'],
-        speed_cfg=['0.80', '0.83', '0.86'],
-        spl_cfg=[80, 100, 120],
+        # speed_cfg=['0.80', '0.83', '0.86'],
+        speed_cfg=['-0.80', '-0.83', '-0.86'],
+
+        # spl_cfg=[80, 100, 120],
+        spl_cfg=['-80', '-100', '-120'],
+
+        l2t_style=True,
     )
 
 
@@ -508,12 +556,12 @@ def main(args=None):
             'c-mnist': plot_for_paper_c_mnist,
             'cifar10': plot_for_paper_cifar,
             'c-cifar10': plot_for_paper_c_cifar,
-            'cifar10-110': plot_for_paper_cifar_resnet110,
+            'cifar10-resnet110': plot_for_paper_cifar_resnet110,
             'imdb': plot_for_paper_imdb,
         }[options.builtin]()
 
 
 if __name__ == '__main__':
-    main(['-b', 'cifar10-110'])
-    # main()
+    main(['-b', 'cifar10'])
+    # argparse_main()
     pass

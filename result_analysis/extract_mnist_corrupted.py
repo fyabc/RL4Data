@@ -50,6 +50,6 @@ def main(**kwargs):
 
 
 if __name__ == '__main__':
-    # main(filename='raw_flip', target='raw')
-    # main(filename='SPL_flip_5000vp', target='SPL')
+    # argparse_main(filename='raw_flip', target='raw')
+    # argparse_main(filename='SPL_flip_5000vp', target='SPL')
     main(filename='random_drop_speed_flip', target='random_drop_speed')

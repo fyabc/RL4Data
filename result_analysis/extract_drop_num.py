@@ -89,7 +89,7 @@ def get_drop_number_rank(filename, dataset='mnist', series_number=5):
     return total_number, rank_numbers, pick_start, pick_end, rank_size
 
 
-def plot_drop_number_rank(filename, **kwargs):
+def plot_drop_number_rank(filename, kwargs):
     dataset = kwargs.pop('dataset', 'mnist')
     plot_total = kwargs.pop('plot_total', False)
     series_number = kwargs.pop('series_number', 5)
@@ -97,6 +97,7 @@ def plot_drop_number_rank(filename, **kwargs):
     mv_avg = kwargs.pop('mv_avg', False)
     interval = kwargs.pop('interval', 1)
     legend_loc = kwargs.pop('legend_loc', 'upper left')
+    use_legend = kwargs.pop('use_legend', False)
 
     vp2epoch = kwargs.pop('vp2epoch', {
         'mnist': 20 * 125.0 / 50000,
@@ -135,15 +136,19 @@ def plot_drop_number_rank(filename, **kwargs):
 
         rank_number = pick_interval(rank_number, interval)
 
+        # label = r'$Bucket\ {} \sim {}$'.format(rank_size + 1 - pick_end[i], rank_size - pick_start[i])
+        label = r'$Hardness\ {}$'.format(i + 1)
+
         plt.plot(xs, rank_number, line_styles[i],
-                 label=r'$Bucket\ {} \sim {}$'.format(rank_size + 1 - pick_end[i], rank_size - pick_start[i]),
+                 label=label,
                  linewidth=line_width, markersize=CFG['markersize'], color=colors[i])
 
     plt.xlim(xmin=xmin, xmax=xmax)
     plt.ylim(ymin=ymin, ymax=ymax)
 
-    plt.legend(loc=legend_loc, fontsize=28,
-               borderpad=0.2, labelspacing=0.2, handletextpad=0.2, borderaxespad=0.2)
+    if use_legend:
+        plt.legend(loc=legend_loc, fontsize=28,
+                   borderpad=0.2, labelspacing=0.2, handletextpad=0.2, borderaxespad=0.2)
     # plt.title('${}$'.format(title), fontsize=40)
     plt.xticks(fontsize=21)
     plt.yticks(fontsize=24)
@@ -156,7 +161,7 @@ def plot_drop_number_rank(filename, **kwargs):
     plt.show()
 
 
-def main(args=None):
+def argparse_main(args=None):
     parser = argparse.ArgumentParser(description='The drop number extractor')
 
     parser.add_argument('filenames', nargs='+', help='The log filenames')
@@ -176,20 +181,23 @@ def main(args=None):
     plot_by_args(options)
 
 
-def plot_cifar10():
-    plot_drop_number_rank(
-        'log-cifar10-stochastic-lr-speed-NonC3Best_1.txt',
+def plot_cifar10(kwargs):
+    kwargs.update(dict(
         dataset='cifar10',
         series_number=5,
         title='CIFAR-10\ NDF-REINFORCE\ LR',
         ymax=45000,
         xmax=24,
+    ))
+
+    plot_drop_number_rank(
+        'log-cifar10-stochastic-lr-speed-NonC3Best_1.txt',
+        kwargs,
     )
 
 
-def plot_imdb():
-    plot_drop_number_rank(
-        'log-imdb-stochastic-lr-speed-NonC_Old2_2.txt',
+def plot_imdb(kwargs):
+    kwargs.update(dict(
         dataset='imdb',
         series_number=5,
         title='IMDB\ NDF-REINFORCE\ LR',
@@ -197,13 +205,17 @@ def plot_imdb():
         # xmax=12,
         xmax=16,
         mv_avg=2,
-        legend_loc='upper right'
+        legend_loc='upper right',
+    ))
+
+    plot_drop_number_rank(
+        'log-imdb-stochastic-lr-speed-NonC_Old2_2.txt',
+        kwargs,
     )
 
 
-def plot_mnist():
-    plot_drop_number_rank(
-        'log-mnist-stochastic-lr-speed-NonC8Best_1.txt',
+def plot_mnist(kwargs):
+    kwargs.update(dict(
         dataset='mnist',
         series_number=5,
         title='MNIST\ NDF-REINFORCE\ LR',
@@ -211,11 +223,16 @@ def plot_mnist():
         plot_total=False,
 
         interval=10,
+    ))
+
+    plot_drop_number_rank(
+        'log-mnist-stochastic-lr-speed-NonC8Best_1.txt',
+        kwargs,
     )
 
 
-if __name__ == '__main__':
-    # main([
+def main():
+    # argparse_main([
     #     '-p',
     #     'log-mnist-stochastic-lr-speed-NonC3Best.txt',
     #     'log-mnist-stochastic-lr-speed-NonC7Best.txt',
@@ -223,13 +240,19 @@ if __name__ == '__main__':
     #     'log-mnist-stochastic-lr-speed-NonC10Best.txt',
     # ])
 
-    import sys
+    kwargs = dict(
+        use_legend=False,
+    )
 
     {
         'imdb': plot_imdb,
         'cifar10': plot_cifar10,
         'mnist': plot_mnist,
-        'main': main,
-    }[sys.argv[1]]()
+        'argparse_main': argparse_main,
+    }['imdb'](kwargs)
 
     pass
+
+
+if __name__ == '__main__':
+    main()
