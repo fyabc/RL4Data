@@ -102,6 +102,9 @@ def pre_process_MNIST_data():
     # Load the dataset
     x_train, y_train, x_validate, y_validate, x_test, y_test = load_mnist_data()
 
+    if Config['part_data'] is not None:
+        x_train, y_train = get_part_data(x_train, y_train, int(round(y_train.shape[0] * Config['part_data'])))
+
     train_size, validate_size, test_size = y_train.shape[0], y_validate.shape[0], y_test.shape[0]
 
     message('Training data size:', train_size)

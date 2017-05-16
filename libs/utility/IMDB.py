@@ -6,8 +6,8 @@ import cPickle as pkl
 
 import numpy as np
 
-from config import IMDBConfig as ParamConfig
-from utils import fX, get_minibatches_idx
+from config import IMDBConfig as ParamConfig, Config
+from utils import fX, get_minibatches_idx, get_part_data
 from my_logging import logging, message
 
 
@@ -211,26 +211,29 @@ def pre_process_IMDB_data():
                                                        maxlen=ParamConfig['maxlen'])
     train_data, valid_data, test_data = preprocess_imdb_data(train_data, valid_data, test_data)
 
-    train_x, train_y = train_data
-    valid_x, valid_y = valid_data
-    test_x, test_y = test_data
+    x_train, y_train = train_data
+    x_valid, y_valid = valid_data
+    x_test, y_test = test_data
 
-    train_x = np.asarray(train_x)
-    train_y = np.asarray(train_y)
-    valid_x = np.asarray(valid_x)
-    valid_y = np.asarray(valid_y)
-    test_x = np.asarray(test_x)
-    test_y = np.asarray(test_y)
+    x_train = np.asarray(x_train)
+    y_train = np.asarray(y_train)
+    x_valid = np.asarray(x_valid)
+    y_valid = np.asarray(y_valid)
+    x_test = np.asarray(x_test)
+    y_test = np.asarray(y_test)
 
-    train_size = len(train_x)
-    valid_size = len(valid_x)
-    test_size = len(test_x)
+    if Config['part_data'] is not None:
+        x_train, y_train = get_part_data(x_train, y_train, int(round(y_train.shape[0] * Config['part_data'])))
+
+    train_size = len(x_train)
+    valid_size = len(x_valid)
+    test_size = len(x_test)
 
     message('Training data size:', train_size)
     message('Validation data size:', valid_size)
     message('Test data size:', test_size)
 
-    return train_x, train_y, valid_x, valid_y, test_x, test_y, train_size, valid_size, test_size
+    return x_train, y_train, x_valid, y_valid, x_test, y_test, train_size, valid_size, test_size
 
 
 def pre_process_config(model, train_size, valid_size, test_size):

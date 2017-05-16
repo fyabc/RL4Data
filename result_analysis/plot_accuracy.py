@@ -314,14 +314,14 @@ def plot_for_paper_mnist():
         'log-mnist-stochastic-lr-speed-NonC8Best.txt',
         'log-mnist-stochastic-lr-speed-NonC10Best.txt',
 
-        'log-mnist-stochastic-lr-speed-Cifar10NonC2Best.txt',
-        'log-mnist-stochastic-lr-speed-Cifar10NonC3Best.txt',
-        'log-mnist-stochastic-lr-speed-Cifar10NonC4Best.txt',
+        # 'log-mnist-stochastic-lr-speed-Cifar10NonC2Best.txt',
+        # 'log-mnist-stochastic-lr-speed-Cifar10NonC3Best.txt',
+        # 'log-mnist-stochastic-lr-speed-Cifar10NonC4Best.txt',
 
-        # 'log-mnist-stochastic-lr-speed-Label.txt',
-        # 'log-mnist-stochastic-lr-speed-NoLoss.txt',
-        # 'log-mnist-stochastic-lr-speed-NoOutput.txt',
-        # 'log-mnist-stochastic-lr-speed-NoTrainInfo.txt',
+        'log-mnist-stochastic-lr-speed-Label.txt',
+        'log-mnist-stochastic-lr-speed-NoLoss_1.txt',
+        'log-mnist-stochastic-lr-speed-NoOutput_1.txt',
+        'log-mnist-stochastic-lr-speed-NoTrainInfo.txt',
 
         xmin=0,
         xmax=600,
@@ -341,8 +341,9 @@ def plot_for_paper_mnist():
 
         # speed_cfg=['0.94', '.89\ .92\ .94', '.80\ .88\ .96'],
         speed_cfg=['-0.94', '-0.96', '-0.98',
-                   '-C0.80', '-C0.84', '-C0.88'],
-        #            'Label', 'NoLoss', 'NoOutput', 'NoTrainInfo'],
+                   # '-C0.80', '-C0.84', '-C0.88'],
+                   # ],
+                   'Label', 'NoLoss', 'NoOutput', 'NoTrainInfo'],
         # speed_cfg=['', '-C'],
 
         l2t_style=True,
@@ -372,9 +373,9 @@ def plot_for_paper_cifar():
         'log-cifar10-stochastic-lr-speed-NonC3Best.txt',
         'log-cifar10-stochastic-lr-speed-NonC4Best.txt',
 
-        'log-cifar10-stochastic-lr-speed-MnistNonC7Best.txt',
-        'log-cifar10-stochastic-lr-speed-MnistNonC8Best.txt',
-        'log-cifar10-stochastic-lr-speed-MnistNonC10Best.txt',
+        # 'log-cifar10-stochastic-lr-speed-MnistNonC7Best.txt',
+        # 'log-cifar10-stochastic-lr-speed-MnistNonC8Best.txt',
+        # 'log-cifar10-stochastic-lr-speed-MnistNonC10Best.txt',
         # 'log-cifar10-raw-LoadIndex_32.txt',
         # 'log-cifar10-stochastic-lr-speed-DumpIndex_32.txt',
 
@@ -397,7 +398,8 @@ def plot_for_paper_cifar():
 
         # speed_cfg=['.80\ .84\ .865', '.84', '.80'],
         speed_cfg=['-0.80', '-0.84', '-0.88',
-                   '-M0.94', '-M0.96', '-M0.98'],
+                   # '-M0.94', '-M0.96', '-M0.98'],
+                   ],
         # speed_cfg=['', '-M'],
 
         l2t_style=True,
@@ -418,7 +420,7 @@ def plot_for_paper_cifar_resnet110():
 
         dataset='cifar10',
         xmin=0,
-        xmax=97,
+        xmax=90,
         ymin=0.6,
         ymax=0.95,
         interval=10,
@@ -487,7 +489,7 @@ def plot_for_paper_imdb():
 
         dataset='imdb',
         xmin=0,
-        xmax=37.0 * 7 / 6,
+        xmax=27.5 * 7 / 6,
         # xmax=90,
         ymin=0.45,
         ymax=0.90,
@@ -562,6 +564,6 @@ def main(args=None):
 
 
 if __name__ == '__main__':
-    main(['-b', 'cifar10'])
+    main(['-b', 'mnist'])
     # argparse_main()
     pass

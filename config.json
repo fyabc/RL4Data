@@ -89,6 +89,9 @@
     // Get filtered data?
     "filter_data": false,
 
+    // Get part data? value in 0.0 ~ 1.0, default is None (not part)
+    "part_data": null,
+
     // The loaded training index file (only used in raw job)
     // Default is null (not load)
     "load_index": null,
