@@ -565,5 +565,5 @@ def main(args=None):
 
 if __name__ == '__main__':
     main(['-b', 'mnist'])
-    # argparse_main()
+    # main()
     pass

@@ -32,7 +32,7 @@ def main():
     # Set the configs (include dataset specific config), and return the dataset attributes.
     config, dataset_attr = preprocess_v2(args)
 
-    # Call the dataset argparse_main entry.
+    # Call the dataset main entry.
     eval('{}()'.format(dataset_attr.main_entry))
 
 

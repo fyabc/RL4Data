@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""The argparse_main entry of training."""
+"""The main entry of training."""
 
 from __future__ import print_function
 
@@ -15,7 +15,7 @@ def main():
     # Set the configs (include dataset specific config), and return the dataset attributes.
     dataset_attr = process_before_train()
 
-    # Call the dataset argparse_main entry.
+    # Call the dataset main entry.
     eval('{}()'.format(dataset_attr.main_entry))
 
 
