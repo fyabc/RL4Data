@@ -458,6 +458,55 @@ def plot_for_paper_cifar():
     )
 
 
+def plot_for_paper_cifar_half():
+    plot_for_paper_all(
+        'log-cifar10-raw-ResNet32_Half.txt',
+
+        'log-cifar10-spl-ResNet32_Half.txt',
+        # 'log-cifar10-spl-NonC60.txt',
+        # 'log-cifar10-spl-NonC180.txt',
+
+        # 'log-cifar10-random_drop-speed-NonC2.txt',
+        None,
+
+        # 'log-cifar10-stochastic-lr-speed-NonC2Best_1.txt',
+        'log-cifar10-stochastic-lr-speed-Cifar10NonC3Best_Half.txt',
+        # 'log-cifar10-stochastic-lr-speed-NonC4Best.txt',
+
+        # 'log-cifar10-stochastic-lr-speed-MnistNonC7Best.txt',
+        # 'log-cifar10-stochastic-lr-speed-MnistNonC8Best.txt',
+        # 'log-cifar10-stochastic-lr-speed-MnistNonC10Best.txt',
+        # 'log-cifar10-raw-LoadIndex_32.txt',
+        # 'log-cifar10-stochastic-lr-speed-DumpIndex_32.txt',
+
+        dataset='cifar10',
+        xmin=0,
+        xmax=87,
+        ymin=0.6,
+        ymax=0.95,
+        interval=10,
+        vp_size=390 * 128,
+        smooth=800,
+        mv_avg=2,
+
+        ymin2=None,
+        ymax2=None,
+        xmax2=40000,
+
+        # spl_cfg=[120, 60, 180],
+        spl_cfg=['120'],
+
+        # speed_cfg=['.80\ .84\ .865', '.84', '.80'],
+        # speed_cfg=['0.80', '0.84', '0.88',
+                   # '-M0.94', '-M0.96', '-M0.98'],
+        speed_cfg=['0.84'
+                   ],
+        # speed_cfg=['', '-M'],
+
+        l2t_style=False,
+    )
+
+
 def plot_for_paper_cifar_resnet110():
     plot_for_paper_all(
         'log-cifar10-raw-ResNet110.txt',
@@ -574,14 +623,14 @@ def plot_for_paper_imdb_half():
 
         # 'log-imdb-spl-NonC1.txt',
         'log-imdb-spl-Half_80.txt',
-        'log-imdb-raw-NonC1s.txt',
-        'log-imdb-spl-NonC120.txt',
+        'log-imdb-spl-Half_100.txt',
+        'log-imdb-spl-Half_120.txt',
 
         'log-imdb-random_drop-lr-speed-NonC_old2_2.txt',
 
-        'log-imdb-stochastic-lr-speed-NonC_Old2_1.txt',
-        'log-imdb-stochastic-lr-speed-OldNonC2Warm2.txt',
-        'log-imdb-stochastic-lr-speed-NonC_Old2_2.txt',
+        'log-imdb-stochastic-lr-speed-Half_NonC_Old2.txt',
+        'log-imdb-stochastic-lr-speed-Half_OldNonC2Warm2.txt',
+        'log-imdb-stochastic-lr-speed-Half_NonC_Old2_1.txt',
         # 'log-imdb-stochastic-lr-speed-NonC_Old.txt',
 
         # 'log-imdb-stochastic-mlp-speed-NonC1Best.txt',
@@ -658,6 +707,7 @@ def main(args=None):
             'mnist-half': plot_for_paper_mnist_half,
             'c-mnist': plot_for_paper_c_mnist,
             'cifar10': plot_for_paper_cifar,
+            'cifar10-half': plot_for_paper_cifar_half,
             'c-cifar10': plot_for_paper_c_cifar,
             'cifar10-resnet110': plot_for_paper_cifar_resnet110,
             'imdb': plot_for_paper_imdb,

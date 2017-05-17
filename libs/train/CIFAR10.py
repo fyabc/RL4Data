@@ -34,6 +34,7 @@ def train_raw_CIFAR10():
 
     # Learning rate discount
     lr_discount_41, lr_discount_61 = False, False
+    fixed_train_size = 100000
 
     # To prevent the double validate point
     last_validate_point = -1
@@ -74,10 +75,10 @@ def train_raw_CIFAR10():
                     test_score = test_acc
 
             if isinstance(model, CIFARModel):
-                if not lr_discount_41 and updater.total_accepted_cases >= 41 * train_size:
+                if not lr_discount_41 and updater.total_accepted_cases >= 41 * fixed_train_size:
                         lr_discount_41 = True
                         model.update_learning_rate()
-                if not lr_discount_61 and updater.total_accepted_cases > 61 * train_size:
+                if not lr_discount_61 and updater.total_accepted_cases > 61 * fixed_train_size:
                         lr_discount_61 = True
                         model.update_learning_rate()
 
@@ -187,6 +188,7 @@ def train_policy_CIFAR10():
 
         # Learning rate discount
         lr_discount_41, lr_discount_61 = False, False
+        fixed_train_size = 100000
 
         # To prevent the double validate point
         last_validate_point = -1
@@ -235,10 +237,10 @@ def train_policy_CIFAR10():
                         test_score = test_acc
 
             if isinstance(model, CIFARModel):
-                if not lr_discount_41 and updater.total_accepted_cases >= 41 * train_size:
+                if not lr_discount_41 and updater.total_accepted_cases >= 41 * fixed_train_size:
                         lr_discount_41 = True
                         model.update_learning_rate()
-                if not lr_discount_61 and updater.total_accepted_cases > 61 * train_size:
+                if not lr_discount_61 and updater.total_accepted_cases > 61 * fixed_train_size:
                         lr_discount_61 = True
                         model.update_learning_rate()
 
@@ -282,6 +284,10 @@ def train_actor_critic_CIFAR10():
         else:
             model.reset_parameters()
         model.reset_learning_rate()
+
+        # Learning rate discount
+        lr_discount_41, lr_discount_61 = False, False
+        fixed_train_size = 100000
 
         # To prevent the double validate / AC update point
         last_AC_update_point = -1
@@ -344,9 +350,13 @@ def train_actor_critic_CIFAR10():
                                 .format(epoch, updater.total_train_batches, part_train_cost,
                                         float(Q_loss), float(actor_loss)))
 
-            if isinstance(model, CIFARModel):
-                if (epoch + 1) in (41, 61):
-                    model.update_learning_rate()
+                if isinstance(model, CIFARModel):
+                    if not lr_discount_41 and updater.total_accepted_cases >= 41 * fixed_train_size:
+                        lr_discount_41 = True
+                        model.update_learning_rate()
+                    if not lr_discount_61 and updater.total_accepted_cases > 61 * fixed_train_size:
+                        lr_discount_61 = True
+                        model.update_learning_rate()
 
             message("Epoch {} of {} took {:.3f}s".format(
                 epoch, ParamConfig['epoch_per_episode'], time.time() - epoch_start_time))
@@ -394,6 +404,7 @@ def test_policy_CIFAR10():
 
     # Learning rate discount
     lr_discount_41, lr_discount_61 = False, False
+    fixed_train_size = 100000
 
     # To prevent the double validate point
     last_validate_point = -1
@@ -428,10 +439,10 @@ def test_policy_CIFAR10():
                     test_score = test_acc
 
             if isinstance(model, CIFARModel):
-                if not lr_discount_41 and updater.total_accepted_cases >= 41 * train_size:
+                if not lr_discount_41 and updater.total_accepted_cases >= 41 * fixed_train_size:
                         lr_discount_41 = True
                         model.update_learning_rate()
-                if not lr_discount_61 and updater.total_accepted_cases > 61 * train_size:
+                if not lr_discount_61 and updater.total_accepted_cases > 61 * fixed_train_size:
                         lr_discount_61 = True
                         model.update_learning_rate()
 
