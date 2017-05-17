@@ -158,6 +158,12 @@ def prepare_imdb_data(seqs, labels, **kwargs):
         if len(lengths) < 1:
             return None, None, None
 
+    if ParamConfig['sort_by_len']:
+        lengths_rank = np.array(lengths).argsort()
+        seqs = [seqs[i] for i in lengths_rank]
+        labels = [labels[i] for i in lengths_rank]
+        lengths = [lengths[i] for i in lengths_rank]
+
     n_samples = len(seqs)
     maxlen = np.max(lengths)
 

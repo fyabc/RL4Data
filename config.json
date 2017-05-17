@@ -309,7 +309,9 @@
         "save_to": false, //"./data/imdb/lstm_model.npz",
         "valid_freq": 200,  // Change the default value to 100?
         "save_freq": 1110,
-        "train_loss_freq": 370
+        "train_loss_freq": 370,
+
+        "sort_by_len": false    // Data sorted by length?
     },
 
     "mnist": {

@@ -80,7 +80,10 @@ def train_raw_IMDB():
     for epoch in range(ParamConfig['epoch_per_episode']):
         epoch_start_time = start_new_epoch(updater, epoch)
 
-        kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
+        shuffle = True
+        if ParamConfig['sort_by_len']:
+            shuffle = False
+        kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=shuffle)
 
         for _, train_index in kf:
             model.use_noise.set_value(floatX(1.))
@@ -154,7 +157,10 @@ def train_SPL_IMDB():
     for epoch in range(ParamConfig['epoch_per_episode']):
         epoch_start_time = start_new_epoch(updater, epoch)
 
-        kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
+        shuffle = True
+        if ParamConfig['sort_by_len']:
+            shuffle = False
+        kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=shuffle)
 
         for _, train_index in kf:
             model.use_noise.set_value(floatX(1.))
@@ -256,7 +262,10 @@ def train_policy_IMDB():
         for epoch in range(ParamConfig['epoch_per_episode']):
             epoch_start_time = start_new_epoch(updater, epoch)
 
-            kf = get_minibatches_idx(train_small_size, model.train_batch_size, shuffle=True)
+            shuffle = True
+            if ParamConfig['sort_by_len']:
+                shuffle = False
+            kf = get_minibatches_idx(train_small_size, model.train_batch_size, shuffle=shuffle)
 
             for _, train_index in kf:
                 model.use_noise.set_value(floatX(1.))
@@ -354,7 +363,10 @@ def train_actor_critic_IMDB():
         for epoch in range(ParamConfig['epoch_per_episode']):
             epoch_start_time = start_new_epoch(updater, epoch)
 
-            kf = get_minibatches_idx(train_small_size, model.train_batch_size, shuffle=True)
+            shuffle = True
+            if ParamConfig['sort_by_len']:
+                shuffle = False
+            kf = get_minibatches_idx(train_small_size, model.train_batch_size, shuffle=shuffle)
 
             for _, train_index in kf:
                 model.use_noise.set_value(floatX(1.))
@@ -477,7 +489,10 @@ def test_policy_IMDB():
     for epoch in range(ParamConfig['epoch_per_episode']):
         epoch_start_time = start_new_epoch(updater, epoch)
 
-        kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=True)
+        shuffle = True
+        if ParamConfig['sort_by_len']:
+            shuffle = False
+        kf = get_minibatches_idx(train_size, model.train_batch_size, shuffle=shuffle)
 
         for _, train_index in kf:
             model.use_noise.set_value(floatX(1.))
