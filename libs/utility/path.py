@@ -51,7 +51,8 @@ def find_newest(dir_name, raw_name, ext='.npz', ret_number=False):
                 max_number = episode
                 newest_filename = filename
 
-    newest_filename = os.path.join(dir_name, newest_filename)
+    if newest_filename:
+        newest_filename = os.path.join(dir_name, newest_filename)
 
     if ret_number:
         return newest_filename, max_number

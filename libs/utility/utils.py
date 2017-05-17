@@ -213,7 +213,7 @@ def process_before_train(args=None):
 
     elif train_type in CommonTypes:
         # Common mode:
-        #     Used for training without policy (raw/SPL/test/random_drop)
+        #     Used for training without policy (test/random_drop)
         #     Options:
         #         Create a new logging file
         #         Load a exist model (if needed) from {P.policy_load_file}
@@ -222,7 +222,9 @@ def process_before_train(args=None):
         raw_name, episode, ext = split_policy_name(PolicyConfig['policy_load_file'])
         if episode == '':
             # Load the newest model
-            PolicyConfig['policy_load_file'] = find_newest(model_path, raw_name, ext)
+            newest_filename = find_newest(model_path, raw_name, ext)
+            if newest_filename:
+                PolicyConfig['policy_load_file'] = newest_filename
         append = False
 
     elif train_action == 'overwrite':
