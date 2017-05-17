@@ -260,6 +260,10 @@ Real cost (Final reward for terminal): {}""".format(
     def load_policy(self, filename=None):
         filename = filename or PolicyConfig['policy_load_file']
 
+        if not os.path.exists(filename):
+            message('Policy file "{}" not exist, do not load'.format(filename))
+            return
+
         with np.load(filename) as f:
             for i, parameter in enumerate(self.parameters):
                 parameter.set_value(f['arr_{}'.format(i)])
