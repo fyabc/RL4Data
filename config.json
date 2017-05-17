@@ -242,6 +242,9 @@
         "validation_size": 10000,
         "test_size": 10000,
 
+        // Validation data from Test data? default is True
+        "v_from_te": true,
+
         /// Valid per ?? batches (128 * ?? data)
         // 100000 // 128 = 781 batch per epoch, 390 is half epoch.
         "valid_freq": 390,

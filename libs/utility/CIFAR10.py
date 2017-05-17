@@ -107,15 +107,17 @@ def split_cifar10_data(data):
     x_test = data['x_test']
     y_test = data['y_test']
 
-    # One: validate is not part of train
-    x_validate = x_test[:ParamConfig['validation_size']]
-    y_validate = y_test[:ParamConfig['validation_size']]
+    if ParamConfig['v_from_te']:
+        # One: validate is not part of train
+        x_validate = x_test[:ParamConfig['validation_size']]
+        y_validate = y_test[:ParamConfig['validation_size']]
+    else:
+        # Another: validate is part of train
+        x_validate = x_train[:ParamConfig['validation_size']]
+        y_validate = y_train[:ParamConfig['validation_size']]
+
     x_test = x_test[-ParamConfig['test_size']:]
     y_test = y_test[-ParamConfig['test_size']:]
-
-    # # Another: validate is part of train
-    # x_validate = x_train[:CifarConfig['validation_size']]
-    # y_validate = y_train[:CifarConfig['validation_size']]
 
     return x_train, y_train, x_validate, y_validate, x_test, y_test
 
