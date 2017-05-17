@@ -110,6 +110,7 @@ def train_SPL_CIFAR10():
 
     # Learning rate discount
     lr_discount_41, lr_discount_61 = False, False
+    fixed_train_size = 100000
 
     # To prevent the double validate point
     last_validate_point = -1
@@ -147,10 +148,10 @@ def train_SPL_CIFAR10():
                     test_score = test_acc
 
             if isinstance(model, CIFARModel):
-                if not lr_discount_41 and updater.total_accepted_cases >= 41 * train_size:
+                if not lr_discount_41 and updater.total_accepted_cases >= 41 * fixed_train_size:
                         lr_discount_41 = True
                         model.update_learning_rate()
-                if not lr_discount_61 and updater.total_accepted_cases > 61 * train_size:
+                if not lr_discount_61 and updater.total_accepted_cases > 61 * fixed_train_size:
                         lr_discount_61 = True
                         model.update_learning_rate()
 
