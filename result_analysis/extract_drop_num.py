@@ -136,8 +136,8 @@ def plot_drop_number_rank(filename, kwargs):
 
         rank_number = pick_interval(rank_number, interval)
 
-        # label = r'$Bucket\ {} \sim {}$'.format(rank_size + 1 - pick_end[i], rank_size - pick_start[i])
-        label = r'$Hardness\ {}$'.format(i + 1)
+        label = r'$Bucket\ {} \sim {}$'.format(rank_size + 1 - pick_end[i], rank_size - pick_start[i])
+        # label = r'$Hardness\ {}$'.format(i + 1)
 
         plt.plot(xs, rank_number, line_styles[i],
                  label=label,
@@ -231,6 +231,23 @@ def plot_mnist(kwargs):
     )
 
 
+def plot_mnist_half(kwargs):
+    kwargs.update(dict(
+        dataset='mnist',
+        series_number=5,
+        title='MNIST\ NDF-REINFORCE\ LR',
+        xmax=64,
+        plot_total=False,
+
+        interval=10,
+    ))
+
+    plot_drop_number_rank(
+        'log-mnist-stochastic-lr-speed-Half_MnistNonC8Best.txt',
+        kwargs,
+    )
+
+
 def main():
     # argparse_main([
     #     '-p',
@@ -241,15 +258,16 @@ def main():
     # ])
 
     kwargs = dict(
-        use_legend=False,
+        use_legend=True,
     )
 
     {
         'imdb': plot_imdb,
         'cifar10': plot_cifar10,
         'mnist': plot_mnist,
+        'mnist-half': plot_mnist_half,
         'argparse_main': argparse_main,
-    }['imdb'](kwargs)
+    }['mnist-half'](kwargs)
 
     pass
 

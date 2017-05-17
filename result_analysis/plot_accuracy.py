@@ -337,7 +337,7 @@ def plot_for_paper_mnist():
         mv_avg2=20,
 
         # spl_cfg=[80, 120, 160],
-        spl_cfg=['-80', '-120', '160'],
+        spl_cfg=['-80', '-120', '-160'],
 
         # speed_cfg=['0.94', '.89\ .92\ .94', '.80\ .88\ .96'],
         speed_cfg=['-0.94', '-0.96', '-0.98',
@@ -347,6 +347,58 @@ def plot_for_paper_mnist():
         # speed_cfg=['', '-C'],
 
         l2t_style=True,
+    )
+
+
+def plot_for_paper_mnist_half():
+    plot_for_paper_all(
+        'log-mnist-raw-Half.txt',
+
+        'log-mnist-spl-Half_60.txt',
+        'log-mnist-spl-Half_120.txt',
+        'log-mnist-spl-Half_180.txt',
+
+        # 'log-mnist-random_drop-speed-NonC3.txt',
+        None,
+
+        # 'log-mnist-stochastic-lr-speed-NonC3Best.txt',
+        'log-mnist-stochastic-lr-speed-Half_MnistNonC7Best.txt',
+        'log-mnist-stochastic-lr-speed-Half_MnistNonC8Best.txt',
+        'log-mnist-stochastic-lr-speed-Half_MnistNonC10Best.txt',
+
+        # 'log-mnist-stochastic-lr-speed-Cifar10NonC2Best.txt',
+        # 'log-mnist-stochastic-lr-speed-Cifar10NonC3Best.txt',
+        # 'log-mnist-stochastic-lr-speed-Cifar10NonC4Best.txt',
+
+        # 'log-mnist-stochastic-lr-speed-Label.txt',
+        # 'log-mnist-stochastic-lr-speed-NoLoss_1.txt',
+        # 'log-mnist-stochastic-lr-speed-NoOutput_1.txt',
+        # 'log-mnist-stochastic-lr-speed-NoTrainInfo.txt',
+
+        xmin=0,
+        xmax=600,
+        ymin=0.93,
+        ymax=0.981,
+        interval=15,
+        maxlen=600,
+        smooth=800,
+
+        interval2=200,
+        xmax2=200000,
+        smooth2=200,
+        mv_avg2=20,
+
+        # spl_cfg=[80, 120, 160],
+        spl_cfg=['80', '120', '160'],
+
+        # speed_cfg=['0.94', '.89\ .92\ .94', '.80\ .88\ .96'],
+        speed_cfg=['0.94', '0.96', '0.98',
+                   # '-C0.80', '-C0.84', '-C0.88'],
+                   ],
+        # 'Label', 'NoLoss', 'NoOutput', 'NoTrainInfo'],
+        # speed_cfg=['', '-C'],
+
+        l2t_style=False,
     )
 
 
@@ -516,6 +568,54 @@ def plot_for_paper_imdb():
     )
 
 
+def plot_for_paper_imdb_half():
+    plot_for_paper_all(
+        'log-imdb-raw-Half.txt',
+
+        # 'log-imdb-spl-NonC1.txt',
+        'log-imdb-spl-Half_80.txt',
+        'log-imdb-raw-NonC1s.txt',
+        'log-imdb-spl-NonC120.txt',
+
+        'log-imdb-random_drop-lr-speed-NonC_old2_2.txt',
+
+        'log-imdb-stochastic-lr-speed-NonC_Old2_1.txt',
+        'log-imdb-stochastic-lr-speed-OldNonC2Warm2.txt',
+        'log-imdb-stochastic-lr-speed-NonC_Old2_2.txt',
+        # 'log-imdb-stochastic-lr-speed-NonC_Old.txt',
+
+        # 'log-imdb-stochastic-mlp-speed-NonC1Best.txt',
+        # 'log-imdb-stochastic-mlp-speed-NonC2Best.txt',
+
+        dataset='imdb',
+        xmin=0,
+        xmax=27.5 * 7 / 6,
+        # xmax=90,
+        ymin=0.45,
+        ymax=0.90,
+        interval=5,
+        vp_size=200 * 16,
+        smooth=800,
+        mv_avg=2,
+
+        ymin2=None,
+        ymax2=None,
+        xmax2=40000,
+        interval2=200,
+        smooth2=800,
+        mv_avg2=5,
+
+        # speed_cfg=['.80\ .83\ .86', '.70\ .80\ .85', '.80\ .83\ .86'],
+        # speed_cfg=['0.80', '0.83', '0.86'],
+        speed_cfg=['0.80', '0.83', '0.86'],
+
+        # spl_cfg=[80, 100, 120],
+        spl_cfg=['80', '100', '120'],
+
+        l2t_style=False,
+    )
+
+
 def plot_by_args(options):
     for filename in options.filename:
         data = get_data_list(filename, options.dataset, options.interval)
@@ -555,15 +655,17 @@ def main(args=None):
     else:
         {
             'mnist': plot_for_paper_mnist,
+            'mnist-half': plot_for_paper_mnist_half,
             'c-mnist': plot_for_paper_c_mnist,
             'cifar10': plot_for_paper_cifar,
             'c-cifar10': plot_for_paper_c_cifar,
             'cifar10-resnet110': plot_for_paper_cifar_resnet110,
             'imdb': plot_for_paper_imdb,
+            'imdb-half': plot_for_paper_imdb_half,
         }[options.builtin]()
 
 
 if __name__ == '__main__':
-    main(['-b', 'mnist'])
+    main(['-b', 'imdb-half'])
     # main()
     pass

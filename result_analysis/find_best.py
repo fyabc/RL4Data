@@ -4,7 +4,11 @@
 from __future__ import print_function
 
 import os
+import sys
 import argparse
+
+ProjectRootPath = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(ProjectRootPath)
 
 from libs.utility.config import LogPath
 
@@ -76,11 +80,12 @@ if __name__ == '__main__':
     # main(['-t', 'stochastic', '-d', 'cifar10'])
     # main(['-t', 'random_drop', '-d', 'cifar10'])
     # main(['-t', 'spl', '-d', 'cifar10'])
-    main(['-t', 'reinforce', '-d', 'imdb', '-n', 'valid_acc', '-f', 'log-imdb-reinforce-lr-best_acc-W.txt'])
-    main(['-t', 'reinforce', '-d', 'imdb', '-n', 'valid_acc', '-f', 'log-imdb-reinforce-lr-best_acc-RB.txt'])
-    main(['-t', 'reinforce', '-d', 'imdb', '-n', 'valid_acc', '-f', 'log-imdb-reinforce-lr-best_acc-NoRB.txt'])
-    main(['-t', 'reinforce', '-d', 'imdb', '-n', 'valid_acc', '-f', 'log-imdb-reinforce-lr-best_acc-b0.txt'])
-    main(['-t', 'raw', '-d', 'imdb', '-n', 'valid_acc'])
-    main(['-t', 'spl', '-d', 'imdb', '-n', 'valid_acc'])
-    main(['-t', 'stochastic', '-d', 'imdb', '-n', 'valid_acc'])
-    main(['-t', 'random_drop', '-d', 'imdb', '-n', 'valid_acc'])
+    # main(['-t', 'reinforce', '-d', 'imdb', '-n', 'valid_acc', '-f', 'log-imdb-reinforce-lr-best_acc-W.txt'])
+    # main(['-t', 'reinforce', '-d', 'imdb', '-n', 'valid_acc', '-f', 'log-imdb-reinforce-lr-best_acc-RB.txt'])
+    # main(['-t', 'reinforce', '-d', 'imdb', '-n', 'valid_acc', '-f', 'log-imdb-reinforce-lr-best_acc-NoRB.txt'])
+    # main(['-t', 'reinforce', '-d', 'imdb', '-n', 'valid_acc', '-f', 'log-imdb-reinforce-lr-best_acc-b0.txt'])
+    # main(['-t', 'raw', '-d', 'imdb', '-n', 'valid_acc'])
+    # main(['-t', 'spl', '-d', 'imdb', '-n', 'valid_acc'])
+    # main(['-t', 'stochastic', '-d', 'imdb', '-n', 'valid_acc'])
+    # main(['-t', 'random_drop', '-d', 'imdb', '-n', 'valid_acc'])
+    main()
