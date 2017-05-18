@@ -104,16 +104,21 @@ def legend(**kwargs):
     speed_count = kwargs.pop('speed_count', 1)
     rand_drop_count = kwargs.pop('rand_drop_count', 1)
     n_rows = kwargs.pop('n_rows', 2)
+    legend_loc = kwargs.pop('legend_loc', 'out')
 
     total_number = 1 + rand_drop_count + spl_count + speed_count
 
     if use_ac:
         total_number += 2
 
-    plt.legend(loc='lower center', bbox_to_anchor=(0.5, -0.0), bbox_transform=plt.gcf().transFigure,
-               fancybox=False, shadow=False,
-               ncol=total_number // n_rows + int(bool(total_number % n_rows)), fontsize=28,
-               borderpad=0.2, labelspacing=0.2, handletextpad=0.2, borderaxespad=0.2)
+    if legend_loc == 'out':
+        plt.legend(loc='lower center', bbox_to_anchor=(0.5, -0.0), bbox_transform=plt.gcf().transFigure,
+                   fancybox=False, shadow=False,
+                   ncol=total_number // n_rows + int(bool(total_number % n_rows)), fontsize=28,
+                   borderpad=0.2, labelspacing=0.2, handletextpad=0.2, borderaxespad=0.2)
+    else:
+        # todo
+        pass
 
 
 def plot_acc_line(k, style, xs, ys, interval=1, smooth=300):

@@ -172,7 +172,8 @@ def plot_for_paper_all(*filenames, **kwargs):
     spl_cfg = kwargs.pop('spl_cfg', [165])
     speed_cfg = kwargs.pop('speed_cfg', ['-'])
     line_width = kwargs.pop('line_width', CFG['linewidth'])
-    l2t_style = kwargs.pop('l2t_style', False)
+    style = kwargs.pop('style', None)
+    legend_loc = kwargs.pop('legend_loc', 'out')
 
     spl_count = len(spl_cfg)
     speed_count = len(speed_cfg)
@@ -208,93 +209,65 @@ def plot_for_paper_all(*filenames, **kwargs):
     spl_colors = ['g', 'm', 'y']
     reinforce_colors = ['c', 'm', 'y', 'g', 'k', 'b', 'r', 'p']
 
-    title = r'$L2T{}$' if l2t_style else r'$NDF-{}$'
+    title = {
+        None: r'$NDF-{}$',
+        'l2t': r'$L2T{}$',
+        'cn': r'$NDF-{}$',
+    }[style]
     for i, reinforce in enumerate(reinforces):
         plot_accuracy_curve(title.format(speed_cfg[i]), reinforce_colors[i] + reinforce_line_style,
                             reinforce, vp_size, smooth, interval, maxlen,
                             linewidth=line_width, mv_avg=mv_avg, markersize=CFG['markersize'])
 
-    title = r'$SPL{}$' if l2t_style else r'$SPL-{}$'
+    title = {
+        None: r'$SPL-{}$',
+        'l2t': r'$SPL{}$',
+        'cn': r'$SPL-{}$',
+    }[style]
     for i, spl in enumerate(spls):
         plot_accuracy_curve(title.format(spl_cfg[i]), spl_colors[i] + spl_line_style,
                             spl, vp_size, smooth, interval, maxlen,
                             linewidth=line_width, mv_avg=mv_avg, markersize=CFG['markersize'])
 
     if random_drop is not None:
-        title = '$RandTeach$' if l2t_style else Curves[0].title
+        title = {
+            None: Curves[0].title,
+            'l2t': '$RandTeach$',
+            'cn': Curves[0].title,
+        }[style]
         plot_accuracy_curve(title, 'b' + random_line_style, random_drop, vp_size, smooth, interval, maxlen,
                             linewidth=line_width - 1, mv_avg=mv_avg, markersize=CFG['markersize'])
 
-    title = '$NoTeach$' if l2t_style else Curves[3].title
+    title = {
+        None: Curves[3].title,
+        'l2t': '$NoTeach$',
+        'cn': Curves[3].title,
+    }[style]
     plot_accuracy_curve(title, 'r' + raw_line_style, raw, vp_size, smooth, interval, maxlen,
                         linewidth=line_width - 1, mv_avg=mv_avg, markersize=CFG['markersize'])
 
-    legend(use_ac=False, spl_count=spl_count, speed_count=speed_count, n_rows=3 if l2t_style else 3,
-           rand_drop_count=random_drop is not None)
+    legend(use_ac=False, spl_count=spl_count, speed_count=speed_count, n_rows=3,
+           rand_drop_count=random_drop is not None, legend_loc=legend_loc)
 
-    if l2t_style:
-        x_label = '$Number\ of\ Effective\ Training\ Data$'
-    else:
-        x_label = '$Number\ of\ Accepted\ Training\ Instances$'
+    x_label = {
+        None: '$Number\ of\ Accepted\ Training\ Instances$',
+        'l2t': '$Number\ of\ Effective\ Training\ Data$',
+        'cn': '$有效训练样本数$'
+    }[style]
+    y_label = {
+        None: r'$Test\ Accuracy$',
+        'l2t': r'$Test\ Accuracy$',
+        'cn': '测试集准确率',
+    }[style]
 
     plt.xlabel(x_label, fontsize=30)
-    plt.ylabel(r'$Test\ Accuracy$', fontsize=30)
+    plt.ylabel(y_label, fontsize=30)
 
     plt.xlim(xmin=xmin * vp_size, xmax=xmax * vp_size)
     plt.ylim(ymin=ymin, ymax=ymax)
     plt.grid(True, axis='both', linestyle='--')
 
     # End plot test accuracy
-
-    if False:
-        # Plot training loss
-        plt.sca(axis2)
-        plt.title(r'$Training\ Loss$')
-
-        interval = kwargs.pop('interval2', 80)
-        vp_size = kwargs.pop('vp_size2', 1)
-        smooth = kwargs.pop('smooth2', 0)
-        maxlen = kwargs.pop('maxlen2', 2000)
-        # line_width = 0.7
-
-        xmin = kwargs.pop('xmin2', None)
-        xmax = kwargs.pop('xmax2', None)
-        ymin = kwargs.pop('ymin2', None)
-        ymax = kwargs.pop('ymax2', 0.75)
-
-        mv_avg = kwargs.pop('mv_avg2', 5)
-
-        train_loss_lists = get_train_loss_lists(*filenames, interval=1, dataset=dataset)
-
-        raw = train_loss_lists[0]
-        spls = train_loss_lists[1:1 + spl_count]
-        random_drop = train_loss_lists[1 + spl_count]
-        reinforces = train_loss_lists[-speed_count:]
-
-        for i, reinforce in enumerate(reinforces):
-            plot_accuracy_curve(r'$NDF-{}$'.format(speed_cfg[i]),
-                                reinforce_colors[i] + reinforce_line_style, reinforce, vp_size, smooth, interval, maxlen,
-                                linewidth=line_width, mv_avg=mv_avg, markersize=CFG['markersize'])
-
-        for i, spl in enumerate(spls):
-            plot_accuracy_curve(r'$SPL-{}$'.format(spl_cfg[i]),
-                                spl_colors[i] + spl_line_style, spl, vp_size, smooth, interval, maxlen,
-                                linewidth=line_width, mv_avg=mv_avg, markersize=CFG['markersize'])
-
-        plot_accuracy_curve(Curves[3].title, 'b' + random_line_style, random_drop, vp_size, smooth, interval, maxlen,
-                            linewidth=line_width, mv_avg=mv_avg, markersize=CFG['markersize'])
-
-        plot_accuracy_curve(Curves[3].title, 'b' + raw_line_style, raw, vp_size, smooth, interval, maxlen,
-                            linewidth=line_width + 1, mv_avg=mv_avg, markersize=CFG['markersize'])
-
-        plt.xlim(xmin=xmin, xmax=xmax)
-        plt.ylim(ymin=ymin, ymax=ymax)
-        plt.grid(True, axis='y', linestyle='--')
-
-        # End plot training loss
-
-    # figure.tight_layout()
-    # figure.set_size_inches(20, 5)
 
     plt.show()
 
@@ -318,10 +291,10 @@ def plot_for_paper_mnist():
         # 'log-mnist-stochastic-lr-speed-Cifar10NonC3Best.txt',
         # 'log-mnist-stochastic-lr-speed-Cifar10NonC4Best.txt',
 
-        'log-mnist-stochastic-lr-speed-Label.txt',
-        'log-mnist-stochastic-lr-speed-NoLoss_1.txt',
-        'log-mnist-stochastic-lr-speed-NoOutput_1.txt',
-        'log-mnist-stochastic-lr-speed-NoTrainInfo.txt',
+        # 'log-mnist-stochastic-lr-speed-Label.txt',
+        # 'log-mnist-stochastic-lr-speed-NoLoss_1.txt',
+        # 'log-mnist-stochastic-lr-speed-NoOutput_1.txt',
+        # 'log-mnist-stochastic-lr-speed-NoTrainInfo.txt',
 
         xmin=0,
         xmax=600,
@@ -342,11 +315,11 @@ def plot_for_paper_mnist():
         # speed_cfg=['0.94', '.89\ .92\ .94', '.80\ .88\ .96'],
         speed_cfg=['-0.94', '-0.96', '-0.98',
                    # '-C0.80', '-C0.84', '-C0.88'],
-                   # ],
-                   'Label', 'NoLoss', 'NoOutput', 'NoTrainInfo'],
+                   ],
+                   # 'Label', 'NoLoss', 'NoOutput', 'NoTrainInfo'],
         # speed_cfg=['', '-C'],
 
-        l2t_style=True,
+        style='l2t',
     )
 
 
@@ -398,7 +371,7 @@ def plot_for_paper_mnist_half():
         # 'Label', 'NoLoss', 'NoOutput', 'NoTrainInfo'],
         # speed_cfg=['', '-C'],
 
-        l2t_style=False,
+        style=None,
     )
 
 
@@ -454,7 +427,7 @@ def plot_for_paper_cifar():
                    ],
         # speed_cfg=['', '-M'],
 
-        l2t_style=True,
+        style='l2t',
     )
 
 
@@ -503,7 +476,7 @@ def plot_for_paper_cifar_half():
                    ],
         # speed_cfg=['', '-M'],
 
-        l2t_style=False,
+        style=None,
     )
 
 
@@ -538,7 +511,7 @@ def plot_for_paper_cifar_resnet110():
         # speed_cfg=['0.80-ResNet32', '0.84-ResNet32', 'DataPath-Resnet32'],
         speed_cfg=['-32'],
 
-        l2t_style=True,
+        style='l2t',
     )
 
 
@@ -613,7 +586,7 @@ def plot_for_paper_imdb():
         # spl_cfg=[80, 100, 120],
         spl_cfg=['-80', '-100', '-120'],
 
-        l2t_style=True,
+        style='l2t',
     )
 
 
@@ -655,13 +628,11 @@ def plot_for_paper_imdb_half():
         mv_avg2=5,
 
         # speed_cfg=['.80\ .83\ .86', '.70\ .80\ .85', '.80\ .83\ .86'],
-        # speed_cfg=['0.80', '0.83', '0.86'],
         speed_cfg=['0.80', '0.83', '0.86'],
 
-        # spl_cfg=[80, 100, 120],
         spl_cfg=['80', '100', '120'],
 
-        l2t_style=False,
+        style=None,
     )
 
 
