@@ -18,7 +18,6 @@ import matplotlib.pyplot as plt
 from libs.utility.config import LogPath
 from utils import Curves, legend, average_list, move_avg, CFG, pick_interval
 
-
 Interval = 4
 
 
@@ -174,14 +173,14 @@ def plot_for_paper_all(*filenames, **kwargs):
     line_width = kwargs.pop('line_width', CFG['linewidth'])
     style = kwargs.pop('style', None)
     legend_loc = kwargs.pop('legend_loc', 'out')
+    add_sort = kwargs.pop('add_sort', False)
 
     spl_count = len(spl_cfg)
     speed_count = len(speed_cfg)
 
-    if False:
-        figure, (axis1, axis2) = plt.subplots(1, 2)
-
-        plt.sca(axis1)
+    if style == 'cn':
+        plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
+        plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
 
     # Plot test accuracy
     # plt.title(r'$Test\ Accuracy$', fontsize=40)
@@ -198,33 +197,46 @@ def plot_for_paper_all(*filenames, **kwargs):
     raw = test_acc_lists[0]
     spls = test_acc_lists[1:1 + spl_count]
     random_drop = test_acc_lists[1 + spl_count]
+
+    if add_sort:
+        raw_sort = test_acc_lists[2 + spl_count]
+
     reinforces = test_acc_lists[-speed_count:]
 
     raw_line_style = '-o'
     random_line_style = '-s'
+    sorted_line_style = '-*'
     spl_line_style = '--'
     reinforce_line_style = '-'
 
     # The color should be fixed.
     spl_colors = ['g', 'm', 'y']
     reinforce_colors = ['c', 'm', 'y', 'g', 'k', 'b', 'r', 'p']
+    raw_color = 'r'
+    random_drop_color = 'b'
+    sort_color = 'g'
 
     title = {
-        None: r'$NDF-{}$',
+        None: r'$NDF{}$',
         'l2t': r'$L2T{}$',
-        'cn': r'$NDF-{}$',
+        'cn': r'$NDF{}$',
     }[style]
     for i, reinforce in enumerate(reinforces):
+        if speed_cfg[i] != '':
+            speed_cfg[i] = '-' + speed_cfg[i]
+
         plot_accuracy_curve(title.format(speed_cfg[i]), reinforce_colors[i] + reinforce_line_style,
                             reinforce, vp_size, smooth, interval, maxlen,
                             linewidth=line_width, mv_avg=mv_avg, markersize=CFG['markersize'])
 
     title = {
-        None: r'$SPL-{}$',
+        None: r'$SPL{}$',
         'l2t': r'$SPL{}$',
-        'cn': r'$SPL-{}$',
+        'cn': r'$SPL{}$',
     }[style]
     for i, spl in enumerate(spls):
+        if spl_cfg[i] != '':
+            spl_cfg[i] = '-' + spl_cfg[i]
         plot_accuracy_curve(title.format(spl_cfg[i]), spl_colors[i] + spl_line_style,
                             spl, vp_size, smooth, interval, maxlen,
                             linewidth=line_width, mv_avg=mv_avg, markersize=CFG['markersize'])
@@ -235,7 +247,12 @@ def plot_for_paper_all(*filenames, **kwargs):
             'l2t': '$RandTeach$',
             'cn': Curves[0].title,
         }[style]
-        plot_accuracy_curve(title, 'b' + random_line_style, random_drop, vp_size, smooth, interval, maxlen,
+        plot_accuracy_curve(title, random_drop_color + random_line_style, random_drop, vp_size, smooth, interval,
+                            maxlen, linewidth=line_width - 1, mv_avg=mv_avg, markersize=CFG['markersize'])
+
+    if add_sort:
+        title = '$CL$'
+        plot_accuracy_curve(title, sort_color + sorted_line_style, raw_sort, vp_size, smooth, interval, maxlen,
                             linewidth=line_width - 1, mv_avg=mv_avg, markersize=CFG['markersize'])
 
     title = {
@@ -243,21 +260,21 @@ def plot_for_paper_all(*filenames, **kwargs):
         'l2t': '$NoTeach$',
         'cn': Curves[3].title,
     }[style]
-    plot_accuracy_curve(title, 'r' + raw_line_style, raw, vp_size, smooth, interval, maxlen,
+    plot_accuracy_curve(title, raw_color + raw_line_style, raw, vp_size, smooth, interval, maxlen,
                         linewidth=line_width - 1, mv_avg=mv_avg, markersize=CFG['markersize'])
 
     legend(use_ac=False, spl_count=spl_count, speed_count=speed_count, n_rows=3,
            rand_drop_count=random_drop is not None, legend_loc=legend_loc)
 
     x_label = {
-        None: '$Number\ of\ Accepted\ Training\ Instances$',
+        None: '$Number\ of\ Effective\ Training\ Data$',
         'l2t': '$Number\ of\ Effective\ Training\ Data$',
-        'cn': '$有效训练样本数$'
+        'cn': u'有效训练样本数',
     }[style]
     y_label = {
         None: r'$Test\ Accuracy$',
         'l2t': r'$Test\ Accuracy$',
-        'cn': '测试集准确率',
+        'cn': u'测试集准确率',
     }[style]
 
     plt.xlabel(x_label, fontsize=30)
@@ -285,6 +302,7 @@ def plot_for_paper_mnist():
         # 'log-mnist-stochastic-lr-speed-NonC3Best.txt',
         'log-mnist-stochastic-lr-speed-NonC7Best.txt',
         'log-mnist-stochastic-lr-speed-NonC8Best.txt',
+        # 'log-mnist-stochastic-lr-speed-NonC14Best.txt',
         'log-mnist-stochastic-lr-speed-NonC10Best.txt',
 
         # 'log-mnist-stochastic-lr-speed-Cifar10NonC2Best.txt',
@@ -309,17 +327,54 @@ def plot_for_paper_mnist():
         smooth2=200,
         mv_avg2=20,
 
-        # spl_cfg=[80, 120, 160],
-        spl_cfg=['-80', '-120', '-160'],
+        spl_cfg=['80', '120', '160'],
 
-        # speed_cfg=['0.94', '.89\ .92\ .94', '.80\ .88\ .96'],
-        speed_cfg=['-0.94', '-0.96', '-0.98',
-                   # '-C0.80', '-C0.84', '-C0.88'],
-                   ],
-                   # 'Label', 'NoLoss', 'NoOutput', 'NoTrainInfo'],
-        # speed_cfg=['', '-C'],
+        speed_cfg=['0.94', '0.96', '0.98', ],
 
-        style='l2t',
+        style=None,
+    )
+
+
+def plot_for_paper_mnist_transfer():
+    plot_for_paper_all(
+        'log-mnist-raw-NonC1.txt',
+
+        'log-mnist-spl-NonC5.txt',
+        # 'log-mnist-spl-NonC4.txt',
+        # 'log-mnist-spl-NonC6.txt',
+
+        'log-mnist-random_drop-speed-NonC3.txt',
+
+        # 'log-mnist-stochastic-lr-speed-NonC3Best.txt',
+        # 'log-mnist-stochastic-lr-speed-NonC7Best.txt',
+        # 'log-mnist-stochastic-lr-speed-NonC14Best.txt',
+        'log-mnist-stochastic-lr-speed-NonC8Best.txt',
+        # 'log-mnist-stochastic-lr-speed-NonC10Best.txt',
+
+        # 'log-mnist-stochastic-lr-speed-Cifar10NonC2Best.txt',
+        'log-mnist-stochastic-lr-speed-Cifar10NonC3Best.txt',
+        # 'log-mnist-stochastic-lr-speed-Cifar10NonC4Best.txt',
+
+        xmin=0,
+        xmax=600,
+        ymin=0.93,
+        ymax=0.981,
+        interval=15,
+        maxlen=600,
+        smooth=800,
+
+        interval2=200,
+        xmax2=200000,
+        smooth2=200,
+        mv_avg2=20,
+
+        spl_cfg=[''],
+
+        speed_cfg=['', 'Transfer'],
+
+        style=None,
+
+        legend_loc='lower right',
     )
 
 
@@ -336,8 +391,9 @@ def plot_for_paper_mnist_half():
 
         # 'log-mnist-stochastic-lr-speed-NonC3Best.txt',
         'log-mnist-stochastic-lr-speed-Half_MnistNonC7Best.txt',
-        'log-mnist-stochastic-lr-speed-Half_MnistNonC8Best.txt',
+        'log-mnist-stochastic-lr-speed-Half_MnistNonC14Best.txt',
         'log-mnist-stochastic-lr-speed-Half_MnistNonC10Best.txt',
+        # 'log-mnist-stochastic-lr-speed-Half_MnistNonC10Best.txt',
 
         # 'log-mnist-stochastic-lr-speed-Cifar10NonC2Best.txt',
         # 'log-mnist-stochastic-lr-speed-Cifar10NonC3Best.txt',
@@ -348,10 +404,10 @@ def plot_for_paper_mnist_half():
         # 'log-mnist-stochastic-lr-speed-NoOutput_1.txt',
         # 'log-mnist-stochastic-lr-speed-NoTrainInfo.txt',
 
-        xmin=0,
+        xmin=50,
         xmax=600,
-        ymin=0.93,
-        ymax=0.981,
+        ymin=0.92,
+        ymax=0.974,
         interval=15,
         maxlen=600,
         smooth=800,
@@ -365,13 +421,61 @@ def plot_for_paper_mnist_half():
         spl_cfg=['80', '120', '160'],
 
         # speed_cfg=['0.94', '.89\ .92\ .94', '.80\ .88\ .96'],
-        speed_cfg=['0.94', '0.96', '0.98',
+        speed_cfg=['0.93', '0.95', '0.97',
                    # '-C0.80', '-C0.84', '-C0.88'],
                    ],
         # 'Label', 'NoLoss', 'NoOutput', 'NoTrainInfo'],
         # speed_cfg=['', '-C'],
 
         style=None,
+
+        legend_loc='lower right',
+    )
+
+
+def plot_for_paper_mnist_half_feature_analysis():
+    plot_for_paper_all(
+        'log-mnist-raw-Half.txt',
+
+        # 'log-mnist-spl-Half_60.txt',
+        # 'log-mnist-spl-Half_120.txt',
+        # 'log-mnist-spl-Half_180.txt',
+
+        # 'log-mnist-random_drop-speed-NonC3.txt',
+        None,
+
+        'log-mnist-stochastic-lr-speed-Half_MnistNonC8Best.txt',
+        'log-mnist-stochastic-lr-speed-NoLoss_Half_1.txt',
+        'log-mnist-stochastic-lr-speed-NoTrainInfo_Half.txt',
+        'log-mnist-stochastic-lr-speed-Half_MnistNonC10Best.txt',
+
+        xmin=80,
+        xmax=600,
+        ymin=0.93,
+        ymax=0.976,
+        interval=15,
+        maxlen=600,
+        smooth=800,
+
+        interval2=200,
+        xmax2=200000,
+        smooth2=200,
+        mv_avg2=20,
+
+        # spl_cfg=[80, 120, 160],
+        spl_cfg=[],
+
+        # speed_cfg=['0.94', '.89\ .92\ .94', '.80\ .88\ .96'],
+        speed_cfg=[
+            'NoDataFeatures',
+            'NoCombinedFeatures',
+            'NoModelFeatures',
+            'AllFeatures',
+        ],
+
+        style=None,
+
+        legend_loc='lower right',
     )
 
 
@@ -406,9 +510,9 @@ def plot_for_paper_cifar():
 
         dataset='cifar10',
         xmin=0,
-        xmax=87,
-        ymin=0.6,
-        ymax=0.95,
+        xmax=89,
+        ymin=0.63,
+        ymax=0.94,
         interval=10,
         vp_size=390 * 128,
         smooth=800,
@@ -419,15 +523,17 @@ def plot_for_paper_cifar():
         xmax2=40000,
 
         # spl_cfg=[120, 60, 180],
-        spl_cfg=['-120', '-60', '-180'],
+        spl_cfg=['120', '60', '180'],
 
         # speed_cfg=['.80\ .84\ .865', '.84', '.80'],
-        speed_cfg=['-0.80', '-0.84', '-0.88',
+        speed_cfg=['0.80', '0.84', '0.88',
                    # '-M0.94', '-M0.96', '-M0.98'],
                    ],
         # speed_cfg=['', '-M'],
 
-        style='l2t',
+        style='cn',
+
+        legend_loc='lower right'
     )
 
 
@@ -435,28 +541,22 @@ def plot_for_paper_cifar_half():
     plot_for_paper_all(
         'log-cifar10-raw-ResNet32_Half.txt',
 
-        'log-cifar10-spl-ResNet32_Half.txt',
-        # 'log-cifar10-spl-NonC60.txt',
-        # 'log-cifar10-spl-NonC180.txt',
+        'log-cifar10-spl-ResNet32_Half_210.txt',
+        'log-cifar10-spl-ResNet32_Half_2.txt',
+        'log-cifar10-spl-ResNet32_Half_180_1.txt',
 
-        # 'log-cifar10-random_drop-speed-NonC2.txt',
-        None,
+        'log-cifar10-random_drop-lr-speed-Cifar10NonC2Best_Half.txt',
 
-        # 'log-cifar10-stochastic-lr-speed-NonC2Best_1.txt',
+        'log-cifar10-stochastic-lr-speed-Cifar10NonC2Best_Half.txt',
         'log-cifar10-stochastic-lr-speed-Cifar10NonC3Best_Half.txt',
-        # 'log-cifar10-stochastic-lr-speed-NonC4Best.txt',
-
-        # 'log-cifar10-stochastic-lr-speed-MnistNonC7Best.txt',
-        # 'log-cifar10-stochastic-lr-speed-MnistNonC8Best.txt',
-        # 'log-cifar10-stochastic-lr-speed-MnistNonC10Best.txt',
-        # 'log-cifar10-raw-LoadIndex_32.txt',
-        # 'log-cifar10-stochastic-lr-speed-DumpIndex_32.txt',
+        'log-cifar10-stochastic-lr-speed-Cifar10NonC4Best_Half.txt',
+        # 'log-cifar10-stochastic-lr-speed-NonC3_Half.txt',
 
         dataset='cifar10',
         xmin=0,
-        xmax=87,
-        ymin=0.6,
-        ymax=0.95,
+        xmax=91,
+        ymin=0.68,
+        ymax=0.91,
         interval=10,
         vp_size=390 * 128,
         smooth=800,
@@ -466,37 +566,41 @@ def plot_for_paper_cifar_half():
         ymax2=None,
         xmax2=40000,
 
-        # spl_cfg=[120, 60, 180],
-        spl_cfg=['120'],
+        spl_cfg=['120', '150', '180'],
 
         # speed_cfg=['.80\ .84\ .865', '.84', '.80'],
         # speed_cfg=['0.80', '0.84', '0.88',
-                   # '-M0.94', '-M0.96', '-M0.98'],
-        speed_cfg=['0.84'
-                   ],
+        # '-M0.94', '-M0.96', '-M0.98'],
+        speed_cfg=['0.80', '0.84', '0.88'],
         # speed_cfg=['', '-M'],
 
         style=None,
+
+        legend_loc='lower right'
     )
 
 
-def plot_for_paper_cifar_resnet110():
+def plot_for_paper_cifar_transfer():
     plot_for_paper_all(
-        'log-cifar10-raw-ResNet110.txt',
+        'log-cifar10-raw-NonC1.txt',
 
-        'log-cifar10-spl-ResNet110.txt',
+        # 'log-cifar10-spl-NonC1.txt',
+        # 'log-cifar10-spl-NonC60.txt',
+        'log-cifar10-spl-NonC180.txt',
 
-        None,
+        'log-cifar10-random_drop-speed-NonC2.txt',
 
-        'log-cifar10-stochastic-lr-speed-Cifar10NonC3Best_Resnet110.txt',
-        # 'log-cifar10-stochastic-lr-speed-Cifar10NonC2Best_Resnet110.txt',
-        # 'log-cifar10-raw-LoadIndex_110.txt',
+        # 'log-cifar10-stochastic-lr-speed-NonC2Best_1.txt',
+        # 'log-cifar10-stochastic-lr-speed-NonC3Best.txt',
+        # 'log-cifar10-stochastic-lr-speed-NonC4Best.txt',
+
+        'log-cifar10-stochastic-lr-speed-MnistNonC10Best.txt',
 
         dataset='cifar10',
         xmin=0,
-        xmax=90,
-        ymin=0.6,
-        ymax=0.95,
+        xmax=89,
+        ymin=0.63,
+        ymax=0.94,
         interval=10,
         vp_size=390 * 128,
         smooth=800,
@@ -507,11 +611,55 @@ def plot_for_paper_cifar_resnet110():
         xmax2=40000,
 
         spl_cfg=[''],
+
+        # speed_cfg=['', 'Transfer'],
+        speed_cfg=['Transfer'],
+
+        style=None,
+
+        legend_loc='lower right',
+    )
+
+
+def plot_for_paper_cifar_resnet110():
+    plot_for_paper_all(
+        'log-cifar10-raw-ResNet110.txt',
+
+        'log-cifar10-spl-ResNet110.txt',
+        # 'log-cifar10-spl-ResNet110_180.txt',
+        # 'log-cifar10-spl-ResNet110_60.txt',
+
+        'log-cifar10-random_drop-lr-speed-Cifar10NonC3Best_Resnet110.txt',
+
+        'log-cifar10-stochastic-lr-speed-Cifar10NonC3Best_Resnet110.txt',
+        # 'log-cifar10-stochastic-lr-speed-Cifar10NonC2Best_Resnet110.txt',
+        # 'log-cifar10-raw-LoadIndex_110.txt',
+
+        dataset='cifar10',
+        xmin=0,
+        xmax=91,
+        ymin=0.65,
+        ymax=0.93,
+        interval=10,
+        vp_size=390 * 128,
+        smooth=800,
+        mv_avg=2,
+
+        ymin2=None,
+        ymax2=None,
+        xmax2=40000,
+
+        spl_cfg=['',
+                 # '180', '60'],
+                 ],
+
         # speed_cfg=['.80\ .84\ .865', '.84', '.80'],
         # speed_cfg=['0.80-ResNet32', '0.84-ResNet32', 'DataPath-Resnet32'],
-        speed_cfg=['-32'],
+        speed_cfg=['Transfer'],
 
-        style='l2t',
+        style=None,
+
+        legend_loc='lower right',
     )
 
 
@@ -594,45 +742,38 @@ def plot_for_paper_imdb_half():
     plot_for_paper_all(
         'log-imdb-raw-Half.txt',
 
-        # 'log-imdb-spl-NonC1.txt',
         'log-imdb-spl-Half_80.txt',
         'log-imdb-spl-Half_100.txt',
         'log-imdb-spl-Half_120.txt',
 
-        'log-imdb-random_drop-lr-speed-NonC_old2_2.txt',
+        'log-imdb-random_drop-lr-speed-Half_NonC_Old2.txt',
+
+        'log-imdb-raw-Half_sort.txt',
 
         'log-imdb-stochastic-lr-speed-Half_NonC_Old2.txt',
         'log-imdb-stochastic-lr-speed-Half_OldNonC2Warm2.txt',
         'log-imdb-stochastic-lr-speed-Half_NonC_Old2_1.txt',
-        # 'log-imdb-stochastic-lr-speed-NonC_Old.txt',
-
-        # 'log-imdb-stochastic-mlp-speed-NonC1Best.txt',
-        # 'log-imdb-stochastic-mlp-speed-NonC2Best.txt',
 
         dataset='imdb',
-        xmin=0,
+        xmin=1,
         xmax=27.5 * 7 / 6,
-        # xmax=90,
-        ymin=0.45,
-        ymax=0.90,
-        interval=5,
+        ymin=0.47,
+        ymax=0.86,
+        interval=1,
         vp_size=200 * 16,
-        smooth=800,
-        mv_avg=2,
-
-        ymin2=None,
-        ymax2=None,
-        xmax2=40000,
-        interval2=200,
-        smooth2=800,
-        mv_avg2=5,
+        smooth=200,
+        mv_avg=3,
 
         # speed_cfg=['.80\ .83\ .86', '.70\ .80\ .85', '.80\ .83\ .86'],
-        speed_cfg=['0.80', '0.83', '0.86'],
+        speed_cfg=['0.78', '0.81', '0.84'],
 
         spl_cfg=['80', '100', '120'],
 
+        add_sort=True,
+
         style=None,
+
+        legend_loc='upper left',
     )
 
 
@@ -676,8 +817,11 @@ def main(args=None):
         {
             'mnist': plot_for_paper_mnist,
             'mnist-half': plot_for_paper_mnist_half,
+            'mnist-transfer': plot_for_paper_mnist_transfer,
+            'feature-analysis': plot_for_paper_mnist_half_feature_analysis,
             'c-mnist': plot_for_paper_c_mnist,
             'cifar10': plot_for_paper_cifar,
+            'cifar10-transfer': plot_for_paper_cifar_transfer,
             'cifar10-half': plot_for_paper_cifar_half,
             'c-cifar10': plot_for_paper_c_cifar,
             'cifar10-resnet110': plot_for_paper_cifar_resnet110,
@@ -687,6 +831,9 @@ def main(args=None):
 
 
 if __name__ == '__main__':
-    main(['-b', 'imdb-half'])
+    # main(['-b', 'cifar10-half'])
+    main(['-b', 'cifar10-resnet110'])
+    # main(['-b', 'feature-analysis'])
+    # main(['-b', 'mnist-transfer'])
     # main()
     pass

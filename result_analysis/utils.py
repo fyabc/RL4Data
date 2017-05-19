@@ -117,8 +117,8 @@ def legend(**kwargs):
                    ncol=total_number // n_rows + int(bool(total_number % n_rows)), fontsize=28,
                    borderpad=0.2, labelspacing=0.2, handletextpad=0.2, borderaxespad=0.2)
     else:
-        # todo
-        pass
+        plt.legend(loc=legend_loc, fontsize=28,
+                   borderpad=0.2, labelspacing=0.2, handletextpad=0.2, borderaxespad=0.2)
 
 
 def plot_acc_line(k, style, xs, ys, interval=1, smooth=300):

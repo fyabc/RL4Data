@@ -98,6 +98,7 @@ def plot_drop_number_rank(filename, kwargs):
     interval = kwargs.pop('interval', 1)
     legend_loc = kwargs.pop('legend_loc', 'upper left')
     use_legend = kwargs.pop('use_legend', False)
+    style = kwargs.pop('style', None)
 
     vp2epoch = kwargs.pop('vp2epoch', {
         'mnist': 20 * 125.0 / 50000,
@@ -136,7 +137,14 @@ def plot_drop_number_rank(filename, kwargs):
 
         rank_number = pick_interval(rank_number, interval)
 
-        label = r'$Bucket\ {} \sim {}$'.format(rank_size + 1 - pick_end[i], rank_size - pick_start[i])
+        if i == 0:
+            more_str = r'\ (Easiest)'
+        elif i == series_number - 1:
+            more_str = r'\ (Hardest)'
+        else:
+            more_str = r''
+        label = r'$Bucket\ {}{}$'.format(series_number - i, more_str)
+        # label = r'$Bucket\ {} \sim {}$'.format(rank_size + 1 - pick_end[i], rank_size - pick_start[i])
         # label = r'$Hardness\ {}$'.format(i + 1)
 
         plt.plot(xs, rank_number, line_styles[i],
@@ -161,7 +169,7 @@ def plot_drop_number_rank(filename, kwargs):
     plt.show()
 
 
-def argparse_main(args=None):
+def argparse_main(kwargs, args=None):
     parser = argparse.ArgumentParser(description='The drop number extractor')
 
     parser.add_argument('filenames', nargs='+', help='The log filenames')
@@ -196,6 +204,21 @@ def plot_cifar10(kwargs):
     )
 
 
+def plot_cifar10_half(kwargs):
+    kwargs.update(dict(
+        dataset='cifar10',
+        series_number=5,
+        title='CIFAR-10\ NDF-REINFORCE\ LR',
+        ymax=28500,
+        xmax=24,
+    ))
+
+    plot_drop_number_rank(
+        'log-cifar10-stochastic-lr-speed-Cifar10NonC4Best_Half.txt',
+        kwargs,
+    )
+
+
 def plot_imdb(kwargs):
     kwargs.update(dict(
         dataset='imdb',
@@ -210,6 +233,24 @@ def plot_imdb(kwargs):
 
     plot_drop_number_rank(
         'log-imdb-stochastic-lr-speed-NonC_Old2_2.txt',
+        kwargs,
+    )
+
+
+def plot_imdb_half(kwargs):
+    kwargs.update(dict(
+        dataset='imdb',
+        series_number=5,
+        title='IMDB\ NDF-REINFORCE\ LR',
+        # xmax=5.420788724759452,
+        # xmax=12,
+        xmax=16,
+        mv_avg=2,
+        legend_loc='upper right',
+    ))
+
+    plot_drop_number_rank(
+        'log-imdb-stochastic-lr-speed-Half_NonC_Old2.txt',
         kwargs,
     )
 
@@ -263,11 +304,13 @@ def main():
 
     {
         'imdb': plot_imdb,
+        'imdb-half': plot_imdb_half,
         'cifar10': plot_cifar10,
+        'cifar10-half': plot_cifar10_half,
         'mnist': plot_mnist,
         'mnist-half': plot_mnist_half,
         'argparse_main': argparse_main,
-    }['mnist-half'](kwargs)
+    }['imdb-half'](kwargs)
 
     pass
 
