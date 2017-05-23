@@ -427,7 +427,7 @@ def plot_for_paper_mnist_half():
         # 'Label', 'NoLoss', 'NoOutput', 'NoTrainInfo'],
         # speed_cfg=['', '-C'],
 
-        style=None,
+        style='cn',
 
         legend_loc='lower right',
     )
@@ -473,7 +473,7 @@ def plot_for_paper_mnist_half_feature_analysis():
             'AllFeatures',
         ],
 
-        style=None,
+        style='cn',
 
         legend_loc='lower right',
     )
@@ -574,7 +574,7 @@ def plot_for_paper_cifar_half():
         speed_cfg=['0.80', '0.84', '0.88'],
         # speed_cfg=['', '-M'],
 
-        style=None,
+        style='cn',
 
         legend_loc='lower right'
     )
@@ -591,7 +591,7 @@ def plot_for_paper_cifar_transfer():
         'log-cifar10-random_drop-speed-NonC2.txt',
 
         # 'log-cifar10-stochastic-lr-speed-NonC2Best_1.txt',
-        # 'log-cifar10-stochastic-lr-speed-NonC3Best.txt',
+        'log-cifar10-stochastic-lr-speed-NonC3Best.txt',
         # 'log-cifar10-stochastic-lr-speed-NonC4Best.txt',
 
         'log-cifar10-stochastic-lr-speed-MnistNonC10Best.txt',
@@ -612,10 +612,10 @@ def plot_for_paper_cifar_transfer():
 
         spl_cfg=[''],
 
-        # speed_cfg=['', 'Transfer'],
-        speed_cfg=['Transfer'],
+        speed_cfg=['', 'Transfer'],
+        # speed_cfg=['Transfer'],
 
-        style=None,
+        style='cn',
 
         legend_loc='lower right',
     )
@@ -657,7 +657,7 @@ def plot_for_paper_cifar_resnet110():
         # speed_cfg=['0.80-ResNet32', '0.84-ResNet32', 'DataPath-Resnet32'],
         speed_cfg=['Transfer'],
 
-        style=None,
+        style='cn',
 
         legend_loc='lower right',
     )
@@ -771,7 +771,7 @@ def plot_for_paper_imdb_half():
 
         add_sort=True,
 
-        style=None,
+        style='cn',
 
         legend_loc='upper left',
     )
@@ -832,8 +832,9 @@ def main(args=None):
 
 if __name__ == '__main__':
     # main(['-b', 'cifar10-half'])
-    main(['-b', 'cifar10-resnet110'])
+    # main(['-b', 'cifar10-resnet110'])
     # main(['-b', 'feature-analysis'])
     # main(['-b', 'mnist-transfer'])
+    main(['-b', 'cifar10-transfer'])
     # main()
     pass

@@ -100,6 +100,10 @@ def plot_drop_number_rank(filename, kwargs):
     use_legend = kwargs.pop('use_legend', False)
     style = kwargs.pop('style', None)
 
+    if style == 'cn':
+        plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
+        plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
+
     vp2epoch = kwargs.pop('vp2epoch', {
         'mnist': 20 * 125.0 / 50000,
         'cifar10': 390 * 128.0 / 100000,
@@ -161,8 +165,14 @@ def plot_drop_number_rank(filename, kwargs):
     plt.xticks(fontsize=21)
     plt.yticks(fontsize=24)
 
-    plt.xlabel('$Epoch$', fontsize=30)
-    plt.ylabel(r'$Filter\ Number$', fontsize=30)
+    if style == 'cn':
+        xlabel = u'轮数'
+        ylabel = u'过滤数据数量'
+    else:
+        xlabel = '$Epoch$'
+        ylabel = r'$Filter\ Number$'
+    plt.xlabel(xlabel, fontsize=30)
+    plt.ylabel(ylabel, fontsize=30)
 
     plt.grid(True, axis='both', linestyle='--')
 
@@ -300,6 +310,7 @@ def main():
 
     kwargs = dict(
         use_legend=True,
+        style='cn',
     )
 
     {
