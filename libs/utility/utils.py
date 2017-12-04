@@ -267,6 +267,7 @@ def process_before_train(args=None):
     message('Running on node: {}'.format(platform.node()))
     message('Start Time: {}'.format(time.ctime()))
 
+    message('Command line: "{}"'.format(' '.join(sys.argv)))
     message('The configures and hyperparameters are:')
     pprint.pprint(Config, stream=sys.stderr)
 
