@@ -62,6 +62,20 @@ class PolicyNetworkBase(NameRegister):
         self.parameters = None
 
     def make_output(self, input_=None):
+        """Build output from input.
+
+        Parameters
+        ----------
+        input_: Tensor, (batch_size, policy_input_size), optional
+            batch input of features
+            if not given, will use self.batch_input.
+
+        Returns
+        -------
+        Tensor, (batch_size,)
+            batch output of 0~1 probability values
+        """
+
         pass
 
     def build_output_function(self):

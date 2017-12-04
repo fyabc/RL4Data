@@ -15,7 +15,20 @@ logging_file = sys.stderr
 _depth = 0
 
 
-def init_logging_file(append=False):
+def init_logging_file(append=False, new=True):
+    """
+
+    Parameters
+    ----------
+    append: bool
+        Append exist logging file?
+    new: bool
+        Create new logging file? If False, will overwrite old logging file.
+    Returns
+    -------
+
+    """
+
     global logging_file
 
     if Config['logging_file'] is None:
@@ -30,9 +43,10 @@ def init_logging_file(append=False):
 
     filename = raw_filename
 
-    while os.path.exists(filename):
-        filename = raw_filename.replace('.txt', '_{}.txt'.format(i))
-        i += 1
+    if new:
+        while os.path.exists(filename):
+            filename = raw_filename.replace('.txt', '_{}.txt'.format(i))
+            i += 1
 
     Config['logging_file'] = filename
     logging_file = open(filename, 'w')
