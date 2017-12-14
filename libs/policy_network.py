@@ -101,7 +101,7 @@ class PolicyNetworkBase(NameRegister):
         batch_action = T.ivector('actions')
         batch_reward = T.vector('rewards', dtype=fX)
 
-        cost = T.mean(T.nnet.binary_crossentropy(output=self.batch_output, target=batch_action))
+        cost = T.mean(batch_reward * T.nnet.binary_crossentropy(output=self.batch_output, target=batch_action))
 
         # Add L2 regularization
         if PolicyConfig['l2_c'] > 0.:

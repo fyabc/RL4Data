@@ -168,6 +168,8 @@
         "reward_sign": false,
 
         "policy_optimizer": "sgd",
+
+        /// For IMDB: set default learning rate to 0.002
         "policy_learning_rate": 0.0002,
         "policy_learning_rate_discount": 0.5,
 
