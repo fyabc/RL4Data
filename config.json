@@ -199,8 +199,8 @@
 
         // Update the policy smoothly
         // policy_new = $(smooth_update) * policy_old + (1 - $(smooth_update)) * policy_current
-        // It $(smooth_update) == 0, there is not any smooth.
-        "smooth_update": 0.3,
+        // If $(smooth_update) == 0, there is not any smooth.
+        "smooth_update": 0,
 
         /// Actor-Critic configurations
         "actor_gamma": 1.0,
