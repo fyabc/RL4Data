@@ -280,7 +280,7 @@ def train_policy_IMDB():
                     validate_acc, test_acc = validate_point_message(
                         model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater, reward_checker,
                         validate_size=valid_size,  # Use part validation set in baseline
-                        run_test=False,
+                        run_test=PolicyConfig['run_test'],
                     )
 
                     if validate_acc > best_validate_acc:

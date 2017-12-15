@@ -164,9 +164,6 @@
         // '~' is './data/{G.dataset}' here
         "random_drop_number_file": "~/drop_num.txt",
 
-        /// Negative reward? true means positive, this is common to false
-        "reward_sign": false,
-
         "policy_optimizer": "sgd",
 
         /// For IMDB: set default learning rate to 0.002
@@ -220,7 +217,10 @@
         /// Self-paced learning configurations
         // Start and end loss threshold
         "start_cost": 0.6,
-        "end_cost": 4.60517     // -log(0.01)
+        "end_cost": 4.60517,    // -log(0.01)
+
+        /// Run test when training the policy?
+        "run_test": false
     },
 
     "cifar10": {

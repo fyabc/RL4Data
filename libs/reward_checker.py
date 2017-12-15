@@ -93,6 +93,20 @@ class AccuracyRewardChecker(RewardChecker):
 AccuracyRewardChecker.register_class(['acc', 'accuracy'])
 
 
+class FinalAccuracyRewardChecker(RewardChecker):
+    def __init__(self):
+        self.validate_accuracy = None
+
+    def check(self, validate_acc, updater):
+        self.validate_accuracy = validate_acc
+
+    def get_reward(self, echo=True):
+        return self.validate_accuracy
+
+
+FinalAccuracyRewardChecker.register_class(['final_acc', 'final_accuracy'])
+
+
 class DeltaAccuracyRewardChecker(RewardChecker):
     ImmediateReward = True
 

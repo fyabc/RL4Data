@@ -107,6 +107,8 @@ def pre_process_MNIST_data():
 
     train_size, validate_size, test_size = y_train.shape[0], y_validate.shape[0], y_test.shape[0]
 
+    np.random.normal()
+
     message('Training data size:', train_size)
     message('Validation data size:', validate_size)
     message('Test data size:', test_size)

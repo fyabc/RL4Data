@@ -250,7 +250,8 @@ Real cost (Final reward for terminal): {}""".format(
         self.message_parameters()
         self.start_new_validation_point()
 
-        if (episode + 1) % PolicyConfig['policy_learning_rate_discount_freq'] == 0:
+        d_freq = PolicyConfig['policy_learning_rate_discount_freq']
+        if d_freq > 0 and (episode + 1) % d_freq == 0:
             self.discount_learning_rate(discount_rate=PolicyConfig['policy_learning_rate_discount'])
 
     def clear_buffer(self):
@@ -283,7 +284,12 @@ Real cost (Final reward for terminal): {}""".format(
     def message_parameters(self):
         message('Parameters:')
         for parameter in self.parameters:
-            message('$    {} = {}'.format(parameter.name, parameter.get_value()))
+            value = parameter.get_value()
+            if value.ndim == 1:
+                value_str = ' '.join(str(e) for e in value)
+            else:
+                value_str = str(value)
+            message('$    {} = {}'.format(parameter.name, value_str))
 
     def check_load(self):
         train_action = Config['action'].lower()
@@ -364,3 +370,116 @@ class MLPPolicyNetwork(PolicyNetworkBase):
         return T.nnet.sigmoid(T.dot(hidden_layer, self.W1) + self.b1)
 
 MLPPolicyNetwork.register_class(['mlp'])
+
+
+class FixedPolicyNetWork(LRPolicyNetwork):
+    # def start_new_validation_point(self):
+    #     # If the current last buffer is empty, do not create new buffer.
+    #     if not self.input_buffer or self.input_buffer[-1]:
+    #         self.input_buffer.append([])
+    #         self.action_buffer.append([])
+
+    def __init__(self, *args, **kwargs):
+        super(FixedPolicyNetWork, self).__init__(*args, **kwargs)
+        self.reward_baseline = None
+
+    def get_discounted_rewards(self, immediate_reward):
+        # Merge all batches. The result reward size is the total number of instances in this episode.
+        discounted_rewards = []
+
+        for i, reward in enumerate(immediate_reward):
+            part_size = sum(len(batches) for batches in self.action_buffer[i])
+            if part_size == 0:
+                continue
+            if True:
+                discounted_rewards.append(np.random.uniform(-abs(reward), abs(reward), (part_size,)).astype(fX))
+
+                dri = discounted_rewards[-1]
+                dri[-1] = reward
+
+                for j in range(part_size - 1, 0, -1):
+                    dri[j] -= dri[j - 1]
+            else:
+                reward_before = 0.0
+                if discounted_rewards:
+                    reward_before = discounted_rewards[-1][-1]
+                discounted_rewards.append(np.linspace(reward_before, reward, part_size, dtype=fX))
+
+        temp = 0.
+        for discounted_reward in reversed(discounted_rewards):
+            for i in range(len(discounted_reward) - 1, -1, -1):
+                temp = temp * self.gamma + discounted_reward[i]
+                discounted_reward[i] = floatX(temp)
+
+        discounted_rewards = np.concatenate(discounted_rewards, axis=0)
+        discounted_rewards -= np.mean(discounted_rewards)
+        discounted_rewards /= np.std(discounted_rewards)
+        return discounted_rewards
+
+    @logging
+    def update(self, reward_checker):
+        old_parameters = [param.get_value() for param in self.parameters]
+
+        def _concat(a):
+            result = []
+            for vp in a:
+                for b in vp:
+                    result.append(b)
+            return np.concatenate(result, axis=0)
+
+        input_buffer = _concat(self.input_buffer)
+        action_buffer = _concat(self.action_buffer)
+        assert input_buffer.shape[0] == action_buffer.shape[0]
+
+        final_reward = reward_checker.get_reward(echo=True)
+
+        if reward_checker.ImmediateReward:
+            imm_reward = reward_checker.get_immediate_reward(echo=True)
+            discounted_rewards = self.get_discounted_rewards(imm_reward)
+        else:
+            # # Calculate fake linear immediate reward
+            # acc_vp_size_list = []
+            # acc_vp_size = 0
+            # for part in self.action_buffer:
+            #     acc_vp_size += len(part)
+            #     acc_vp_size_list.append(acc_vp_size)
+            # acc_vp_size_list = np.array(acc_vp_size_list, dtype=fX)
+            # imm_reward = acc_vp_size_list / acc_vp_size_list[-1] * final_reward
+
+            # discounted_rewards = np.full(action_buffer.shape, self.get_terminal_reward(final_reward), dtype=fX)
+
+            discounted_rewards = np.linspace(final_reward, 0.0, len(action_buffer), dtype=fX)
+            discounted_rewards -= discounted_rewards.mean()
+            discounted_rewards /= discounted_rewards.std()
+
+        cost = self.update_raw(input_buffer, action_buffer, discounted_rewards)
+
+        if np.isnan(cost) or np.isinf(cost):
+            raise OverflowError('NaN detected at policy update')
+
+        message("""\
+    Cost: {}
+    Real cost (Final reward for terminal): {}""".format(
+            cost, final_reward
+        ))
+
+        # clear buffers
+        self.clear_buffer()
+
+        new_parameters = [param.get_value() for param in self.parameters]
+        print('Param delta:', [n - o for n, o in zip(new_parameters, old_parameters)])
+
+    def get_terminal_reward(self, termial_reward):
+        """Get terminal reward and update reward baseline."""
+
+        if self.reward_baseline is None:
+            self.reward_baseline = termial_reward
+            return 0.0
+
+        result = termial_reward - self.reward_baseline
+        self.update_rb(termial_reward)
+
+        return result
+
+
+FixedPolicyNetWork.register_class(['fixed'])

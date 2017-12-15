@@ -229,7 +229,7 @@ def train_policy_CIFAR10():
                     last_validate_point = updater.total_train_batches
                     validate_acc, test_acc = validate_point_message(
                         model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater, reward_checker,
-                        run_test=False,
+                        run_test=PolicyConfig['run_test'],
                     )
 
                     if validate_acc > best_validate_acc:

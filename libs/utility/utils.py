@@ -427,7 +427,7 @@ VA: {:.6f}""".format(
 
     # The policy start a new validation point
     updater_policy = getattr(updater, 'policy', None)
-    if updater_policy:
+    if kwargs.pop('start_new_vp', True) and updater_policy:
         updater.policy.start_new_validation_point()
 
     # [NOTE] Important! increment `vp_number` in validation point.
