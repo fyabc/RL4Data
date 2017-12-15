@@ -129,6 +129,26 @@ class DeltaAccuracyRewardChecker(RewardChecker):
 DeltaAccuracyRewardChecker.register_class(['delta_acc', 'delta_accuracy'])
 
 
+class IncreaseAccuracyRewardChecker(RewardChecker):
+    ImmediateReward = True
+
+    def __init__(self):
+        self.validate_accuracy = [0.0]
+
+    def check(self, validate_acc, updater):
+        self.validate_accuracy.append(validate_acc)
+
+    def get_reward(self, echo=True):
+        return self.validate_accuracy[-1] - self.validate_accuracy[-2]
+
+    def get_immediate_reward(self, echo=True):
+        return [self.validate_accuracy[i] - self.validate_accuracy[i - 1]
+                for i in range(1, len(self.validate_accuracy))]
+
+
+IncreaseAccuracyRewardChecker.register_class(['inc_acc', 'inc_accuracy'])
+
+
 class BestAccuracyRewardChecker(RewardChecker):
     def __init__(self):
         self.validate_accuracy = []

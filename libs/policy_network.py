@@ -457,11 +457,10 @@ class FixedPolicyNetWork(LRPolicyNetwork):
         if np.isnan(cost) or np.isinf(cost):
             raise OverflowError('NaN detected at policy update')
 
-        message("""\
-    Cost: {}
-    Real cost (Final reward for terminal): {}""".format(
-            cost, final_reward
-        ))
+        msg = '    Cost: {}\n    Real cost (Final reward for terminal): {}'.format(cost, final_reward)
+        if reward_checker.ImmediateReward:
+            msg += '\n    Average immediate reward: {}'.format(np.mean(imm_reward))
+        message(msg)
 
         # clear buffers
         self.clear_buffer()

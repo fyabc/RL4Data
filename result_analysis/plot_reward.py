@@ -23,7 +23,9 @@ Data = namedtuple('Data', ['name', 'prefix_list', 'location'])
 
 all_data = {
     'tr': Data('terminal reward', ('Real cost', 'TR'), -1),
+    'ir': Data('immediate reward', 'Average', -1),
     'b': Data('bias', '$    b', -1),
+    'tea': Data('test accuracy', '$  best test', -2),
 }
 
 for i in range(15):
@@ -65,7 +67,7 @@ def plot_by_args(options):
         print('{} Total: {} episodes; Max: {} at episode {}'.format(
             data.name, len(reward_list), reward_list[arg_max], arg_max))
 
-        if options.normalize:
+        if len(options.data) > 1 and options.normalize:
             reward_list = np.array(reward_list)
             reward_list -= reward_list.mean()
             reward_list /= reward_list.std()

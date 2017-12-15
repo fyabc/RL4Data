@@ -304,6 +304,12 @@ def train_policy_IMDB():
 
         episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
 
+        # Add a validation point at the final of the episode, related to last batches.
+        validate_point_message(
+            model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater, reward_checker,
+            run_test=PolicyConfig['run_test'],
+            start_new_vp=False,
+        )
         policy.update(reward_checker)
 
         if PolicyConfig['policy_save_freq'] > 0 and episode % PolicyConfig['policy_save_freq'] == 0:
