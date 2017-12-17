@@ -1,6 +1,14 @@
 #! /usr/bin/python
 # -*- encoding: utf-8 -*-
 
+"""Plot the reward or other data.
+
+Some plots: curves are in "/result_analysis/curve"
+
+    # mini-mnist-reward-smoothed.png
+    $ python2 result_analysis\plot_reward.py -d mnist log-mnist-reinforce-fixed-acc-new.txt -D tr -X 102
+"""
+
 from __future__ import print_function
 
 import os
@@ -16,6 +24,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from libs.utility.config import LogPath
+from libs.utility.plot_utils import move_avg
 
 
 Data = namedtuple('Data', ['name', 'prefix_list', 'location'])
@@ -23,8 +32,9 @@ Data = namedtuple('Data', ['name', 'prefix_list', 'location'])
 
 all_data = {
     'tr': Data('terminal reward', ('Real cost', 'TR'), -1),
-    'ir': Data('immediate reward', 'Average', -1),
+    'ir': Data('immediate reward', 'Average immediate', -1),
     'b': Data('bias', '$    b', -1),
+    'va': Data('valid accuracy', '$  best valid', -1),
     'tea': Data('test accuracy', '$  best test', -2),
 }
 
@@ -40,9 +50,15 @@ def get_reward_list(filename, dataset='mnist', abspath=False, data_name='tr'):
 
     data = all_data[data_name]
 
+    def _get_float(_line):
+        val_str = _line.split()[data.location]
+        if val_str == 'None':
+            return 0.0
+        return float(val_str)
+
     with open(abs_filename, 'r') as f:
         result = [
-            float(line.split()[data.location])
+            _get_float(line)
             for line in f
             if line.strip().startswith(data.prefix_list)
         ]
@@ -67,6 +83,9 @@ def plot_by_args(options):
         print('{} Total: {} episodes; Max: {} at episode {}'.format(
             data.name, len(reward_list), reward_list[arg_max], arg_max))
 
+        if options.move_avg > 0:
+            reward_list = move_avg(reward_list, options.move_avg)
+
         if len(options.data) > 1 and options.normalize:
             reward_list = np.array(reward_list)
             reward_list -= reward_list.mean()
@@ -79,9 +98,10 @@ def plot_by_args(options):
             linewidth=2 if data_name == 'tr' else 1,
         )
 
+    plt.xlim(xmin=options.xmin, xmax=options.xmax)
     plt.ylim(ymin=options.ymin, ymax=options.ymax)
     plt.grid()
-    plt.legend()
+    plt.legend(loc='best')
     plt.show()
 
 
@@ -93,6 +113,10 @@ def main():
                         help='The dataset (default is "%(default)s")')
     parser.add_argument('-i', '--ignore_zero', action='store_true', dest='ignore_zero', default=False,
                         help='Ignore the zero reward (default is %(default)s)')
+    parser.add_argument('-x', '--xmin', action='store', dest='xmin', type=float, default=None,
+                        help='The x min value (default is %(default)s)')
+    parser.add_argument('-X', '--xmax', action='store', dest='xmax', type=float, default=None,
+                        help='The x max value (default is %(default)s)')
     parser.add_argument('-y', '--ymin', action='store', dest='ymin', type=float, default=None,
                         help='The y min value (default is %(default)s)')
     parser.add_argument('-Y', '--ymax', action='store', dest='ymax', type=float, default=None,
@@ -103,6 +127,8 @@ def main():
                         help='The data to plot (default is "%(default)s")')
     parser.add_argument('-n', '--normalize', action='store_true', dest='normalize', default=False,
                         help='Add normalize on data, (default is %(default)s)')
+    parser.add_argument('--move_avg', action='store', dest='move_avg', default=0, type=int,
+                        help='Moving average, default is %(default)s')
 
     options = parser.parse_args()
 

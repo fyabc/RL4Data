@@ -391,7 +391,7 @@ class FixedPolicyNetWork(LRPolicyNetwork):
             part_size = sum(len(batches) for batches in self.action_buffer[i])
             if part_size == 0:
                 continue
-            if True:
+            if False:
                 discounted_rewards.append(np.random.uniform(-abs(reward), abs(reward), (part_size,)).astype(fX))
 
                 dri = discounted_rewards[-1]

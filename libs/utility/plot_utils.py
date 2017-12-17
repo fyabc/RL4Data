@@ -11,6 +11,10 @@ from .config import LogPath
 Interval = 4
 
 
+def avg(l):
+    return sum(l) / len(l)
+
+
 def average_without_none(l):
     no_none = [e for e in l if e is not None]
 
@@ -22,6 +26,10 @@ def average_list(*lists):
         average_without_none(elements)
         for elements in izip_longest(*lists)
     ]
+
+
+def move_avg(l, mv_avg=5):
+    return [avg(l[max(i - mv_avg, 0):i + 1]) for i in range(len(l))]
 
 
 def get_file_config(filename, dataset='mnist'):
