@@ -18,6 +18,9 @@ def avg(l):
 def average_without_none(l):
     no_none = [e for e in l if e is not None]
 
+    if not no_none:
+        return None
+
     return sum(no_none) / len(no_none)
 
 
@@ -29,7 +32,7 @@ def average_list(*lists):
 
 
 def move_avg(l, mv_avg=5):
-    return [avg(l[max(i - mv_avg, 0):i + 1]) for i in range(len(l))]
+    return [average_without_none(l[max(i - mv_avg, 0):i + 1]) for i in range(len(l))]
 
 
 def get_file_config(filename, dataset='mnist'):

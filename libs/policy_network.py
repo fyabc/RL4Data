@@ -403,7 +403,7 @@ class FixedPolicyNetWork(LRPolicyNetwork):
                 reward_before = 0.0
                 if discounted_rewards:
                     reward_before = discounted_rewards[-1][-1]
-                discounted_rewards.append(np.linspace(reward_before, reward, part_size, dtype=fX))
+                discounted_rewards.append(np.linspace(reward_before, reward, part_size, endpoint=False, dtype=fX))
 
         temp = 0.
         for discounted_reward in reversed(discounted_rewards):
