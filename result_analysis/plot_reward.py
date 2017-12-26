@@ -7,6 +7,7 @@ Some plots: curves are in "/result_analysis/curve"
 
     # mini-mnist-reward-smoothed.png
     $ python2 result_analysis\plot_reward.py -d mnist log-mnist-reinforce-fixed-acc-new.txt -D tr -X 102
+    $ python2 result_analysis\plot_reward.py -d mnist log-mnist-reinforce-fixed-acc-new_full.txt -D ir
 """
 
 from __future__ import print_function
@@ -124,7 +125,7 @@ def main():
     parser.add_argument('-a', '--abspath', action='store_true', dest='abspath', default=False,
                         help='Filename is absolute path, (default is %(default)s)')
     parser.add_argument('-D', '--data', action='store', nargs='+', dest='data', default=['tr'],
-                        help='The data to plot (default is "%(default)s")')
+                        choices=all_data.keys(), help='The data to plot (default is "%(default)s")')
     parser.add_argument('-n', '--normalize', action='store_true', dest='normalize', default=False,
                         help='Add normalize on data, (default is %(default)s)')
     parser.add_argument('--move_avg', action='store', dest='move_avg', default=0, type=int,
