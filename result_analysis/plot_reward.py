@@ -7,7 +7,7 @@ Some plots: curves are in "/result_analysis/curve"
 
     # mini-mnist-reward-smoothed.png
     $ python2 result_analysis\plot_reward.py -d mnist log-mnist-reinforce-fixed-acc-new.txt -D tr -X 102
-    $ python2 result_analysis\plot_reward.py -d mnist log-mnist-reinforce-fixed-acc-new_full.txt -D ir
+    $ python2 result_analysis\plot_reward.py -d mnist log-mnist-reinforce-fixed-acc-new_full.txt -D ir -x 0 -X 50 -y 0.953  # noqa
 """
 
 from __future__ import print_function
@@ -22,6 +22,7 @@ sys.path.append(ProjectRootPath)
 import argparse
 
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 
 from libs.utility.config import LogPath
@@ -33,7 +34,8 @@ Data = namedtuple('Data', ['name', 'prefix_list', 'location'])
 
 all_data = {
     'tr': Data('terminal reward', ('Real cost', 'TR'), -1),
-    'ir': Data('immediate reward', 'Average immediate', -1),
+    # 'ir': Data('immediate reward', 'Average immediate', -1),
+    'ir': Data(r'$Terminal\ reward\ for\ training\ teacher\ model\ on\ MNIST$', 'Average immediate', -1),
     'b': Data('bias', '$    b', -1),
     'va': Data('valid accuracy', '$  best valid', -1),
     'tea': Data('test accuracy', '$  best test', -2),
@@ -96,17 +98,29 @@ def plot_by_args(options):
 
         plt.plot(
             reward_list, style, label=data.name,
-            linewidth=2 if data_name == 'tr' else 1,
+            linewidth=7.5,
         )
+
+    # Set style.
+    plt.xlabel(r'$Number\ of\ Episode$', fontsize=30)
+    plt.ylabel(r'$Terminal\ Reward$', fontsize=30)
+    plt.xticks(fontsize=21)
+    plt.yticks(fontsize=24)
 
     plt.xlim(xmin=options.xmin, xmax=options.xmax)
     plt.ylim(ymin=options.ymin, ymax=options.ymax)
-    plt.grid()
-    plt.legend(loc='best')
+    plt.grid(True, axis='both', linestyle='--')
+    plt.legend(loc='lower right', fontsize=28, borderpad=0.2, labelspacing=0.2, handletextpad=0.2, borderaxespad=0.2)
     plt.show()
 
 
 def main():
+    try:
+        # [NOTE]: Must add this after matplotlib 2.0.0.
+        matplotlib.rcParams['text.usetex'] = True
+    except KeyError:
+        pass
+
     parser = argparse.ArgumentParser(description='The reward plotter')
 
     parser.add_argument('filename', help='The log filename')
