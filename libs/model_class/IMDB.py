@@ -111,9 +111,8 @@ class IMDBModelBase(object):
 
             to_be_stacked.append(labels)
 
-        # TODO add first layer output here
         if PolicyConfig['use_first_layer_output']:
-            pass
+            raise RuntimeError('IMDB model does not support first layer output now')
 
         if PolicyConfig['add_epoch_number']:
             epoch_number_inputs = np.full((batch_size, 1),

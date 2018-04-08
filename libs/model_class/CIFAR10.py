@@ -565,7 +565,6 @@ class VanillaCNNModel(CIFARModelBase):
         # f_train_adadelta = theano.function([self.input_var, self.target_var], loss, updates=updates_adadelta)
         # f_train_rmsprop = theano.function([self.input_var, self.target_var], loss, updates=updates_rmsprop)
 
-        # TODO: can be selected
         self.f_train = f_train_adam
 
     def build_validate_function(self):

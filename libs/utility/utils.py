@@ -486,28 +486,6 @@ def episode_final_message(best_validate_acc, best_iteration, test_score, start_t
         message("Dump train index to '{}'".format(train_index_filename))
 
 
-def preprocess_v2(args):
-    """Preprocessor of train v2.
-
-    Parse arguments
-    Create directory if not exists, copy config files
-    Set some paths
-    etc.
-
-    Parameters
-    ----------
-    args: arguments from argument parser.
-
-    Returns
-    -------
-    A 2-elements tuple.
-    Current config and A `DatasetAttributes` instance, indicates the dataset information.
-    """
-
-    # todo
-    return None, None
-
-
 def _test_initialize():
     process_before_train()
 

@@ -209,7 +209,6 @@ def train_policy_MNIST():
         episode_final_message(best_validate_acc, best_iteration, test_score, start_time)
 
         # Add a validation point at the final of the episode, related to last batches.
-        # todo: move this to other functions
         validate_point_message(
             model, x_train, y_train, x_validate, y_validate, x_test, y_test, updater, reward_checker,
             run_test=PolicyConfig['run_test'],
