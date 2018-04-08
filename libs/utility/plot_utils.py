@@ -31,8 +31,30 @@ def average_list(*lists):
     ]
 
 
-def move_avg(l, mv_avg=5):
+def move_avg(l, mv_avg=5, fill_start=None):
+    assert isinstance(l, list), 'Input l must be a list'
+    if fill_start is not None:
+        return [
+            average_without_none([fill_start for _ in range(max(mv_avg - i, 0))] + l[max(i - mv_avg, 0):i + 1])
+            for i in range(len(l))]
     return [average_without_none(l[max(i - mv_avg, 0):i + 1]) for i in range(len(l))]
+
+
+def running_avg(l, move_ratio=0.1, start_value=None):
+    if start_value is None:
+        running_value = l[0]
+        si = 1
+        result = [running_value]
+    else:
+        running_value = start_value
+        si = 0
+        result = []
+
+    for i in xrange(si, len(l)):
+        running_value = running_value * (1 - move_ratio) + l[i] * move_ratio
+        result.append(running_value)
+
+    return result
 
 
 def get_file_config(filename, dataset='mnist'):

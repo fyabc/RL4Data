@@ -6,6 +6,7 @@ Using policy gradient to select training data of neural network.
 
 [Theano](https://github.com/Theano/Theano)
 [lasagne](https://github.com/Lasagne/Lasagne)
+Python version: 2.7
 
 ## Run
 

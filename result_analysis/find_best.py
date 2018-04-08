@@ -12,8 +12,6 @@ sys.path.append(ProjectRootPath)
 
 from libs.utility.config import LogPath
 
-__author__ = 'fyabc'
-
 
 StartTags = {
     'test_acc': ['Test accuracy:', 'TeA:'],
