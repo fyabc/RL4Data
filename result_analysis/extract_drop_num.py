@@ -171,8 +171,8 @@ def plot_drop_number_rank(filename, kwargs):
     else:
         xlabel = '$Epoch$'
         ylabel = r'$Filter\ Number$'
-    plt.xlabel(xlabel, fontsize=30)
-    plt.ylabel(ylabel, fontsize=30)
+    plt.xlabel(xlabel, fontsize=CFG['label-font-size-x'])
+    plt.ylabel(ylabel, fontsize=CFG['label-font-size-y'])
 
     plt.grid(True, axis='both', linestyle='--')
 

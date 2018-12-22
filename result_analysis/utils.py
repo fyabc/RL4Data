@@ -28,6 +28,8 @@ Curves = [
 CFG = {
     'linewidth': 7.5,
     'markersize': 17.0,
+    'label-font-size-x': 30,
+    'label-font-size-y': 30,
 }
 
 

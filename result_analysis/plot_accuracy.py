@@ -277,8 +277,8 @@ def plot_for_paper_all(*filenames, **kwargs):
         'cn': u'测试集准确率',
     }[style]
 
-    plt.xlabel(x_label, fontsize=30)
-    plt.ylabel(y_label, fontsize=30)
+    plt.xlabel(x_label, fontsize=CFG['label-font-size-x'])
+    plt.ylabel(y_label, fontsize=CFG['label-font-size-y'])
 
     plt.xlim(xmin=xmin * vp_size, xmax=xmax * vp_size)
     plt.ylim(ymin=ymin, ymax=ymax)
